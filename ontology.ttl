@@ -1,0 +1,140 @@
+# Strata root ontology — core vocabulary for the Strata family.
+# [ontology] source declared by ggen.toml. Per-pack detail lives in each
+# pack's own ontology.ttl (aligned here via rdfs:seeAlso); this file defines
+# the shared core classes, properties, and seed individuals the pack
+# templates consume.
+
+@prefix st:   <https://strata.chatman.ai/ontology#> .
+@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl:  <http://www.w3.org/2002/07/owl#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+
+<https://strata.chatman.ai/ontology> a owl:Ontology ;
+    rdfs:label "Strata Ontology" ;
+    rdfs:comment "Root ontology for the Strata system: CLAP frames, quads, attestations, witness valves, actuation arenas, Merkle commits, knowledge wormholes, fuel leases, coordinate masks." ;
+    owl:imports
+        <https://strata.chatman.ai/ontology/protocol> ,
+        <https://strata.chatman.ai/ontology/temprun> ,
+        <https://strata.chatman.ai/ontology/stratus> ,
+        <https://strata.chatman.ai/ontology/cas> ,
+        <https://strata.chatman.ai/ontology/signer> .
+
+# ── Pack alignment (rdfs:seeAlso to each pack's ontology.ttl) ────────
+
+<https://strata.chatman.ai/ontology/protocol> rdfs:seeAlso
+    <file:///Users/sac/ggen-marketplace/packs/strata-protocol-pack/ontology.ttl> .
+<https://strata.chatman.ai/ontology/temprun> rdfs:seeAlso
+    <file:///Users/sac/ggen-marketplace/packs/strata-temprun-pack/ontology.ttl> .
+<https://strata.chatman.ai/ontology/stratus> rdfs:seeAlso
+    <file:///Users/sac/ggen-marketplace/packs/strata-stratus-pack/ontology.ttl> .
+<https://strata.chatman.ai/ontology/cas> rdfs:seeAlso
+    <file:///Users/sac/ggen-marketplace/packs/strata-cas-pack/ontology.ttl> .
+<https://strata.chatman.ai/ontology/signer> rdfs:seeAlso
+    <file:///Users/sac/ggen-marketplace/packs/strata-signer-pack/ontology.ttl> .
+
+# ── Core classes ─────────────────────────────────────────────────────
+
+st:ClapFrame a rdfs:Class ; rdfs:label "ClapFrame" ;
+    rdfs:comment "A framed CLAP protocol data unit with magic/version header." .
+
+st:Quad a rdfs:Class ; rdfs:label "Quad" ;
+    rdfs:comment "A subject/predicate/object/graph coordinate record." .
+
+st:AttestationReceipt a rdfs:Class ; rdfs:label "AttestationReceipt" ;
+    rdfs:comment "A five-field receipt (identity/authority/consequence/replay/standing) bound to an actuation and signed by an attestation key." .
+
+st:WitnessValve a rdfs:Class ; rdfs:label "WitnessValve" ;
+    rdfs:comment "A gate that admits or refuses a state transition based on witnessed evidence." .
+
+st:ActuationArena a rdfs:Class ; rdfs:label "ActuationArena" ;
+    rdfs:comment "A bounded execution arena in which actuations run under fuel leases." .
+
+st:MerkleCommit a rdfs:Class ; rdfs:label "MerkleCommit" ;
+    rdfs:comment "A Merkle-rooted commit over a quad graph." .
+
+st:KnowledgeWormhole a rdfs:Class ; rdfs:label "KnowledgeWormhole" ;
+    rdfs:comment "A content-addressed link between two graph coordinates." .
+
+st:FuelLease a rdfs:Class ; rdfs:label "FuelLease" ;
+    rdfs:comment "A leased budget of actuation fuel granted to a run." .
+
+st:CoordinateMask a rdfs:Class ; rdfs:label "CoordinateMask" ;
+    rdfs:comment "A mask over graph coordinates scoping which quads a frame or commit covers." .
+
+# ── Digest / universe properties ─────────────────────────────────────
+
+st:parentDigest a rdf:Property ; rdfs:label "parent digest" ;
+    rdfs:domain st:MerkleCommit ; rdfs:range xsd:string ;
+    rdfs:comment "Digest of the parent commit (causal lineage)." .
+
+st:universeDigest a rdf:Property ; rdfs:label "universe digest" ;
+    rdfs:range xsd:string ;
+    rdfs:comment "Digest of the graph universe a frame, commit, or mask covers." .
+
+st:permutationIndex a rdf:Property ; rdfs:label "permutation index" ;
+    rdfs:range xsd:integer ;
+    rdfs:comment "Index into the canonical permutation of the coordinate space." .
+
+st:nonce a rdf:Property ; rdfs:label "nonce" ;
+    rdfs:range xsd:string ;
+    rdfs:comment "Freshness nonce binding a frame or receipt to one use." .
+
+# ── Fuel properties ──────────────────────────────────────────────────
+
+st:fuelLease a rdf:Property ; rdfs:label "fuel lease" ;
+    rdfs:domain st:ActuationArena ; rdfs:range st:FuelLease ;
+    rdfs:comment "The fuel lease under which an actuation runs." .
+
+st:fuelConsumed a rdf:Property ; rdfs:label "fuel consumed" ;
+    rdfs:domain st:FuelLease ; rdfs:range xsd:integer ;
+    rdfs:comment "Fuel consumed against the lease so far." .
+
+# ── Causal lineage predicates ────────────────────────────────────────
+
+st:causedBy a rdf:Property ; rdfs:label "caused by" ;
+    rdfs:comment "Direct causal predecessor (any strata artifact)." .
+
+st:derivedFrom a rdf:Property ; rdfs:label "derived from" ;
+    rdfs:comment "Content-lineage predecessor: this artifact's digest was computed over its derivation parent." .
+
+st:attestsTo a rdf:Property ; rdfs:label "attests to" ;
+    rdfs:comment "The artifact a receipt or signature witnesses." .
+
+# ── Seed individuals (consumed by pack template SPARQL) ──────────────
+
+st:ClapFrameV1 a st:ClapFrame ;
+    st:magic "CLAP" ;
+    st:version 1 ;
+    st:frameType "data" ;
+    st:universeDigest "sha256:strata-genesis" ;
+    st:nonce "nonce-genesis-0001" .
+
+st:GenesisCommit a st:MerkleCommit ;
+    st:merkleRoot "sha256:strata-genesis-root" ;
+    st:universeDigest "sha256:strata-genesis" ;
+    st:permutationIndex 0 ;
+    st:nonce "nonce-genesis-0001" .
+
+st:DefaultFuelLease a st:FuelLease ;
+    st:leaseFuel 1000000 ;
+    st:fuelConsumed 0 ;
+    st:leaseHolder "strata-default" ;
+    st:runsIn st:DefaultArena .
+
+st:GenesisWormhole a st:KnowledgeWormhole ;
+    st:sourceDigest "sha256:strata-genesis" ;
+    st:targetDigest "sha256:strata-genesis-root" .
+
+st:GenesisMask a st:CoordinateMask ;
+    st:universeDigest "sha256:strata-genesis" ;
+    st:permutationIndex 0 .
+
+st:GenesisReceipt a st:AttestationReceipt ;
+    st:receiptIdentity "receipt:strata-genesis" ;
+    st:receiptAuthority "BRCE" ;
+    st:receiptConsequence "strata genesis universe admitted" ;
+    st:receiptReplay "git+sha256:strata-genesis-root" ;
+    st:receiptStanding "ALIVE" ;
+    st:nonce "nonce-genesis-0001" ;
+    st:causedBy st:GenesisCommit .

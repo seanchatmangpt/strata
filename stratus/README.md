@@ -1,0 +1,37 @@
+# stratus — Strata witness valve
+
+Mechanical witness valve for CLAP/1.0 frame ingress (Erlang/OTP, Elixir).
+
+## Environment (recorded deviation)
+
+PRD specifies Erlang/OTP 29. Implemented and tested on **Erlang/OTP 28
+(erts-16.2) with Elixir 1.19.5** — the available environment. No OTP-29-only
+features are used.
+
+## Supervision tree
+
+`Stratus.Supervisor` (one_for_all):
+- `Registry.Stratus` — unique registry.
+- `Stratus.Valve` — witness valve GenServer, configured with an arena
+  (`Stratus.Valve.DefaultArena` stand-in until temprun supplies the real
+  WASM boundary).
+
+## API
+
+- `Stratus.Valve.ingest/1` — validate 64-byte CLAP header, verify parent
+  continuity and fuel, hand off to arena, advance registers on success.
+  Refusals: `:parent_discontinuity`, `:fuel_exhausted`, `:malformed_frame`,
+  `:arena_failure` (atoms only — constant-time refusal discipline).
+- `Stratus.Valve.handoff_to_arena/1` — arena boundary handoff; does not
+  touch witness registers.
+- `Stratus.Valve.registers/0` — current parent digest + Merkle commit hash.
+
+## Binary-reference ingress
+
+Frames are refc binaries; the header parse produces sub-binary references
+into the original — quad payload is never copied to the valve heap.
+
+## Tests
+
+`mix test` — Chicago style: real frame binaries, real processes, real
+concurrency; arena injected as a real fun or module (no mocks).

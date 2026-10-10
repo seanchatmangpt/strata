@@ -1,0 +1,8 @@
+[workspace]
+resolver = "2"
+members = ["strata_protocol", "temprun"]
+
+[profile.release]
+opt-level = "z"
+lto = true
+panic = "abort"

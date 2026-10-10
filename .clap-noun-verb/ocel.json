@@ -1,0 +1,255 @@
+{
+  "objectTypes": [
+    {
+      "name": "command",
+      "attributes": []
+    },
+    {
+      "name": "process",
+      "attributes": []
+    }
+  ],
+  "eventTypes": [
+    {
+      "name": "cli_invocation",
+      "attributes": []
+    }
+  ],
+  "objects": [
+    {
+      "id": "sync:run",
+      "type": "command",
+      "attributes": []
+    },
+    {
+      "id": "proc-11033-18dd1b90e4a16360",
+      "type": "process",
+      "attributes": []
+    },
+    {
+      "id": "proc-19098-18dd1ba35b6c0330",
+      "type": "process",
+      "attributes": []
+    },
+    {
+      "id": "proc-20352-18dd1ba69e64e960",
+      "type": "process",
+      "attributes": []
+    },
+    {
+      "id": "proc-20594-18dd1ba762ff99a0",
+      "type": "process",
+      "attributes": []
+    },
+    {
+      "id": "proc-21082-18dd1ba9c8bd3ae8",
+      "type": "process",
+      "attributes": []
+    },
+    {
+      "id": "proc-21560-18dd1bac287b3348",
+      "type": "process",
+      "attributes": []
+    }
+  ],
+  "events": [
+    {
+      "id": "evt-18dd1b90e4a16360-0",
+      "type": "cli_invocation",
+      "time": "2026-10-10T07:48:55.888542+00:00",
+      "attributes": [
+        {
+          "name": "noun",
+          "value": "sync"
+        },
+        {
+          "name": "verb",
+          "value": "run"
+        },
+        {
+          "name": "success",
+          "value": false
+        },
+        {
+          "name": "duration_ms",
+          "value": 19
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "sync:run",
+          "qualifier": "regards"
+        },
+        {
+          "objectId": "proc-11033-18dd1b90e4a16360",
+          "qualifier": "performed_by"
+        }
+      ]
+    },
+    {
+      "id": "evt-18dd1ba35b6c0718-0",
+      "type": "cli_invocation",
+      "time": "2026-10-10T07:50:15.190926+00:00",
+      "attributes": [
+        {
+          "name": "noun",
+          "value": "sync"
+        },
+        {
+          "name": "verb",
+          "value": "run"
+        },
+        {
+          "name": "success",
+          "value": false
+        },
+        {
+          "name": "duration_ms",
+          "value": 18
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "sync:run",
+          "qualifier": "regards"
+        },
+        {
+          "objectId": "proc-19098-18dd1ba35b6c0330",
+          "qualifier": "performed_by"
+        }
+      ]
+    },
+    {
+      "id": "evt-18dd1ba69e64ed48-0",
+      "type": "cli_invocation",
+      "time": "2026-10-10T07:50:29.199392+00:00",
+      "attributes": [
+        {
+          "name": "noun",
+          "value": "sync"
+        },
+        {
+          "name": "verb",
+          "value": "run"
+        },
+        {
+          "name": "success",
+          "value": false
+        },
+        {
+          "name": "duration_ms",
+          "value": 15
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "sync:run",
+          "qualifier": "regards"
+        },
+        {
+          "objectId": "proc-20352-18dd1ba69e64e960",
+          "qualifier": "performed_by"
+        }
+      ]
+    },
+    {
+      "id": "evt-18dd1ba762ffa170-0",
+      "type": "cli_invocation",
+      "time": "2026-10-10T07:50:32.497736+00:00",
+      "attributes": [
+        {
+          "name": "noun",
+          "value": "sync"
+        },
+        {
+          "name": "verb",
+          "value": "run"
+        },
+        {
+          "name": "success",
+          "value": false
+        },
+        {
+          "name": "duration_ms",
+          "value": 12
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "sync:run",
+          "qualifier": "regards"
+        },
+        {
+          "objectId": "proc-20594-18dd1ba762ff99a0",
+          "qualifier": "performed_by"
+        }
+      ]
+    },
+    {
+      "id": "evt-18dd1ba9c8bd3ed0-0",
+      "type": "cli_invocation",
+      "time": "2026-10-10T07:50:42.794596+00:00",
+      "attributes": [
+        {
+          "name": "noun",
+          "value": "sync"
+        },
+        {
+          "name": "verb",
+          "value": "run"
+        },
+        {
+          "name": "success",
+          "value": false
+        },
+        {
+          "name": "duration_ms",
+          "value": 5
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "sync:run",
+          "qualifier": "regards"
+        },
+        {
+          "objectId": "proc-21082-18dd1ba9c8bd3ae8",
+          "qualifier": "performed_by"
+        }
+      ]
+    },
+    {
+      "id": "evt-18dd1bac287b3730-0",
+      "type": "cli_invocation",
+      "time": "2026-10-10T07:50:52.990816+00:00",
+      "attributes": [
+        {
+          "name": "noun",
+          "value": "sync"
+        },
+        {
+          "name": "verb",
+          "value": "run"
+        },
+        {
+          "name": "success",
+          "value": true
+        },
+        {
+          "name": "duration_ms",
+          "value": 172
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "sync:run",
+          "qualifier": "regards"
+        },
+        {
+          "objectId": "proc-21560-18dd1bac287b3348",
+          "qualifier": "performed_by"
+        }
+      ]
+    }
+  ]
+}

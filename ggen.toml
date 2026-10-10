@@ -1,0 +1,15 @@
+[project]
+name = "strata"
+
+[ontology]
+source = "ontology.ttl"
+
+[packs]
+strata-protocol-pack = { path = "/Users/sac/ggen-marketplace/packs/strata-protocol-pack" }
+strata-temprun-pack = { path = "/Users/sac/ggen-marketplace/packs/strata-temprun-pack" }
+strata-stratus-pack = { path = "/Users/sac/ggen-marketplace/packs/strata-stratus-pack" }
+strata-cas-pack = { path = "/Users/sac/ggen-marketplace/packs/strata-cas-pack" }
+strata-signer-pack = { path = "/Users/sac/ggen-marketplace/packs/strata-signer-pack" }
+
+[templates]
+dir = "templates"

@@ -54,7 +54,7 @@ defmodule Stratus.ValvePreambleTest do
   test "preamble'd frame strips to the exact raw CLAP frame and ingests", %{valve: pid} do
     raw = clap_frame()
     assert {:ok, ^raw} = Valve.strip_preamble(framed_frame())
-    assert {:ok, %{header: h}} = Valve.ingest(pid, raw)
+    assert {:ok, %{header: h}} = GenServer.call(pid, {:ingest, raw})
     assert h.history_quad_count == 1 and h.candidate_quad_count == 1
   end
 
@@ -75,7 +75,7 @@ defmodule Stratus.ValvePreambleTest do
       {"reserved[5]", 5, 0x01},
       {"canary-hi", 6, 0xFF},
       {"canary-lo", 7, 0xFF},
-      {"perm>5", 8, 5},
+      {"perm>5", 8, 0xFF},
       {"reserved[13]", 13, 0x01},
       {"reserved[14]", 14, 0x01},
       {"reserved[15]", 15, 0x01}

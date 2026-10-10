@@ -55,7 +55,6 @@ defmodule Stratus.Valve do
 
   @framing_magic "STRA"
   @framing_version 1
-  @framing_preamble_len 16
   @framing_max_permutation 5
 
   @doc """
@@ -69,14 +68,15 @@ defmodule Stratus.Valve do
   @spec strip_preamble(binary()) :: {:ok, binary()} | {:error, :malformed_frame}
   def strip_preamble(<<@framing_magic, version::8, 0::8, 0xFF::8, 0x00::8, permutation::8,
                        quad_count::32, 0::24, rest::binary>>)
-      when version == @framing_version and permutation <= @framing_max_permutation do
-    with <<_::binary-size(64), _::binary>> = clap <- rest,
-         <<_::binary-size(8), 0::16, _nonce::64, _fuel::64, _digest::binary-size(32),
-           history::32, candidate::32, _::binary>> <- clap,
-         true <- history + candidate == quad_count do
-      {:ok, clap}
+      when version == @framing_version and permutation <= @framing_max_permutation and
+             byte_size(rest) >= 64 do
+    <<_magic::binary-size(4), _v::8, _perm::8, 0::16, _nonce::64, _fuel::64,
+      _digest::binary-size(32), history::32, candidate::32, _payload::binary>> = rest
+
+    if history + candidate == quad_count do
+      {:ok, rest}
     else
-      _ -> {:error, :malformed_frame}
+      {:error, :malformed_frame}
     end
   end
 

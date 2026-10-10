@@ -90,9 +90,11 @@ defmodule Stratus.PduLayoutTest do
   @valve_digest <<0::256>>
 
   defp valve_frame(permutation \\ @rust_permutation) do
+    # One policy quad + one lineage quad: the current temprun_arena wrapper
+    # conformance kernel admits N=1, M=1 only (multi-quad frames refuse).
     <<"CLAP", @rust_version::8, permutation::8, 0::16, @rust_nonce::64,
-      @rust_fuel::64, @valve_digest::binary, @rust_history_count::32,
-      @rust_candidate_count::32>>
+      @rust_fuel::64, @valve_digest::binary, 1::32, 1::32,
+      <<1::64, 2::64, 3::64, 0::64>>::binary, <<1::64, 2::64, 3::64, 10::64>>::binary>>
   end
 
   test "valid frame with zero parent digest is genesis-accepted" do

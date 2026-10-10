@@ -41,10 +41,22 @@ fn emit_object(kind: &str, payload: &[u8]) -> GitObject {
 }
 
 /// Decompress a stored object back to its raw `"<type> <len>\0<payload>"` bytes.
+/// Fail-closed on truncated transport: the zlib stream must terminate exactly
+/// at the last input byte (StreamEnd with every byte consumed) — flate2's
+/// streaming decoders otherwise accept a partial deflate stream.
 pub fn inflate_object(data: &[u8]) -> crate::Result<Vec<u8>> {
-    let mut dec = flate2::write::ZlibDecoder::new(Vec::new());
-    dec.write_all(data).map_err(|_| crate::Error::Invalid)?;
-    dec.finish().map_err(|_| crate::Error::Invalid)
+    use std::io::Read;
+    let mut dec = flate2::read::ZlibDecoder::new(data);
+    let mut out = Vec::new();
+    // read_to_end fails with UnexpectedEof on a truncated stream and stops
+    // at the zlib stream terminator on a valid one, so total_in must equal
+    // data.len() — refusing both partial reads and trailing garbage.
+    dec.read_to_end(&mut out).map_err(|_| crate::Error::Invalid)?;
+    if dec.total_in() == data.len() as u64 {
+        Ok(out)
+    } else {
+        Err(crate::Error::Invalid)
+    }
 }
 
 /// Verify that `data` decompresses and hashes to `oid`. Fail-closed.
@@ -274,17 +286,33 @@ impl CasSnapshotLedger {
     }
 
     /// Append a snapshot record. Same-range intervals must tile monotonically
-    /// without overlap; fail-closed otherwise.
+    /// without overlap AND without gaps — a new interval whose left neighbor
+    /// (largest end <= its start) or right neighbor (smallest start >= its
+    /// end) does not abut exactly would strand a missing parent snapshot;
+    /// fail-closed otherwise.
     pub fn push(&mut self, rec: CasSnapshotRecord) -> crate::Result<()> {
         rec.validate()?;
+        let mut same_range: Vec<&CasSnapshotRecord> = Vec::new();
         for s in &self.records {
             // Half-open overlap test: intervals abutting at an endpoint
             // ([0,10] then [10,20]) are legal tiling in either insertion
             // order; true overlap is not.
-            if s.quad_range == rec.quad_range
-                && rec.start_epoch < s.end_epoch
-                && s.start_epoch < rec.end_epoch
-            {
+            if s.quad_range == rec.quad_range {
+                if rec.start_epoch < s.end_epoch && s.start_epoch < rec.end_epoch {
+                    return Err(crate::Error::Invalid);
+                }
+                same_range.push(s);
+            }
+        }
+        // Gap refusal (demoted-ledger semantics): the nearest same-range
+        // predecessor/successor must abut the new interval exactly.
+        if let Some(pred) = same_range.iter().rev().find(|s| s.end_epoch <= rec.start_epoch) {
+            if pred.end_epoch != rec.start_epoch {
+                return Err(crate::Error::Invalid);
+            }
+        }
+        if let Some(succ) = same_range.iter().find(|s| s.start_epoch >= rec.end_epoch) {
+            if succ.start_epoch != rec.end_epoch {
                 return Err(crate::Error::Invalid);
             }
         }

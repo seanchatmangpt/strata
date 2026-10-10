@@ -100,7 +100,8 @@ defmodule Stratus.Valve do
 
       {:ok, header} ->
         case actuate(state.arena, frame) do
-          {:ok, %{status: :ok, commit_hash: commit}} when is_binary(commit) ->
+          {:ok, %{status: :ok, commit_hash: commit}}
+          when is_binary(commit) and bit_size(commit) == 256 ->
             new_state = %{state | parent_digest: commit, commit_hash: commit}
             {:reply, {:ok, %{commit_hash: commit, header: header}}, new_state}
 

@@ -34,9 +34,11 @@ zero host imports (`Imports=∅` verified at build and load). Candidates receive
 immutable quad inputs and emit candidate quads; they cannot touch the host, the
 clock, or the network.
 
-### Ash / AshR2RML Projection Tier
+### Ash / AshR2RML Projection Tier — **UNIMPLEMENTED**
 
-SELECT-only read model: quad universe → R2RML mapping → Ash resources. The tier
+Design target only; no Ash or R2RML code exists in the tree as of 2026-10-10
+(PRD FR-4 is unimplemented). When built, it will be a SELECT-only read model:
+quad universe → R2RML mapping → Ash resources. The tier
 holds no leases and cannot mint them; it is a pure projection of admitted state.
 Any mutation attempt from this tier is refused by the valve.
 
@@ -56,16 +58,24 @@ historical state is a checkout plus Knowledge Wormhole reconstruction.
 | 6 | 2 B | Reserved (zero) |
 | 8 | 8 B | u64 nonce |
 | 16 | 8 B | u64 fuel |
-| 24 | 32 B | Parent digest (BLAKE-style 32-byte chain digest) |
+| 24 | 32 B | Parent receipt digest |
+| 56 | 4 B | u32 history quad count N |
+| 60 | 4 B | u32 candidate quad count M |
 
-Frame is exactly 64 bytes. Frame body is followed by:
-- **N** history quads (u32 count),
-- **M** candidate quads (u32 count).
+The 64-byte block is the frame **header** (implemented verbatim in
+`strata_protocol/src/pdu.rs`, including the permutation ≤ 5 fail-closed
+check). A full frame is header followed by the segment payload:
+N + M quads × 32 bytes (`header.segment_len()`).
 
 **Quad** = 32 bytes: 4×u64 `(s, p, o, g)`.
 
-**Receipt** = parent digest (32 B) + universe digest (32 B) + fuel consumed (u64)
-+ ML-DSA-65 signature (FIPS 204) over the preceding fields.
+**Receipt** = 3381 bytes total: parent digest (32 B) + universe digest (32 B)
++ fuel consumed (u64, 8 B) + ML-DSA-65 detached signature (3309 B, FIPS 204)
+over the preceding fields (`strata_protocol/src/receipt.rs::WIRE_LEN`,
+asserted against the ml-dsa crate by `signer::assert_wire_sizes`).
+
+**Refusal** = exactly 32 opaque zero bytes, `H(Error)=0`
+(`strata_protocol/src/refusal.rs`); constant-time, zeroized intermediates.
 
 ## Invariants
 
@@ -94,6 +104,8 @@ Frame is exactly 64 bytes. Frame body is followed by:
   per load. A single import fails the gate.
 - **10^6-cycle Six Sigma sampling**: 1,000,000-cycle statistical runs with process
   capability Cp ≥ 2.0 and Cpk ≥ 1.5 on admission and replay distributions.
+  Measured 2026-10-10: `cargo run -p temprun --bin soak` at defaults returns
+  Cp 0.56 / Cpk 0.125 (FAIL) — the target is not yet met; see README status table.
 - **Adversarial falsification**: each invariant carries a falsifier corpus — mutated
   frames, broken parent chains, intersecting leases, regressed clocks, fuel-zero
   frames — all of which must be refused; a corpus entry that passes is a gate failure.

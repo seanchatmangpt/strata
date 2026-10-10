@@ -13,15 +13,12 @@ _ensure_workspace:
 test: _ensure_workspace
     cargo test --workspace
 
-# Build temprun for wasm32 (fuel-limited runtime). Skips if the crate is absent.
-# cargo rustc --crate-type cdylib emits the .wasm artifact even though temprun
-# is a lib crate — no [lib] crate-type edit needed in temprun/Cargo.toml.
+# Build temprun as a wasm32 cdylib (fuel-limited runtime).
 test-wasm:
     @test -d temprun || { echo "SKIP: temprun/ absent"; exit 0; }
     cargo rustc -p temprun --lib --target wasm32-unknown-unknown --release --crate-type cdylib
 
-# Verify temprun.wasm imports = ∅: parse the import section count straight
-# from the binary. Any import at all is a refusal (exit 1).
+# Verify temprun.wasm imports = ∅ via import-section count (refusal = exit 1).
 check-wasm-imports:
     #!/usr/bin/env python3
     import struct, sys, pathlib
@@ -64,11 +61,17 @@ check-wasm-imports:
         print(f"FAIL: {path}: {imports} imports (doctrine requires Imports = ∅)")
         sys.exit(1)
 
+# Clippy with warnings denied across the whole workspace.
 lint: _ensure_workspace
     cargo clippy --workspace --all-targets -- -D warnings
 
+# Run the stratus valve test suite (Elixir; skips if stratus/ is absent).
+test-stratus:
+    @test -d stratus || { echo "SKIP: stratus/ absent"; exit 0; }
+    cd stratus && mix test
+
 # Full verification ladder.
-ci: test test-wasm check-wasm-imports lint
+ci: test test-wasm check-wasm-imports lint test-stratus
     @echo "ci: all gates green"
 
 # Six Sigma statistical harness: N-cycle sampling of the temprun admission

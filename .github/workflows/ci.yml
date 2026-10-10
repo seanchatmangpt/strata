@@ -6,20 +6,67 @@ on:
   pull_request:
 
 jobs:
-  ci:
+  rust:
+    name: Rust (test + clippy + wasm)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Rust toolchain (pinned by rust-toolchain.toml) + wasm32 target
+      - name: Install Rust toolchain (pinned by rust-toolchain.toml) + wasm targets
         run: |
           rustup toolchain install
-          rustup target add wasm32-unknown-unknown
+          rustup target add wasm32-unknown-unknown wasm32-wasip1
 
       - name: Install just
         run: |
           curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh \
             | bash -s -- --to /usr/local/bin
 
-      - name: Full verification ladder
-        run: just ci
+      - name: Cache cargo registry + target
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: cargo-${{ runner.os }}-${{ hashFiles('Cargo.lock', 'rust-toolchain.toml') }}
+          restore-keys: cargo-${{ runner.os }}-
+
+      - name: Workspace tests
+        run: just test
+
+      - name: Lint (clippy, warnings denied)
+        run: just lint
+
+      - name: temprun wasm32-unknown-unknown build + imports = ∅ check
+        run: |
+          just test-wasm
+          just check-wasm-imports
+
+      - name: temprun wasm32-wasip1 build
+        run: cargo build -p temprun --target wasm32-wasip1 --release
+
+  stratus:
+    name: Elixir (stratus valve tests)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: erlef/setup-beam@v1
+        with:
+          elixir-version: '1.19'
+          otp-version: '28'
+
+      - name: Cache mix deps + build
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.hex
+            ~/.mix
+            stratus/deps
+            stratus/_build
+          key: mix-${{ runner.os }}-${{ hashFiles('stratus/mix.lock') }}
+          restore-keys: mix-${{ runner.os }}-
+
+      - name: Stratus tests
+        run: just test-stratus

@@ -30,7 +30,8 @@ cargo test -p strata-protocol --no-fail-fast
 cd stratus && mix test
 
 # Soak / process-capability harness (default 10^6 cycles; override: --cycles N)
-cargo run -p temprun --bin soak
+# --release is required: the dev-profile build fails the Cp/Cpk gates
+cargo run -p temprun --release --bin soak
 
 # wasm32 arena + imports gate
 just test-wasm
@@ -48,7 +49,9 @@ attestation with BLAKE3 dual-anchor digests live in strata_protocol.
 
 Five strata packs (existing ggen pack machinery, newly authored) live in
 /Users/sac/ggen-marketplace/packs/strata-*-pack and are referenced by
-ggen.toml. `ggen sync run` projects ontology + templates into this tree.
+ggen.toml. `ggen sync run` projects ontology + templates into this tree
+(re-lock `ggen.lock` after pack edits; `force: true` is required if a
+projected file has drifted from its template — it will be overwritten).
 
 ## Verification doctrine
 

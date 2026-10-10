@@ -84,7 +84,11 @@ defmodule Stratus.Valve.DefaultArenaRaceTest do
     invalid = for _ <- 1..8, do: "not-a-frame"
 
     expected = serial_expectation(valid)
-    all = Enum.shuffle(Enum.zip(valid, Stream.cycle([:valid])) ++ Enum.zip(invalid, Stream.cycle([:invalid])))
+
+    all =
+      Enum.shuffle(
+        Enum.zip(valid, Stream.cycle([:valid])) ++ Enum.zip(invalid, Stream.cycle([:invalid]))
+      )
 
     results =
       Task.await_many(
@@ -96,7 +100,9 @@ defmodule Stratus.Valve.DefaultArenaRaceTest do
 
     for {kind, f, r} <- results do
       case kind do
-        :invalid -> assert {:error, :malformed_frame} = r
+        :invalid ->
+          assert {:error, :malformed_frame} = r
+
         :valid ->
           assert {:ok, %{commit_hash: c}} = r
           assert {:ok, %{commit_hash: ^c}} = Map.fetch!(expected, f)
@@ -108,7 +114,11 @@ defmodule Stratus.Valve.DefaultArenaRaceTest do
 
   test "bogus artifact path: all typed :arena_failure, no crash storm, recovery after env restore" do
     frames = for nonce <- 30..33, do: frame(nonce: nonce, parent: <<nonce::256>>)
-    System.put_env("STRATUS_TEMPRUN_WASM", "/nonexistent/temprun_arena-#{System.unique_integer()}.wasm")
+
+    System.put_env(
+      "STRATUS_TEMPRUN_WASM",
+      "/nonexistent/temprun_arena-#{System.unique_integer()}.wasm"
+    )
 
     try do
       results = parallel_actuate(frames)
@@ -154,6 +164,7 @@ defmodule Stratus.Valve.DefaultArenaRaceTest do
     end
 
     ports_after = length(:erlang.ports())
+
     assert ports_after <= ports_before + 1,
            "port leak: #{ports_before} -> #{ports_after} after 50 serial actuate calls"
   end

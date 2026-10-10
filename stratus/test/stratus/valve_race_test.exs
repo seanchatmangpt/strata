@@ -210,7 +210,9 @@ defmodule Stratus.ValveRaceTest do
       {:ok, witness} = Agent.start_link(fn -> {0, []} end)
 
       arena = fn frame ->
-        Agent.update(witness, fn {n, log} -> {n + 1, [{:crypto.hash(:sha256, frame), n} | log]} end)
+        Agent.update(witness, fn {n, log} ->
+          {n + 1, [{:crypto.hash(:sha256, frame), n} | log]}
+        end)
 
         {:ok, %{status: :ok, commit_hash: :crypto.hash(:sha256, frame)}}
       end
@@ -235,7 +237,7 @@ defmodule Stratus.ValveRaceTest do
              end),
              "iter #{iter}: #{inspect(Enum.reject(results, fn {_i, _p, r} -> match?({:ok, _}, r) or match?({:error, _}, r) end))}"
 
-      if trailing_reset?, do: assert reset(pid) == :ok
+      if trailing_reset?, do: assert(reset(pid) == :ok)
 
       # Exact replay over true execution order: an admit advances iff its
       # captured parent matched the register when it executed.

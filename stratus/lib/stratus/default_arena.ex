@@ -51,18 +51,23 @@ defmodule Stratus.Valve.DefaultArena do
   def actuate(frame) when is_binary(frame) do
     with :ok <- header_check(frame),
          {:ok, receipt} <- run_wasmtime(frame) do
-      case receipt do
-        # Status = bit 0 of byte 0 (LSB; Elixir matches bits MSB-first, so
-        # the pattern skips 7 high bits first). 0 = admit.
-        <<_::size(7), 0::size(1), _::size(248)>> ->
-          {:ok, %{status: :ok, commit_hash: receipt}}
-
-        _refused ->
-          # No error-class entropy on the wire; the fuel field is public
-          # frame-header data, not refusal entropy.
-          if header_fuel(frame) == 0, do: {:error, :fuel_exhausted}, else: {:error, :refused}
-      end
+      classify_receipt(receipt, frame)
     end
+  end
+
+  # Status = bit 0 of byte 0 (LSB; Elixir matches bits MSB-first, so the
+  # pattern skips 7 high bits first). 0 = admit.
+  defp classify_receipt(
+         <<_::size(7), 0::size(1), _::size(248)>> = receipt,
+         _frame
+       ) do
+    {:ok, %{status: :ok, commit_hash: receipt}}
+  end
+
+  defp classify_receipt(_refused, frame) do
+    # No error-class entropy on the wire; the fuel field is public
+    # frame-header data, not refusal entropy.
+    if header_fuel(frame) == 0, do: {:error, :fuel_exhausted}, else: {:error, :refused}
   end
 
   defp header_fuel(<<_::size(128), fuel::64, _::binary>>), do: fuel

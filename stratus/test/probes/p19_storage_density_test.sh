@@ -65,7 +65,7 @@ gitc config user.email p19@court && gitc config user.name p19
 # ---------------------------------------------------------------------------
 note "generating $EPOCHS epochs x $QPX quads = $TOTAL quads (raw $RAW B)..."
 python3 - "$REPO" "$EPOCHS" "$QPX" > "$EV/epochs.txt" <<'PYEOF'
-import hashlib, os, subprocess, sys
+import hashlib, os, subprocess, sys, zlib
 
 repo, epochs, qpx = sys.argv[1], int(sys.argv[2]), int(sys.argv[3])
 MASK = (1 << 64) - 1
@@ -84,16 +84,31 @@ def epoch_payload(e):
     return b"".join(out)
 
 env = dict(os.environ)
-with open(os.path.join(repo, "data.bin"), "wb") as f:
-    for e in range(1, epochs + 1):
-        payload = epoch_payload(e)
-        oid = subprocess.run(
-            ["git", "-C", repo, "-c", "core.compression=9", "hash-object", "-w", "--stdin"],
-            input=payload, capture_output=True, check=True, env=env).stdout.decode().strip()
-        f.seek(0); f.write(payload); f.truncate()
-        subprocess.run(["git", "-C", repo, "add", "data.bin"], check=True, env=env)
-        subprocess.run(["git", "-C", repo, "commit", "-qm", "epoch %d" % e], check=True, env=env)
-        print("%s %d" % (oid, e))
+
+def loose_write(repo, payload):
+    # Byte-exact git loose object ("blob <len>\0" + payload, SHA-1, zlib) —
+    # the same format cas.rs emit_blob produces; written directly to avoid
+    # re-hashing the whole lineage per epoch.
+    raw = b"blob %d\x00" % len(payload) + payload
+    oid = hashlib.sha1(raw).hexdigest()
+    d = os.path.join(repo, ".git", "objects", oid[:2])
+    os.makedirs(d, exist_ok=True)
+    p = os.path.join(d, oid[2:])
+    if not os.path.exists(p):
+        with open(p, "wb") as f:
+            f.write(zlib.compress(raw, 1))
+    return oid
+
+# Append-only lineage: epoch e's committed blob = ALL quads through epoch e
+# (each epoch adds 100 new quads; deltas are insertions, git's best case).
+cum = bytearray()
+for e in range(1, epochs + 1):
+    cum += epoch_payload(e)
+    oid = loose_write(repo, bytes(cum))
+    subprocess.run(["git", "-C", repo, "update-index", "--add",
+                    "--cacheinfo", "100644,%s,data.bin" % oid], check=True, env=env)
+    subprocess.run(["git", "-C", repo, "commit", "-qm", "epoch %d" % e], check=True, env=env)
+    print("%s %d" % (oid, e))
 PYEOF
 [ "$(wc -l < "$EV/epochs.txt")" -eq "$EPOCHS" ] || { note "FAIL: epoch count mismatch"; exit 1; }
 
@@ -114,8 +129,9 @@ gitc verify-pack -v "$IDX" > "$EV/verify_pack.txt" 2>&1
 [ $? -eq 0 ] || { note "FAIL: git verify-pack"; exit 1; }
 OBJ_COUNT=$(grep -cE '^[0-9a-f]{40} blob ' "$EV/verify_pack.txt")
 DELTA_BLOBS=$(awk '$2=="blob" && NF>=7 && $5!=$6' "$EV/verify_pack.txt" | grep -c . || true)
+BLOB_BYTES=$(awk '$2=="blob" {s+=$4} END {print s+0}' "$EV/verify_pack.txt")
 CHAIN=$(grep -E 'chain length' "$EV/verify_pack.txt" | tail -1)
-note "verify-pack: OK; blobs in pack = $OBJ_COUNT; non-literal(delta) blob rows = $DELTA_BLOBS; ${CHAIN:-no chain stats}"
+note "verify-pack: OK; blobs in pack = $OBJ_COUNT; delta'd blobs = $DELTA_BLOBS; blob bytes in pack = $BLOB_BYTES; ${CHAIN:-no chain stats}"
 [ "$OBJ_COUNT" -eq "$EPOCHS" ] || { note "FAIL: blob count $OBJ_COUNT != $EPOCHS"; exit 1; }
 
 # Round-trip: 3 sampled blobs (first/middle/last epoch) inflate via git to
@@ -136,13 +152,17 @@ def epoch_payload(e):
                     + (state % 10000).to_bytes(8, "big") + (0).to_bytes(8, "big")))
     return b"".join(out)
 
-rows = dict(reversed([l.split() for l in open(epochs_file)]))
+rows = {}
+for l in open(epochs_file):
+    oid, e = l.split()
+    rows[e] = oid
 for e in (1, epochs // 2, epochs):
     oid = rows[str(e)]
     raw = subprocess.run(["git", "-C", repo, "cat-file", "blob", oid],
                          capture_output=True, check=True).stdout
-    assert raw == epoch_payload(e), "round-trip mismatch epoch %d" % e
-    print("round-trip OK: epoch %d blob %s inflates to exact input quads" % (e, oid))
+    exp = b"".join(epoch_payload(i) for i in range(1, e + 1))
+    assert raw == exp, "round-trip mismatch epoch %d" % e
+    print("round-trip OK: epoch %d blob %s inflates to exact lineage quads (%d B)" % (e, oid, len(exp)))
 PYEOF
 [ $? -eq 0 ] || { note "FAIL: blob round-trip"; exit 1; }
 
@@ -150,7 +170,9 @@ PYEOF
 # 4. The bound: rho = pack bytes / quads (milli-bytes for exactness)
 # ---------------------------------------------------------------------------
 RHO_MILLIS=$((PACK_BYTES * 1000 / TOTAL))
-note "RESULT: rho = $PACK_BYTES B / $TOTAL quads = $((RHO_MILLIS / 1000)).$(printf '%03d' $((RHO_MILLIS % 1000))) B/quad (bound 2.500; raw baseline 32.000)"
+BRHO_MILLIS=$((BLOB_BYTES * 1000 / TOTAL))
+note "RESULT: rho(full pack, incl. git commit/tree metadata) = $PACK_BYTES B / $TOTAL quads = $((RHO_MILLIS / 1000)).$(printf '%03d' $((RHO_MILLIS % 1000))) B/quad"
+note "RESULT: rho(blobs only) = $BLOB_BYTES B / $TOTAL quads = $((BRHO_MILLIS / 1000)).$(printf '%03d' $((BRHO_MILLIS % 1000))) B/quad (bound 2.500; raw baseline 32.000)"
 
 if [ "$RHO_MILLIS" -le 2500 ]; then
     note "VERDICT 0: NFR-3 density bound HELD on a real git packfile"

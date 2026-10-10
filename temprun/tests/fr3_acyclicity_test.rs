@@ -200,10 +200,12 @@ fn property_100_randomized_dag_vs_cyclic_vs_oracle() {
             .enumerate()
             .map(|(k, &(c, d))| {
                 let t = match &stamp {
-                    Some(depth) => depth[c] * 10 + 5, // dependent's stamp
+                    Some(depth) => depth[d] * 10 + 5, // dependent's stamp
                     None => (k as u64 + 1) * 7,
                 };
-                [id(c), DEP_P, id(d), t]
+                // d depends on c: d is the subject, c the cause. Dependent's
+                // stamp exceeds its cause's by topological depth.
+                [id(d), DEP_P, id(c), t]
             })
             .collect();
         let verdict = check(&lineage);

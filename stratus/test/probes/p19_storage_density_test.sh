@@ -6,10 +6,11 @@
 #
 # METHOD (option (a), the real-tool path): strata's CAS emits Git LOOSE
 # objects ("blob <len>\0<32B quads>", SHA-1, zlib) — strata_protocol/src/
-# cas.rs emit_blob. This probe materializes the SAME payloads for a large
-# delta-friendly corpus as real git blobs (via `git hash-object -w`), one
-# commit per epoch on a stable path (the high-inter-epoch-similarity
-# workload a lineage store produces), then invokes the REAL git packfile
+# cas.rs emit_blob. This probe materializes the SAME per-epoch delta
+# segments (100 quads per blob, the exact shipped topology) as real git
+# loose objects, one commit per epoch on a distinct path (the
+# high-inter-epoch-similarity workload a lineage store produces), then
+# invokes the REAL git packfile
 # writer (`git gc --aggressive` -> git pack-objects with true cross-object
 # delta chains). Density rho = resulting .pack bytes / total quads.
 # Zero-loss reconstruction is verified by `git verify-pack` (CRC, delta
@@ -85,10 +86,14 @@ def epoch_payload(e):
 
 env = dict(os.environ)
 
-def loose_write(repo, payload):
-    # Byte-exact git loose object ("blob <len>\0" + payload, SHA-1, zlib) —
-    # the same format cas.rs emit_blob produces; written directly to avoid
-    # re-hashing the whole lineage per epoch.
+# Faithful topology (matches cas.rs + the landed nfr3 court): ONE blob per
+# epoch delta segment — 100 canonical 32-byte quads per blob. Each epoch
+# commits its segment under a distinct path so every blob is reachable.
+# Written directly as git loose objects ("blob <len>\0" + payload, SHA-1,
+# zlib) — byte-format-identical to cas.rs emit_blob output.
+index_lines = []
+for e in range(1, epochs + 1):
+    payload = epoch_payload(e)
     raw = b"blob %d\x00" % len(payload) + payload
     oid = hashlib.sha1(raw).hexdigest()
     d = os.path.join(repo, ".git", "objects", oid[:2])
@@ -97,25 +102,24 @@ def loose_write(repo, payload):
     if not os.path.exists(p):
         with open(p, "wb") as f:
             f.write(zlib.compress(raw, 1))
-    return oid
-
-# Append-only lineage: epoch e's committed blob = ALL quads through epoch e
-# (each epoch adds 100 new quads; deltas are insertions, git's best case).
-cum = bytearray()
-for e in range(1, epochs + 1):
-    cum += epoch_payload(e)
-    oid = loose_write(repo, bytes(cum))
-    subprocess.run(["git", "-C", repo, "update-index", "--add",
-                    "--cacheinfo", "100644,%s,data.bin" % oid], check=True, env=env)
-    subprocess.run(["git", "-C", repo, "commit", "-qm", "epoch %d" % e], check=True, env=env)
+    index_lines.append("100644 %s\tepochs/e%06d.bin" % (oid, e))
     print("%s %d" % (oid, e))
+# One tree/commit referencing all segments makes every blob reachable for
+# the pack pass (transport, not lineage structure — density is measured on
+# the blob population, which is 1:1 with the CAS segments).
+subprocess.run(["git", "-C", repo, "update-index", "--index-info"],
+               input="\n".join(index_lines).encode() + b"\n", check=True, env=env)
+subprocess.run(["git", "-C", repo, "commit", "-qm", "corpus: %d epochs" % epochs],
+               check=True, env=env)
 PYEOF
 [ "$(wc -l < "$EV/epochs.txt")" -eq "$EPOCHS" ] || { note "FAIL: epoch count mismatch"; exit 1; }
 
 # ---------------------------------------------------------------------------
 # 2. Real git packfile writer (delta chains on, aggressive)
 # ---------------------------------------------------------------------------
-gitc gc --aggressive --prune=now || { note "FAIL: git gc exited $?"; exit 1; }
+# --force: probe-private repo; a stale gc.pid from a killed run (or a
+# recycled live pid on this busy host) must not block the pack pass.
+gitc gc --force --aggressive --prune=now || { note "FAIL: git gc exited $?"; exit 1; }
 PACK=$(ls "$REPO"/.git/objects/pack/*.pack 2>/dev/null | head -1)
 [ -n "$PACK" ] || { note "FAIL: no packfile produced"; exit 1; }
 IDX="${PACK%.pack}.idx"
@@ -160,9 +164,9 @@ for e in (1, epochs // 2, epochs):
     oid = rows[str(e)]
     raw = subprocess.run(["git", "-C", repo, "cat-file", "blob", oid],
                          capture_output=True, check=True).stdout
-    exp = b"".join(epoch_payload(i) for i in range(1, e + 1))
+    exp = epoch_payload(e)
     assert raw == exp, "round-trip mismatch epoch %d" % e
-    print("round-trip OK: epoch %d blob %s inflates to exact lineage quads (%d B)" % (e, oid, len(exp)))
+    print("round-trip OK: epoch %d blob %s inflates to exact epoch quads (%d B)" % (e, oid, len(exp)))
 PYEOF
 [ $? -eq 0 ] || { note "FAIL: blob round-trip"; exit 1; }
 

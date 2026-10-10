@@ -44,8 +44,8 @@ defmodule Stratus.ValveBehaviorTest do
       Keyword.get(opts, :nonce, 0)::64,
       fuel::64,
       parent::binary-size(32),
-      1::32,
-      1::32
+      Keyword.get(opts, :history_count, 1)::32,
+      Keyword.get(opts, :candidate_count, 1)::32
     >>
   end
 
@@ -82,8 +82,10 @@ defmodule Stratus.ValveBehaviorTest do
   end
 
   test "exactly 64-byte header with no quad payload admits", %{valve: pid} do
-    assert {:ok, %{header: h}} = ingest(pid, header())
-    assert h.history_quad_count == 1 and h.candidate_quad_count == 1
+    # Header-only frame: declared counts must honestly be zero over an empty
+    # payload (1/1-over-nothing was the old bug).
+    assert {:ok, %{header: h}} = ingest(pid, header(history_count: 0, candidate_count: 0))
+    assert h.history_quad_count == 0 and h.candidate_quad_count == 0
   end
 
   # ---- (2) fuel-lease edges ------------------------------------------------
@@ -237,7 +239,15 @@ defmodule Stratus.ValveBehaviorTest do
   test "large refc frame (4 MB) ingests with O(1) valve heap growth" do
     {:ok, pid} = GenServer.start(Valve, arena: OpaqueArena)
 
-    big_frame = IO.iodata_to_binary([header(), :binary.copy(<<7>>, 4 * 1024 * 1024 - 64)])
+    payload_size = 4 * 1024 * 1024 - 64
+    quads = div(payload_size, 32)
+
+    big_frame =
+      IO.iodata_to_binary([
+        header(history_count: div(quads, 2), candidate_count: quads - div(quads, 2)),
+        :binary.copy(<<7>>, payload_size)
+      ])
+
     assert byte_size(big_frame) == 4 * 1024 * 1024
 
     assert {:ok, _} = ingest(pid, big_frame)
@@ -251,7 +261,17 @@ defmodule Stratus.ValveBehaviorTest do
 
   test "parsed header map carries only integers — no frame binary retained" do
     {:ok, pid} = GenServer.start(Valve, arena: OpaqueArena)
-    big = IO.iodata_to_binary([header(parent: <<0::256>>), :binary.copy(<<3>>, 1_000_000)])
+    quads = div(1_000_000, 32)
+
+    big =
+      IO.iodata_to_binary([
+        header(
+          parent: <<0::256>>,
+          history_count: div(quads, 2),
+          candidate_count: quads - div(quads, 2)
+        ),
+        :binary.copy(<<3>>, 1_000_000)
+      ])
 
     {:ok, %{header: h}} = ingest(pid, big)
 

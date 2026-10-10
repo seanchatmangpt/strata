@@ -49,8 +49,8 @@ defmodule Stratus.ProcBinHardeningTest do
       Keyword.get(opts, :nonce, 0)::64,
       fuel::64,
       parent::binary-size(32),
-      1::32,
-      1::32
+      Keyword.get(opts, :history_count, 1)::32,
+      Keyword.get(opts, :candidate_count, 1)::32
     >>
   end
 
@@ -62,8 +62,13 @@ defmodule Stratus.ProcBinHardeningTest do
   # ---- (1) header-only admission -------------------------------------------
 
   test "64-byte header-only frame admits without quad payload", %{valve: pid} do
-    assert {:ok, %{header: h, commit_hash: commit}} = ingest(pid, header())
-    assert h.history_quad_count == 1 and h.candidate_quad_count == 1
+    # Header-only: declared quad counts must honestly be zero over an empty
+    # payload (the old 1/1-over-nothing encoding was the bug the seglen fix
+    # closes).
+    assert {:ok, %{header: h, commit_hash: commit}} =
+             ingest(pid, header(history_count: 0, candidate_count: 0))
+
+    assert h.history_quad_count == 0 and h.candidate_quad_count == 0
     assert byte_size(commit) == 32
     assert registers(pid).parent_digest == commit
   end
@@ -106,9 +111,14 @@ defmodule Stratus.ProcBinHardeningTest do
 
   test "large sub-binary of a 4 MB parent ingests with flat heap", %{valve: pid} do
     payload_size = 4 * 1024 * 1024 - 64
+    quads = div(payload_size, 32)
 
     blob =
-      IO.iodata_to_binary([:binary.copy(<<0>>, 32), header(), :binary.copy(<<7>>, payload_size)])
+      IO.iodata_to_binary([
+        :binary.copy(<<0>>, 32),
+        header(history_count: div(quads, 2), candidate_count: quads - div(quads, 2)),
+        :binary.copy(<<7>>, payload_size)
+      ])
 
     sub = binary_part(blob, 32, byte_size(blob) - 32)
     assert byte_size(sub) == 64 + payload_size

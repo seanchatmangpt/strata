@@ -150,7 +150,8 @@ defmodule Stratus.XproductSandboxWitnessTest do
 
   describe "sandbox x witness: outcome x register matrix" do
     @tag :wasmtime
-    test "admit advances parent_digest to the returned commit; arena is the real wasmtime boundary", %{valve: pid} do
+    test "admit advances parent_digest to the returned commit; arena is the real wasmtime boundary",
+         %{valve: pid} do
       {:ok, %{commit_hash: c1}} = ingest(pid, frame(nonce: 101))
 
       assert byte_size(c1) == 32
@@ -163,8 +164,9 @@ defmodule Stratus.XproductSandboxWitnessTest do
     end
 
     @tag :wasmtime
-    test "fuel refusal (fuel=0): {:error, :fuel_exhausted}, both registers byte-frozen", %{valve: pid} do
-
+    test "fuel refusal (fuel=0): {:error, :fuel_exhausted}, both registers byte-frozen", %{
+      valve: pid
+    } do
       {:ok, %{commit_hash: c1}} = ingest(pid, frame(nonce: 1))
       before = registers(pid)
 
@@ -179,8 +181,8 @@ defmodule Stratus.XproductSandboxWitnessTest do
     end
 
     @tag :wasmtime
-    test "coordination refusal (stale parent): {:error, :parent_discontinuity}, both registers byte-frozen", %{valve: pid} do
-
+    test "coordination refusal (stale parent): {:error, :parent_discontinuity}, both registers byte-frozen",
+         %{valve: pid} do
       {:ok, %{commit_hash: c1}} = ingest(pid, frame(nonce: 3))
       before = registers(pid)
 
@@ -197,8 +199,8 @@ defmodule Stratus.XproductSandboxWitnessTest do
     end
 
     @tag :wasmtime
-    test "conformance refusal (sandbox policy atom from the arena): both registers byte-frozen", %{valve: pid} do
-
+    test "conformance refusal (sandbox policy atom from the arena): both registers byte-frozen",
+         %{valve: pid} do
       {:ok, %{commit_hash: c1}} = ingest(pid, frame(nonce: 6))
       before = registers(pid)
 
@@ -214,7 +216,6 @@ defmodule Stratus.XproductSandboxWitnessTest do
 
     @tag :wasmtime
     test "malformed frame: {:error, :malformed_frame}, both registers byte-frozen", %{valve: pid} do
-
       {:ok, %{commit_hash: c1}} = ingest(pid, frame(nonce: 8))
       before = registers(pid)
 
@@ -227,8 +228,8 @@ defmodule Stratus.XproductSandboxWitnessTest do
     end
 
     @tag :wasmtime
-    test "arena_failure (broken wasm artifact path): {:error, :arena_failure}, both registers byte-frozen", %{valve: pid} do
-
+    test "arena_failure (broken wasm artifact path): {:error, :arena_failure}, both registers byte-frozen",
+         %{valve: pid} do
       {:ok, %{commit_hash: c1}} = ingest(pid, frame(nonce: 9))
       before = registers(pid)
 
@@ -248,9 +249,8 @@ defmodule Stratus.XproductSandboxWitnessTest do
 
   describe "sandbox x witness: crash containment" do
     @tag :wasmtime
-    test "arena_failure mid-chain does not kill the valve; next valid frame with correct parent admits", %{valve: pid} do
-
-
+    test "arena_failure mid-chain does not kill the valve; next valid frame with correct parent admits",
+         %{valve: pid} do
       # chain position 1 via the real wasmtime arena
       assert {:ok, %{commit_hash: c1}} = ingest(pid, frame(nonce: 21))
 
@@ -278,7 +278,6 @@ defmodule Stratus.XproductSandboxWitnessTest do
   describe "sandbox x witness: telemetry classification" do
     @tag :wasmtime
     test "each outcome class emits its distinct telemetry event", %{valve: pid} do
-
       tid = attach_telemetry()
 
       # admit -> [:stratus, :valve, :admit]
@@ -337,13 +336,14 @@ defmodule Stratus.XproductSandboxWitnessTest do
 
   describe "sandbox x witness: recovery after the full matrix" do
     @tag :wasmtime
-    test "after every outcome class fires, a conforming frame admits (witness fully recovered)", %{valve: pid} do
-
+    test "after every outcome class fires, a conforming frame admits (witness fully recovered)",
+         %{valve: pid} do
       tid = attach_telemetry()
       genesis = registers(pid)
 
       # fire all five non-admit classes
       assert {:error, :fuel_exhausted} = ingest(pid, frame(fuel: 0, nonce: 41))
+
       assert {:error, :parent_discontinuity} =
                ingest(pid, frame(parent: :crypto.strong_rand_bytes(32), nonce: 42))
 

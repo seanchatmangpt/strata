@@ -52,7 +52,8 @@ defmodule Stratus.XproductWireWitnessTest do
 
   def frame(opts \\ []), do: IO.iodata_to_binary([header(opts), :binary.copy(<<7>>, 64)])
 
-  def swap_magic(frame, magic), do: IO.iodata_to_binary([magic, binary_part(frame, 4, byte_size(frame) - 4)])
+  def swap_magic(frame, magic),
+    do: IO.iodata_to_binary([magic, binary_part(frame, 4, byte_size(frame) - 4)])
 
   # segment_len class: header declares history=1 + candidate=1 quads (64-byte
   # payload at 4 lanes x 2 words x 8 bytes per quad); payload deviates.
@@ -72,10 +73,22 @@ defmodule Stratus.XproductWireWitnessTest do
   # Telemetry capture: real :telemetry handlers, unique ids per test.
   def attach_telemetry do
     tid = {__MODULE__, make_ref()}
-    :ok = :telemetry.attach({tid, :admit}, [:stratus, :valve, :admit], &__MODULE__.track/4, {self(), :admit})
 
     :ok =
-      :telemetry.attach({tid, :refuse}, [:stratus, :valve, :refuse], &__MODULE__.track/4, {self(), :refuse})
+      :telemetry.attach(
+        {tid, :admit},
+        [:stratus, :valve, :admit],
+        &__MODULE__.track/4,
+        {self(), :admit}
+      )
+
+    :ok =
+      :telemetry.attach(
+        {tid, :refuse},
+        [:stratus, :valve, :refuse],
+        &__MODULE__.track/4,
+        {self(), :refuse}
+      )
 
     tid
   end
@@ -110,7 +123,9 @@ defmodule Stratus.XproductWireWitnessTest do
       detach(tid)
     end
 
-    test "bad version refuses :malformed_frame, registers untouched, no admit event", %{valve: pid} do
+    test "bad version refuses :malformed_frame, registers untouched, no admit event", %{
+      valve: pid
+    } do
       tid = attach_telemetry()
       before = registers(pid)
       assert {:error, :malformed_frame} = ingest(pid, frame(version: 2))
@@ -132,7 +147,9 @@ defmodule Stratus.XproductWireWitnessTest do
       detach(tid)
     end
 
-    test "permutation > 5 refuses :malformed_frame (6 and 255), registers untouched", %{valve: pid} do
+    test "permutation > 5 refuses :malformed_frame (6 and 255), registers untouched", %{
+      valve: pid
+    } do
       tid = attach_telemetry()
       before = registers(pid)
       assert {:error, :malformed_frame} = ingest(pid, frame(perm: 6))
@@ -202,7 +219,8 @@ defmodule Stratus.XproductWireWitnessTest do
       # advances the witness and is outside the refusal-matrix invariant.
 
       for f <- corrupted do
-        assert {:error, _} = ingest(pid, f), "expected typed refusal for #{byte_size(f)}-byte frame"
+        assert {:error, _} = ingest(pid, f),
+               "expected typed refusal for #{byte_size(f)}-byte frame"
       end
 
       assert registers(pid) == genesis
@@ -227,9 +245,10 @@ defmodule Stratus.XproductWireWitnessTest do
       detach(tid)
     end
 
-    test "valve remains fully functional after the matrix: valid frame admits, registers advance", %{
-      valve: pid
-    } do
+    test "valve remains fully functional after the matrix: valid frame admits, registers advance",
+         %{
+           valve: pid
+         } do
       tid = attach_telemetry()
 
       corrupted = [

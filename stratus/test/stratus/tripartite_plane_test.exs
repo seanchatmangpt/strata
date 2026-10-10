@@ -217,7 +217,9 @@ defmodule Stratus.TripartitePlaneTest do
     assert regs.commit_hash == commit
 
     # Chained frame with that arena-minted parent also admits (real DO plane).
-    chained = IO.iodata_to_binary([header(parent: commit), :binary.copy(<<7>>, 128)])
+    # Conforming policy/lineage quads (the same payload the default frame
+    # carries) with the arena-minted parent digest.
+    chained = frame(parent: commit)
     assert {:ok, %{commit_hash: c2}} = GenServer.call(pid, {:ingest, chained}, 10_000)
     assert c2 != commit
   end

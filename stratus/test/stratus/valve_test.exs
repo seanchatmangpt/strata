@@ -40,12 +40,18 @@ defmodule Stratus.ValveTest do
       0::64,
       fuel::64,
       parent::binary-size(32),
-      0::32,
-      0::32
+      Keyword.get(opts, :history_count, 0)::32,
+      Keyword.get(opts, :candidate_count, 0)::32
     >>
   end
 
-  def frame(opts \\ []), do: IO.iodata_to_binary([header(opts), :binary.copy(<<7>>, 128)])
+  # 128-byte filler payload = 4 quads, declared honestly in the header.
+  def frame(opts \\ []) do
+    payload = :binary.copy(<<7>>, 128)
+    opts = Keyword.put_new(opts, :history_count, 2)
+    opts = Keyword.put_new(opts, :candidate_count, 2)
+    IO.iodata_to_binary([header(opts), payload])
+  end
 
   def ingest(pid, frame), do: GenServer.call(pid, {:ingest, frame})
   def registers(pid), do: GenServer.call(pid, :registers)

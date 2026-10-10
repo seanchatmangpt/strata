@@ -119,9 +119,10 @@ defmodule Stratus.XproductAttestWitnessTest do
       assert registers(pid) == %{parent_digest: forged, commit_hash: forged}
     end
 
-    test "even citing the forged value itself is refused — the forged register is not a receipt", %{
-      valve: pid
-    } do
+    test "even citing the forged value itself is refused — the forged register is not a receipt",
+         %{
+           valve: pid
+         } do
       drive_chain(pid, 2)
 
       forged = :crypto.strong_rand_bytes(32)

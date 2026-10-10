@@ -32,15 +32,25 @@ defmodule Stratus.Nfr2BeamHeapTest do
       Keyword.get(opts, :nonce, 0)::64,
       fuel::64,
       parent::binary-size(32),
-      1::32,
-      1::32
+      Keyword.get(opts, :history_count, 1)::32,
+      Keyword.get(opts, :candidate_count, 1)::32
     >>
   end
 
   defp ingest(pid, frame), do: GenServer.call(pid, {:ingest, frame})
 
   defp frame_of_bytes(n, parent \\ <<0::256>>) do
-    IO.iodata_to_binary([header(parent: parent), :binary.copy(<<7>>, n - 64)])
+    payload = :binary.copy(<<7>>, n - 64)
+    quads = div(byte_size(payload), 32)
+
+    IO.iodata_to_binary([
+      header(
+        parent: parent,
+        history_count: div(quads, 2),
+        candidate_count: quads - div(quads, 2)
+      ),
+      payload
+    ])
   end
 
   defp heap_words(pid) do

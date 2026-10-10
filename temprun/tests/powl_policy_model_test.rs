@@ -216,3 +216,76 @@ fn compiler_output_sorted_for_100_random_dag_workflows() {
         assert!(merge_join_total(&lineage, &quads), "dag-{w}: self-conformance");
     }
 }
+
+// ---- (4) host-side OCEL 2.0 lane (feature "powl-bcinr" only) ----
+//
+// The compiled policy tape is executed by bcinr-powl's OcelLog recorder and
+// converted to a real OCEL 2.0 log — closing the "topology-only" tension for
+// the host-side representation: the OCEL events carry the tape's op slots,
+// the receipt is digest-sealed, and the JSON round-trips.
+#[cfg(feature = "powl-bcinr")]
+mod host_ocel {
+    use bcinr_powl::compiler::{compile_powl, PowlAstNode};
+    use bcinr_powl::ocel::{ConformanceResult, OcelLog};
+    use bcinr_powl::tape::OpKind;
+
+    fn bridge_ast() -> PowlAstNode<'static> {
+        // A -> (B | C) -> D: entry, AND pair, exit.
+        // Labels are leaked to get 'static — a test-only, bounded allocation.
+        let l = |s: &'static str| Box::leak(s.to_string().into_boxed_str());
+        PowlAstNode::Sequence(vec![
+            PowlAstNode::Atom(l("1:2")),
+            PowlAstNode::PartialOrder {
+                children: vec![
+                    PowlAstNode::Atom(l("3:4")),
+                    PowlAstNode::Atom(l("5:6")),
+                ],
+                edges: vec![],
+            },
+            PowlAstNode::Atom(l("7:8")),
+        ])
+    }
+
+    #[test]
+    fn compiled_policy_tape_produces_conformant_ocel_2_0_log() {
+        let tape = compile_powl(&bridge_ast()).expect("bridge ast must compile");
+
+        let mut log = OcelLog::new();
+        let mut trace: u64 = 0;
+        for i in 0..tape.len as u32 {
+            if tape.ops[i as usize].kind == OpKind::Silent {
+                continue;
+            }
+            log.record_op_fired(7, i, (10 + i as u64 * 5) as u32, 5).expect("log not full");
+            trace |= 1u64 << i;
+        }
+        log.record_run_sealed(7, trace, (10 + tape.len as u64 * 5) as u32).expect("log not full");
+
+        // The log conforms to the very tape the policy compiler emitted.
+        assert_eq!(
+            log.validate_against_tape(&tape),
+            ConformanceResult::Conforms,
+            "OCEL events must witness the compiled policy tape"
+        );
+
+        // OCEL 2.0 structure: 2 object types, 2 event types, real objects.
+        let ocel = log.to_ocel_2_0();
+        assert_eq!(ocel.object_types.len(), 2);
+        assert_eq!(ocel.event_types.len(), 2);
+        assert!(!ocel.events.is_empty());
+        assert!(!ocel.objects.is_empty());
+
+        // Receipt: digest-sealed, event count matches.
+        let receipt = log.seal_receipt();
+        assert_eq!(receipt.event_count(), log.events().len());
+        assert_ne!(receipt.digest(), [0u8; 32]);
+
+        // JSON round-trip parses as an OCEL 2.0 document.
+        let json = log.to_ocel_json().expect("ocel json serializes");
+        let v: serde_json::Value =
+            serde_json::from_str(&json).expect("ocel json must parse");
+        assert!(v.get("eventTypes").is_some(), "ocel 2.0 json shape");
+        assert!(v.get("objectTypes").is_some(), "ocel 2.0 json shape");
+        assert!(v.get("objects").is_some(), "ocel 2.0 json shape");
+    }
+}

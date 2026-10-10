@@ -50,6 +50,16 @@
       "id": "proc-21560-18dd1bac287b3348",
       "type": "process",
       "attributes": []
+    },
+    {
+      "id": "proc-81791-18dd2a131addef58",
+      "type": "process",
+      "attributes": []
+    },
+    {
+      "id": "proc-81909-18dd2a16334075b8",
+      "type": "process",
+      "attributes": []
     }
   ],
   "events": [
@@ -247,6 +257,72 @@
         },
         {
           "objectId": "proc-21560-18dd1bac287b3348",
+          "qualifier": "performed_by"
+        }
+      ]
+    },
+    {
+      "id": "evt-18dd2a131addfb10-0",
+      "type": "cli_invocation",
+      "time": "2026-10-10T12:14:48.306959+00:00",
+      "attributes": [
+        {
+          "name": "noun",
+          "value": "sync"
+        },
+        {
+          "name": "verb",
+          "value": "run"
+        },
+        {
+          "name": "success",
+          "value": false
+        },
+        {
+          "name": "duration_ms",
+          "value": 12
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "sync:run",
+          "qualifier": "regards"
+        },
+        {
+          "objectId": "proc-81791-18dd2a131addef58",
+          "qualifier": "performed_by"
+        }
+      ]
+    },
+    {
+      "id": "evt-18dd2a1633407d88-0",
+      "type": "cli_invocation",
+      "time": "2026-10-10T12:15:01.600840+00:00",
+      "attributes": [
+        {
+          "name": "noun",
+          "value": "sync"
+        },
+        {
+          "name": "verb",
+          "value": "run"
+        },
+        {
+          "name": "success",
+          "value": false
+        },
+        {
+          "name": "duration_ms",
+          "value": 87
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "sync:run",
+          "qualifier": "regards"
+        },
+        {
+          "objectId": "proc-81909-18dd2a16334075b8",
           "qualifier": "performed_by"
         }
       ]

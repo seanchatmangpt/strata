@@ -54,10 +54,11 @@ FR/NFR test files. Companions: `docs/COURT_ADJUDICATIONS.md` (ledger),
   under_merge_join`).
 - **Evidence**: `temprun/src/acyclicity.rs` module docs (operator adjudication
   2026-10-10); `docs/COURT_ADJUDICATIONS.md` FR-3 row (GAP → mandatory fix).
-- **Disposition**: IN FIX — acyclicity sieve (Kahn cycle detection +
+- **Disposition**: FIXED 2026-10-10 — acyclicity sieve (Kahn cycle detection +
   within-trace vector-clock inversion, DEP_P==7 convention) is wired into the
-  pipeline (`temprun/src/lib.rs:66`); courts
-  `temprun/tests/fr3_acyclicity_test.rs` + `fr3_causal_test.rs` landed.
+  pipeline (`temprun/src/acyclicity.rs`, `temprun/src/lib.rs:66`); cycles
+  refuse. `temprun/tests/fr3_acyclicity_test.rs` 8/8 GREEN;
+  `fr3_causal_test.rs` landed.
 
 ## KG-NFR3 — 2.50 B/quad storage-density bound unachievable under LZ77
 
@@ -73,7 +74,10 @@ FR/NFR test files. Companions: `docs/COURT_ADJUDICATIONS.md` (ledger),
 - **Disposition**: REVISED per operator adjudication — LZ77 baseline pinned at
   7.74 B/quad; columnar varint-delta Elias-Fano encoding slated v27.04
   data-plane milestone; CAS format not compromised to chase the original
-  bound.
+  bound. Probe 19 (real git packfile delta-chain measurement) is
+  PENDING-FINAL-RUN: its evidence dir exists but the last recorded verdict
+  byte is `1` (broken run per the probe header); final 42-vs-0 adjudication
+  awaits a clean rerun.
 
 ## KG-FR5 — FR-5 SLA split (profile artifact)
 
@@ -86,9 +90,10 @@ FR/NFR test files. Companions: `docs/COURT_ADJUDICATIONS.md` (ledger),
 - **Evidence**: `temprun/tests/fr5_lifecycle_test.rs` header (T1/T2/profile
   requirement, lines 28–42, 180–181); `docs/COURT_ADJUDICATIONS.md` FR-5
   adjudication; FR-5 row (REVISED).
-- **Disposition**: accepted — adjudicated split encoded in the test; debug
-  throughput-floor failure is the documented profile artifact, not a
-  regression.
+- **Disposition**: IMPLEMENTED — adjudicated split encoded in
+  `temprun/tests/fr5_lifecycle_test.rs` (≤1000 quads → hard 5 ms; >1000 quads
+  → throughput-bound); test GREEN. Debug throughput-floor failure is the
+  documented profile artifact, not a regression.
 
 ## KG-NFR4 — reconstruct_at O(n) pending snapshot-basis materialization
 
@@ -98,10 +103,11 @@ FR/NFR test files. Companions: `docs/COURT_ADJUDICATIONS.md` (ledger),
 - **Evidence**: `stratus/test/probes/p17_wormhole_travel_test.sh` header
   (History section); `docs/COURT_ADJUDICATIONS.md` NFR-4 row (NOT MET → fix
   in flight via probe 17).
-- **Disposition**: IN FLIGHT — snapshot-basis fix reported landed in
+- **Disposition**: FIXED 2026-10-10 — snapshot-basis fix landed in
   `strata_protocol/src/wormhole.rs` (WormholeSnapshot materializes full
-  BTreeSet<Quad> at freeze; reconstruct_at replays only the k ≤ s tail);
-  probe 17 verdict pending in the ledger (IN FLIGHT, finding cell "—").
+  BTreeSet<Quad> at freeze; reconstruct_at replays only the k ≤ s tail).
+  `strata_protocol/tests/nfr4_reconstruct_scaling_test.rs` GREEN — NFR-4
+  restored; probe 17 PASS (post-fix) in the ledger.
 
 ## KG-FR4 — Ash FR-4 tier DEFERRED
 
@@ -139,3 +145,18 @@ FR/NFR test files. Companions: `docs/COURT_ADJUDICATIONS.md` (ledger),
   bcinr-POWL boundary (valve stays authority boundary, arena pure).
 - **Disposition**: accepted — documented divergence; Rust-side-only signing
   is the operating arrangement.
+
+## KG-PDU — valve segment_len unchecked (FIXED)
+
+- **Requirement ref**: FR-5 / CLAP-PDU 64-byte frame (PDU segment_len
+  semantics).
+- **Gap**: pre-fix, the valve did not validate `segment_len` against the PDU
+  invariant `32 * (N + M)`; a mismatched segment_len could reach the payload
+  path.
+- **Evidence**: `stratus/lib/stratus/valve.ex:152` (validate/1 now enforces
+  `32 * (N + M)`, fail-closed); flipped test
+  `stratus/test/stratus/xproduct_wire_witness_test.exs:179` ("segment_len
+  mismatch refuses :malformed_frame, registers untouched") plus
+  `stratus/test/stratus/pdu_layout_test.exs`.
+- **Disposition**: FIXED 2026-10-10 — refuse behavior verified by the flipped
+  witness tests.

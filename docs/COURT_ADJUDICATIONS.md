@@ -1,9 +1,8 @@
 # Court Adjudications — Chicago Probe Ledger
 
-Date: 2026-10-10. Ledger of the probe court results (probes 01–20) plus the
-operator adjudications issued on the same date. Verdicts marked IN FLIGHT are
-pending; their finding cells are deliberately unfilled ("—") until a real
-verdict lands.
+Date: 2026-10-10, finalized same date. Ledger of the probe court results
+(probes 01–20) plus the operator adjudications issued on the same date.
+Probe 19 remains PENDING-FINAL-RUN (last verdict byte = broken run).
 
 ## Probe Verdicts (01–20)
 
@@ -11,23 +10,23 @@ verdict lands.
 |---|---|---|
 | 01 | FAIL — finding | CLI exposes a header-only surface; no payload-refusal surface exists. Finding recorded; fix required before the refusal path can be claimed. |
 | 02 | SPLIT | Universe digests HOLD via BTreeSet canonicalization (deterministic order-independence verified). Commit OIDs do NOT: wire-form identity diverges — finding. |
-| 03 | IN FLIGHT | — |
+| 03 | PASS | Probe evidence cited from probe 03 run. |
 | 05 | KNOWN-GAP-42 | LSB refuse-bit vs spec 0x02 mismatch (GAP-42). The refuse behavior itself holds; the substrate doc comment was corrected to match observed/spec'd bit placement. Per operator adjudication (FR-3, below) this stays KNOWN-GAP-42 for the status bitmask. |
 | 06 | PASS | Probe evidence cited from probe 06 run. |
 | 07 | PASS | Probe evidence cited from probe 07 run. |
 | 08 | PASS | Probe evidence cited from probe 08 run. |
 | 09 | PASS | Probe evidence cited from probe 09 run. |
 | 10 | PASS | Probe evidence cited from probe 10 run. |
-| 11 | IN FLIGHT | — |
-| 12 | IN FLIGHT | — |
-| 13 | IN FLIGHT | — |
-| 14 | IN FLIGHT | — |
-| 15 | IN FLIGHT | — |
+| 11 | PASS | Probe evidence cited from probe 11 run. |
+| 12 | PASS | Probe evidence cited from probe 12 run. |
+| 13 | PASS | Probe evidence cited from probe 13 run. |
+| 14 | PASS | Probe evidence cited from probe 14 run. |
+| 15 | PASS | Probe evidence cited from probe 15 run. |
 | 16 | PASS | Probe evidence cited from probe 16 run. |
-| 17 | IN FLIGHT | — |
-| 18 | IN FLIGHT | — |
-| 19 | IN FLIGHT | — |
-| 20 | IN FLIGHT | — |
+| 17 | PASS (post-fix) | Snapshot-basis fix landed in `strata_protocol/src/wormhole.rs` (WormholeSnapshot); NFR-4 restored — `strata_protocol/tests/nfr4_reconstruct_scaling_test.rs` GREEN. |
+| 18 | PASS | Probe evidence cited from probe 18 run. |
+| 19 | PENDING-FINAL-RUN | Evidence dir `/tmp/court/p19/evidence` exists; last recorded verdict byte = `1` (broken/tool-infrastructure per probe header). Final 42-vs-0 adjudication (real git packfile, NFR-3 corroboration) awaits a clean rerun. |
+| 20 | PASS | Probe evidence cited from probe 20 run. |
 
 ## Operator Adjudications (2026-10-10, verbatim-in-substance)
 
@@ -63,7 +62,7 @@ capability-free integer machine.
 |---|---|---|
 | FR-1 | PASS | — |
 | FR-2 | PASS | Gap closed. |
-| FR-3 | GAP → mandatory fix | Acyclicity enforcement required (see adjudication above). |
+| FR-3 | PASS (post-fix) | Acyclicity sieve wired (`temprun/src/acyclicity.rs`, lib.rs:66); `temprun/tests/fr3_acyclicity_test.rs` 8/8 GREEN; cycles refuse. |
 | FR-4 | PASS | — |
 | FR-5 | REVISED | SLA split per adjudication above. |
 | FR-6 | PASS | Gap closed. |
@@ -73,4 +72,4 @@ capability-free integer machine.
 | NFR-1 | PASS | — |
 | NFR-2 | PASS | — |
 | NFR-3 | NOT MET → REVISED | Bound re-scoped; LZ77 baseline 7.74 B/quad locked (see `docs/NFR3_PRD_REVISION.md`). |
-| NFR-4 | NOT MET → fix in flight | Snapshot-basis fix via probe 17. |
+| NFR-4 | PASS (post-fix) | Snapshot-basis fix landed; `strata_protocol/tests/nfr4_reconstruct_scaling_test.rs` GREEN (probe 17 PASS post-fix). |

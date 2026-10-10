@@ -9,6 +9,7 @@
 //!      forms as documented in soak.rs (one-sided spec: LSL is the physical
 //!      0 bound, Cpk = (USL - median) / (3 sigma_robust); Cp reported with
 //!      the same sigma for comparability).
+//!
 //! Plus Shewhart X-bar chart parameters (subgroup n=5: CL = grand mean,
 //! UCL/LCL = CL ± 3σ/√n) and DPMO / z-score against USL.
 //!
@@ -128,7 +129,7 @@ fn main() {
                     std::process::exit(2);
                 });
             }
-            other => {
+            _other => {
                 eprintln!("usage: capability_report [--cycles N] [--out FILE.json]");
                 std::process::exit(2);
             }

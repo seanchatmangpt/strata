@@ -144,16 +144,16 @@ fn main() {
     let mut data = vec![vec![vec![0f64; REPLICATES]; PARTS]; OPERATORS];
     let mut all_admitted = true;
 
-    for op in 0..OPERATORS {
+    for (op, op_cells) in data.iter_mut().enumerate() {
         // Warmup this operator's context.
         for w in 0..WARMUP {
             let mut inp = build_part(w as usize % PARTS, op);
             let _ = run(&mut inp, FuelLease::new(10));
         }
-        for part in 0..PARTS {
-            for rep in 0..REPLICATES {
+        for (part, part_cell) in op_cells.iter_mut().enumerate() {
+            for slot in part_cell.iter_mut() {
                 let (ns, admitted) = replicate_ns(part, op);
-                data[op][part][rep] = ns;
+                *slot = ns;
                 all_admitted &= admitted;
             }
         }
@@ -162,10 +162,10 @@ fn main() {
 
     // Cell means and grand mean.
     let mut grand = Vec::with_capacity(OPERATORS * PARTS * REPLICATES);
-    for op in 0..OPERATORS {
-        for part in 0..PARTS {
-            for rep in 0..REPLICATES {
-                grand.push(data[op][part][rep]);
+    for op in &data {
+        for part in op {
+            for rep in part {
+                grand.push(*rep);
             }
         }
     }
@@ -197,17 +197,18 @@ fn main() {
         ss_op += sp * (m - gm).powi(2);
     }
     let mut ss_int = 0.0;
-    for op in 0..OPERATORS {
+    for (op, op_cells) in data.iter().enumerate() {
         for part in 0..PARTS {
-            let cell = mean(&data[op][part]);
+            let cell = mean(&op_cells[part]);
             ss_int += n * (cell - part_means[part] - op_means[op] + gm).powi(2);
         }
     }
     let mut ss_e = 0.0;
-    for op in 0..OPERATORS {
-        for part in 0..PARTS {
-            for r in &data[op][part] {
-                ss_e += (r - mean(&data[op][part])).powi(2);
+    for op_cells in &data {
+        for part_cell in op_cells {
+            let cell_mean = mean(part_cell);
+            for r in part_cell {
+                ss_e += (r - cell_mean).powi(2);
             }
         }
     }

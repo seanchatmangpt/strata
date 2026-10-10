@@ -10,3 +10,9 @@ target/
 # Elixir/Mix build artifacts
 stratus/_build/
 stratus/deps/
+
+# Elixir crash dumps
+erl_crash.dump
+
+# Lane build roots (fanout lease cleanup)
+stratus/_build-lane-fb/

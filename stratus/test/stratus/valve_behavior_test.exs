@@ -37,8 +37,15 @@ defmodule Stratus.ValveBehaviorTest do
     fuel = Keyword.get(opts, :fuel, 1)
 
     <<
-      "CLAP", 1::8, 1::8, 0::16, Keyword.get(opts, :nonce, 0)::64, fuel::64,
-      parent::binary-size(32), 1::32, 1::32
+      "CLAP",
+      1::8,
+      1::8,
+      0::16,
+      Keyword.get(opts, :nonce, 0)::64,
+      fuel::64,
+      parent::binary-size(32),
+      1::32,
+      1::32
     >>
   end
 
@@ -193,7 +200,10 @@ defmodule Stratus.ValveBehaviorTest do
   end
 
   test "real DefaultArena with missing wasm artifact returns typed :arena_failure, valve survives" do
-    System.put_env("STRATUS_TEMPRUN_WASM", "/nonexistent/temprun_arena-#{:erlang.unique_integer([:positive])}.wasm")
+    System.put_env(
+      "STRATUS_TEMPRUN_WASM",
+      "/nonexistent/temprun_arena-#{:erlang.unique_integer([:positive])}.wasm"
+    )
 
     try do
       {:ok, pid} = GenServer.start(Valve, arena: Stratus.Valve.DefaultArena)

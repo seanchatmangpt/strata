@@ -75,7 +75,10 @@ defmodule Stratus.Valve.DefaultArena do
 
   defp run_wasmtime(frame) do
     tmpdir =
-      Path.join(System.tmp_dir!(), "stratus-arena-#{System.pid()}-#{:erlang.unique_integer([:positive])}")
+      Path.join(
+        System.tmp_dir!(),
+        "stratus-arena-#{System.pid()}-#{:erlang.unique_integer([:positive])}"
+      )
 
     case File.mkdir_p(tmpdir) do
       :ok ->

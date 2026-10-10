@@ -1,0 +1,5 @@
+// frozen golden vector: profile 01_minimal, fuel 10
+// regenerate = deliberate diff (see test header)
+admitted: true
+receipt: de0a1f1fde56589342e0497518dfc10c2929b04cbb92d7e0e3d46e636b7fe2ad
+universe_digest: de0a1f1fde56589342e0497518dfc10c2929b04cbb92d7e0e3d46e636b7fe2ad

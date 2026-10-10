@@ -4,7 +4,7 @@ members = ["strata_protocol", "temprun"]
 
 [package]
 name = "strata"
-version = "0.1.0"
+version = "26.10.10"
 edition = "2021"
 publish = false
 

@@ -79,3 +79,16 @@ ci: test test-wasm check-wasm-imports lint test-stratus
 #   just soak 10000
 soak cycles='1000000':
     cargo run --release -p temprun --bin soak -- --cycles {{cycles}}
+
+# Full release verification ladder (26.10.10).
+release-check: _ensure_workspace
+    cargo test --workspace
+    cd stratus && mix test
+    just test-wasm
+    cargo clippy --workspace --all-targets -- -D warnings
+    @echo "release-check: all gates green"
+
+# Print the tag command for the operator. Does NOT tag or push.
+release-tag:
+    @echo "Run manually after release-check passes:"
+    @echo "  git tag -a v26.10.10 -m 'Strata v26.10.10 (2cbc5d7)' && git push origin v26.10.10"

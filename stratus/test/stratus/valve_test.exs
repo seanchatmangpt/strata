@@ -33,8 +33,15 @@ defmodule Stratus.ValveTest do
     # (<= 5 fail-closed), reserved::16-zero, nonce::64, fuel::64, parent::32,
     # N::32, M::32.
     <<
-      "CLAP", version::8, permutation::8, 0::16, 0::64, fuel::64,
-      parent::binary-size(32), 0::32, 0::32
+      "CLAP",
+      version::8,
+      permutation::8,
+      0::16,
+      0::64,
+      fuel::64,
+      parent::binary-size(32),
+      0::32,
+      0::32
     >>
   end
 
@@ -102,7 +109,9 @@ defmodule Stratus.ValveTest do
     assert byte_size(registers(pid).commit_hash) == 32
   end
 
-  test "handoff_to_arena returns arena registers without touching witness registers", %{valve: pid} do
+  test "handoff_to_arena returns arena registers without touching witness registers", %{
+    valve: pid
+  } do
     before = registers(pid)
     assert {:ok, %{status: :ok, commit_hash: commit}} = handoff(pid, frame())
     assert byte_size(commit) == 32
@@ -110,7 +119,8 @@ defmodule Stratus.ValveTest do
   end
 
   test "configurable arena fun is honored (real fun, no mock)" do
-    {:ok, pid} = GenServer.start(Valve, arena: fn _f -> {:ok, %{status: :ok, commit_hash: <<2::256>>}} end)
+    {:ok, pid} =
+      GenServer.start(Valve, arena: fn _f -> {:ok, %{status: :ok, commit_hash: <<2::256>>}} end)
 
     assert {:ok, %{commit_hash: <<2::256>>}} = ingest(pid, frame())
     assert registers(pid).parent_digest == <<2::256>>
@@ -132,7 +142,11 @@ defmodule Stratus.ValveTest do
     payload = <<1::64, 2::64, 3::64, 0::64>> <> <<1::64, 2::64, 3::64, 10::64>>
 
     header =
-      "CLAP" <> <<1, 0>> <> <<0::16>> <> <<7::64>> <> <<10::64>> <>
+      "CLAP" <>
+        <<1, 0>> <>
+        <<0::16>> <>
+        <<7::64>> <>
+        <<10::64>> <>
         <<0::256>> <> <<1::32>> <> <<1::32>>
 
     assert {:ok, %{status: :ok, commit_hash: commit}} =

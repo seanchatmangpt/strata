@@ -141,11 +141,22 @@ defmodule Stratus.Valve do
        )
        when version == @version and permutation <= @max_permutation do
     cond do
-      fuel == 0 -> {:error, :fuel_exhausted}
-      parent_digest != state.parent_digest -> {:error, :parent_discontinuity}
+      fuel == 0 ->
+        {:error, :fuel_exhausted}
+
+      parent_digest != state.parent_digest ->
+        {:error, :parent_discontinuity}
+
       true ->
-        {:ok, %{version: version, permutation: permutation, nonce: nonce, fuel: fuel,
-                history_quad_count: history_count, candidate_quad_count: candidate_count}}
+        {:ok,
+         %{
+           version: version,
+           permutation: permutation,
+           nonce: nonce,
+           fuel: fuel,
+           history_quad_count: history_count,
+           candidate_quad_count: candidate_count
+         }}
     end
   end
 

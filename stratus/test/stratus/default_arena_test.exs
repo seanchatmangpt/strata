@@ -14,7 +14,11 @@ defmodule Stratus.Valve.DefaultArenaTest do
     payload = Keyword.get(opts, :payload, conformance_payload())
 
     header =
-      "CLAP" <> <<1, 0>> <> <<0::16>> <> <<nonce::64>> <> <<fuel::64>> <>
+      "CLAP" <>
+        <<1, 0>> <>
+        <<0::16>> <>
+        <<nonce::64>> <>
+        <<fuel::64>> <>
         <<0x11::256>> <> <<1::32>> <> <<1::32>>
 
     header <> payload
@@ -26,7 +30,8 @@ defmodule Stratus.Valve.DefaultArenaTest do
   end
 
   test "valid frame: real wasm invocation admits with a 32-byte commit hash" do
-    assert {:ok, %{status: :ok, commit_hash: commit}} = Stratus.Valve.DefaultArena.actuate(frame())
+    assert {:ok, %{status: :ok, commit_hash: commit}} =
+             Stratus.Valve.DefaultArena.actuate(frame())
 
     assert is_binary(commit)
     assert bit_size(commit) == 256

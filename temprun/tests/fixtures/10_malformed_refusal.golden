@@ -1,0 +1,5 @@
+// frozen golden vector: profile 10_malformed_refusal, fuel 10
+// regenerate = deliberate diff (see test header)
+admitted: false
+receipt: f509ce3ce992e3cd090ff1a1e8c9ba0cde62004639ec873f382306cb91e5d826
+universe_digest: f409ce3ce992e3cd090ff1a1e8c9ba0cde62004639ec873f382306cb91e5d826

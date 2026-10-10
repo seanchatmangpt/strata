@@ -49,17 +49,28 @@ d=$(grep -o 'P10FAILS=[0-9]*' "$OUT/driver.log" | cut -d= -f2)
 emit "PASS driver: fuel 0/1/2 refuse, zero-entropy receipts identical, 500-quad admits at fuel=3, charge trace [2,1,0,0]+clamp, refusal-path scrub all-zero"
 
 # ---- corroborating evidence run: temprun's own fuel + zeroize courts -------
-if cargo test -p temprun fuel_exhaustion > "$OUT/cargo_fuel.log" 2>&1; then
+# cargo runs from the repo root (workspace member "temprun"; --lib targets
+# tests::fuel_exhaustion_constant_time_refusal / zeroization_digest_determinism;
+# the fr6_zeroize_test integration suite is the full FR-6 court).
+cd "$REPO" || exit 42
+if cargo test -p temprun --lib fuel_exhaustion > "$OUT/cargo_fuel.log" 2>&1; then
   n=$(grep -o "test result: ok. [0-9]* passed" "$OUT/cargo_fuel.log" | grep -o "[0-9]*" | head -1)
-  emit "PASS evidence run: cargo test -p temprun fuel_exhaustion ($n passed)"
+  [ "$n" -ge 1 ] || n=0
+  if [ "$n" -ge 1 ]; then
+    emit "PASS evidence run: cargo test -p temprun --lib fuel_exhaustion ($n passed)"
+  else
+    emit "FAIL evidence run: filter matched 0 tests (see $OUT/cargo_fuel.log)"
+    fails=$((fails+1)); findings="$findings cargo-fuel-empty"
+  fi
 else
-  emit "FAIL evidence run: cargo test -p temprun fuel_exhaustion"
+  emit "FAIL evidence run: cargo test -p temprun --lib fuel_exhaustion"
   fails=$((fails+1)); findings="$findings cargo-fuel"
 fi
-if cargo test -p temprun zeroization > "$OUT/cargo_fr6.log" 2>&1; then
-  emit "PASS FR-6 evidence run: cargo test -p temprun zeroization (zeroization_digest_determinism)"
+if cargo test -p temprun --test fr6_zeroize_test > "$OUT/cargo_fr6.log" 2>&1; then
+  n=$(grep -o "test result: ok. [0-9]* passed" "$OUT/cargo_fr6.log" | grep -o "[0-9]*" | head -1)
+  emit "PASS FR-6 evidence run: cargo test -p temprun --test fr6_zeroize_test ($n passed)"
 else
-  emit "FAIL FR-6 evidence run: cargo test -p temprun zeroization"
+  emit "FAIL FR-6 evidence run: cargo test -p temprun --test fr6_zeroize_test"
   fails=$((fails+1)); findings="$findings cargo-fr6"
 fi
 

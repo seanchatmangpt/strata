@@ -35,7 +35,7 @@ defmodule Stratus.Telemetry do
   handle_call entry; `header` is the parsed valve header map (fuel read from
   it); `parent_present?` is true when the valve held a non-genesis parent.
   """
-  @spec admit(integer(), %{fuel: integer()}, boolean()) :: :ok
+  @spec admit(integer(), %{required(:fuel) => integer(), optional(atom()) => term()}, boolean()) :: :ok
   def admit(start, header, parent_present?) do
     :telemetry.execute(@admit, %{duration: duration_ms(start)}, %{
       parent_present: parent_present?,

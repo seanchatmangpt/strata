@@ -91,29 +91,6 @@ fn encode(log: &OcelLog) -> Vec<Quad> {
 
 // --- sieve (verbatim temprun::conformance::merge_join_total) -------------
 
-fn merge_join_local(lineage: &[[u64; 4]], policy: &[[u64; 4]]) -> bool {
-    let (mut i, mut j) = (0usize, 0usize);
-    let mut mismatch: u64 = 0;
-    while i < lineage.len() && j < policy.len() {
-        let l = &lineage[i];
-        let p = &policy[j];
-        let lk = (l[0], l[1], l[2]);
-        let pk = (p[0], p[1], p[2]);
-        let eq = (lk == pk) as u64;
-        mismatch |= 1 - eq;
-        if eq == 1 {
-            i += 1;
-            j += 1;
-        } else if lk < pk {
-            i += 1;
-        } else {
-            j += 1;
-        }
-    }
-    mismatch |= (lineage.len() - i.min(lineage.len())) as u64;
-    mismatch == 0
-}
-
 fn merge_join_total_local(lineage: &[[u64; 4]], policy: &[[u64; 4]]) -> bool {
     let (mut i, mut j) = (0usize, 0usize);
     let mut mismatch: u64 = 0;
@@ -148,20 +125,20 @@ fn ocel_log_passes_conformance_sieve() {
     let lineage = encode(&log);
     assert_eq!(lineage.len(), 8, "1 type + 1 attr + 3 object types + 3 E2O");
 
-    // Policy = required milestones: the order and item objects must exist
-    // and the event must relate to all three. Sorted, same convention.
-    let policy: Vec<Quad> = vec![
-        Quad::new(E1, P_REL, O_ITEM1, 0),
-        Quad::new(E1, P_REL, O_ITEM2, 0),
-        Quad::new(E1, P_REL, O_ORDER, 0),
-        Quad::new(O_ITEM1, P_TYPE, V_OBJ_ITEM, 0),
-        Quad::new(O_ITEM2, P_TYPE, V_OBJ_ITEM, 0),
-        Quad::new(O_ORDER, P_TYPE, V_OBJ_ORDER, 0),
-    ]
-    .into_iter()
-    .map(|q| Quad::new(q.s, q.p, q.o, 0))
-    .collect();
-    let mut policy: Vec<[u64; 4]> = policy.into_iter().map(|q| [q.s, q.p, q.o, q.g]).collect();
+    // Policy = required milestones: the full required topology (objects
+    // exist, event relates to all three, event individual typed), with the
+    // attribute row included. Sorted, same convention.
+    let policy: Vec<[u64; 4]> = vec![
+        [E1, P_REL, O_ITEM1, 0],
+        [E1, P_REL, O_ITEM2, 0],
+        [E1, P_REL, O_ORDER, 0],
+        [E1, P_ATTR_AMOUNT, 900, 0],
+        [E1, P_TYPE, V_EVENT_ORDER, 0],
+        [O_ITEM1, P_TYPE, V_OBJ_ITEM, 0],
+        [O_ITEM2, P_TYPE, V_OBJ_ITEM, 0],
+        [O_ORDER, P_TYPE, V_OBJ_ORDER, 0],
+    ];
+    let mut policy = policy;
     policy.sort();
 
     let lin: Vec<[u64; 4]> = lineage.iter().map(|q| [q.s, q.p, q.o, q.g]).collect();
@@ -203,7 +180,8 @@ fn roundtrip_recovers_ocel_structure() {
         }
     }
     assert_eq!(events, vec![E1], "1 event re-derived");
-    assert_eq!(objects.len(), 3, "3 objects re-derived");
+    assert_eq!(events.len() as u32, log.events, "event count matches log");
+    assert_eq!(objects.len() as u32, log.objects, "3 objects re-derived");
     assert_eq!(edges.len(), 3, "3 E2O relations re-derived");
     for (e, _r, o) in &log.relations {
         assert!(edges.contains(&(*e, *o)), "E2O ({},{}) preserved", e, o);
@@ -231,40 +209,46 @@ fn sieve_is_blind_to_timestamps_and_attribute_values() {
             [q.s, q.p, q.o, g]
         })
         .collect();
-    // Corrupt the attribute value: V("149.90") -> V("0.01").
-    let corrupted: Vec<[u64; 4]> = retimed
-        .iter()
-        .map(|w| if w[1] == P_ATTR_AMOUNT { [w[0], w[1], 901, w[3]] } else { *w })
-        .collect();
+    let corrupted = retimed.clone();
 
     // Retiming does not change any (s,p,o) key — that is the blindness.
-    let keys_orig: Vec<(u64, u64, u64)> =
-        encode(&minimal_log()).iter().map(|q| (q.s, q.p, q.o)).collect();
-    let keys_corrupt: Vec<(u64, u64, u64)> =
-        corrupted.iter().map(|w| (w[0], w[1], w[2])).collect();
-    assert_ne!(
-        keys_orig, keys_corrupt,
-        "attribute-value corruption changed an (s,p,o) key — the corrupted \
-         attribute row is NOT a required milestone, so the sieve still sees \
-         the same policy surface"
-    );
     let policy: Vec<[u64; 4]> = vec![
         [E1, P_REL, O_ITEM1, 0],
         [E1, P_REL, O_ITEM2, 0],
         [E1, P_REL, O_ORDER, 0],
+        [E1, P_ATTR_AMOUNT, 900, 0],
+        [E1, P_TYPE, V_EVENT_ORDER, 0],
         [O_ITEM1, P_TYPE, V_OBJ_ITEM, 0],
         [O_ITEM2, P_TYPE, V_OBJ_ITEM, 0],
         [O_ORDER, P_TYPE, V_OBJ_ORDER, 0],
     ];
-    let lin: Vec<[u64; 4]> = corrupted.iter().map(|w| [w[0], w[1], w[2], w[3]]).collect();
-    assert_eq!(
-        lin.iter().map(|w| (w[0], w[1], w[2])).collect::<Vec<_>>(),
-        encode(&minimal_log()).iter().map(|q| (q.s, q.p, q.o)).collect::<Vec<_>>(),
-        "(s,p,o) keys unchanged by retiming + value corruption"
+    let mut policy = policy;
+    policy.sort();
+    let lin: Vec<[u64; 4]> = corrupted.iter().map(|w| *w).collect();
+    assert_ne!(
+        lin.iter().map(|w| w[3]).collect::<Vec<_>>(),
+        encode(&minimal_log()).iter().map(|q| q.g).collect::<Vec<_>>(),
+        "sanity: g slots actually differ (retime applied)"
     );
     assert!(
         merge_join_total_local(&lin, &policy),
-        "VERDICT: sieve admits retimed + value-corrupted log — OCEL 2.0 \
-         value semantics are NOT carried; topology only"
+        "VERDICT: sieve admits a fully retimed log — event timestamps live \
+         in g, which the (s,p,o) join key structurally ignores. OCEL 2.0 \
+         value/ordering semantics are NOT carried; topology only"
+    );
+
+    // Anti-vacuity control: the sieve is NOT dead — corrupting a
+    // policy-pinned (s,p,o) key (the attribute row's dictionary value) IS
+    // killed by the total join. Blindness is confined to g and to values no
+    // policy pins.
+    let mut key_corrupted: Vec<[u64; 4]> = lin.clone();
+    for w in key_corrupted.iter_mut() {
+        if w[1] == P_ATTR_AMOUNT {
+            w[2] = 901; // V("149.90") -> V("0.01")
+        }
+    }
+    assert!(
+        !merge_join_total_local(&key_corrupted, &policy),
+        "control: a pinned-key corruption must fail the sieve"
     );
 }

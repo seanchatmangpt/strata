@@ -15,8 +15,9 @@
 //!       1..=64 tables, real BLAKE3 receipts) under the standard fuel
 //!       ceiling (u64::MAX, same ceiling as golden vector 02): every frame
 //!       completes <= 5.0 ms wall-clock; min/median/P99.9 printed to stdout.
-//!   T2  Degradation pins: the max-fuel (02_max_fuel) and 4 MiB-payload
-//!       (06_payload_4mib) golden profiles must ALSO complete <= 5.0 ms.
+//!   T2  Degradation pins: the max-fuel (02_max_fuel) golden profile must
+//!       ALSO complete <= 5.0 ms. The 4 MiB-payload (06_payload_4mib)
+//!       profile gets a documented carve-out (see PRD-DELTA below).
 //!   T3  Teardown: actuation goes through the real `temprun_arena` binary
 //!       (src/bin/temprun_arena.rs — the wasm32-wasip1 frame-ingesting
 //!       surface; built here for the host so the subprocess is the real
@@ -26,13 +27,19 @@
 //!       byte-identical receipts AND a changed nonce changes the receipt —
 //!       no state can have survived the instance drop in between.
 //!
-//! Profile requirement (measured 2026-10-10): the 5.0 ms bound is
-//! ENFORCED ONLY UNDER `--release`. In debug, T1's 50 ordinary frames
-//! still hold (max ~1.5 ms) but the 06_payload_4mib degradation frame
-//! costs ~100 ms (unoptimized BLAKE3 over 4 MiB) and T2 fails by
-//! design. That is a profile artifact of `opt-level = "z"` release
-//! optimization, not an arena regression: the gating invocation is
-//! `cargo test --release -p temprun --test fr5_lifecycle_test`.
+//! Profile requirement (measured 2026-10-10): the bounds below are
+//! RELEASE-PROFILE SLOs. Two measurements pin the profile split:
+//!   * release: standard frames fast; the 4 MiB batch frame costs
+//!     4.45-4.57 ms wall-clock (BLAKE3 over 4 MiB = 131072 quads,
+//!     ~29M quads/s) — UNDER a nominal 5 ms cap but with <10% headroom.
+//!   * debug: the same 4 MiB frame costs ~102 ms (unoptimized BLAKE3).
+//! Operator adjudication (2026-10-10) — SLA split, encoded below:
+//!   * frames <= 1000 quads: hard assert <= 5.0 ms wall-clock;
+//!   * batch frames > 1000 quads up to 4 MiB: assert throughput
+//!     >= 5M quads/s (conservative floor; measured ~29M quads/s release).
+//! Gating invocation: `cargo test --release -p temprun --test
+//! fr5_lifecycle_test` (a debug run will fail the throughput floor by
+//! design — that is the documented profile artifact, not a regression).
 
 use std::io::Write;
 use std::process::{Command, Stdio};
@@ -160,9 +167,22 @@ fn fr5_t1_fifty_admitted_frames_within_5ms() {
     assert!(max <= BOUND_MS * 1000);
 }
 
-/// T2: degradation pins — max-fuel and 4 MiB-payload golden profiles also
-/// complete <= 5.0 ms. Profiles are the exact 02_max_fuel / 06_payload_4mib
-/// constructions from golden_vectors_test.rs (same seeds => same inputs).
+/// T2: degradation pins — max-fuel and 4 MiB-payload golden profiles.
+/// Profiles are the exact 02_max_fuel / 06_payload_4mib constructions from
+/// golden_vectors_test.rs (same seeds => same inputs).
+///
+/// PRD-DELTA (FR-5 bound adjudication, operator 2026-10-10): the FR-5 SLO
+/// is split by frame class. Standard transitions (<= 1000 quads — the
+/// 02_max_fuel golden profile and the whole T1 corpus, widths 1..=64,
+/// messages to 8 KiB, trees to 256) hold the hard 5.0 ms bound; batch
+/// frames (> 1000 quads up to 4 MiB) hold a throughput floor of >= 5M
+/// quads/s instead. Both profile measurements back the split: release
+/// 4 MiB batch cost is 4.45-4.57 ms (~29M quads/s — nominally under 5 ms
+/// but with <10% headroom, so a hard 5 ms assert there is a flake trap),
+/// while a debug-profile run measured the same frame at ~102 ms. The
+/// throughput floor is the release-profile SLO for the batch class; the
+/// quads count for a frame is its commit-message length / 32 (4 MiB =
+/// 131072 quads).
 #[test]
 fn fr5_t2_degradation_frames_within_5ms() {
     // 02_max_fuel: diverse valid input, fuel u64::MAX (the ceiling itself).
@@ -195,16 +215,41 @@ fn fr5_t2_degradation_frames_within_5ms() {
         parent: [0u8; 32],
         message: filled(17, 4 * 1024 * 1024),
     };
-    for (name, inp) in [("02_max_fuel", &mut max_fuel), ("06_payload_4mib", &mut payload_4mib)] {
+    // 02_max_fuel: standard transition — hard FR-5 bound.
+    {
         let t0 = Instant::now();
-        let out = run(inp, FuelLease::new(STANDARD_FUEL_CEILING));
+        let out = run(&mut max_fuel, FuelLease::new(STANDARD_FUEL_CEILING));
         let us = t0.elapsed().as_micros();
-        assert!(out.admitted, "{name} degradation frame must admit");
+        assert!(out.admitted, "02_max_fuel degradation frame must admit");
         assert!(
             us <= BOUND_MS * 1000,
-            "FR-5 VIOLATION: degradation frame {name} took {us}us > {BOUND_MS}ms"
+            "FR-5 VIOLATION: standard degradation frame 02_max_fuel took {us}us > {BOUND_MS}ms"
         );
-        println!("FR-5 T2 degradation pin {name}: {us}us <= {BOUND_MS}ms");
+        println!("FR-5 T2 degradation pin 02_max_fuel: {us}us <= {BOUND_MS}ms (hard)");
+    }
+    // 06_payload_4mib: batch class — throughput floor per PRD-DELTA above.
+    // 4 MiB message = 131072 quads; >= 5M quads/s floor (measured ~29M/s
+    // release; ~102 ms debug-profile artifact documented in the header).
+    {
+        const QUADS: u128 = (4 * 1024 * 1024 / 32) as u128;
+        const THROUGHPUT_FLOOR_QPS: u128 = 5_000_000;
+        let t0 = Instant::now();
+        let out = run(&mut payload_4mib, FuelLease::new(STANDARD_FUEL_CEILING));
+        let us = t0.elapsed().as_micros();
+        assert!(out.admitted, "06_payload_4mib degradation frame must admit");
+        // Throughput = quads/sec; us -> seconds is us / 1_000_000, so
+        // quads/s = QUADS * 1_000_000 / us (avoid float, u128 all through).
+        let qps = QUADS * 1_000_000 / us.max(1);
+        assert!(
+            qps >= THROUGHPUT_FLOOR_QPS,
+            "FR-5 VIOLATION: 4 MiB batch frame ({QUADS} quads) took {us}us \
+             => {qps} quads/s < {THROUGHPUT_FLOOR_QPS} quads/s throughput floor"
+        );
+        println!(
+            "FR-5 T2 degradation pin 06_payload_4mib: {us}us for {QUADS} quads \
+             = {qps} quads/s >= {THROUGHPUT_FLOOR_QPS} quads/s (batch-class \
+             throughput floor; release-profile SLO)"
+        );
     }
 }
 

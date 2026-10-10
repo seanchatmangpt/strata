@@ -5,6 +5,7 @@
 //! functions imported; pure compute over linear memory).
 
 pub mod abi;
+pub mod acyclicity;
 pub mod clock;
 pub mod conformance;
 pub mod coords;
@@ -57,8 +58,13 @@ pub fn run(input: &mut ArenaInput, mut fuel: fuel::FuelLease) -> ArenaOutput {
     // 1. Fuel: each sieve step costs; exhaustion -> constant-time refusal.
     let mut refuse = false;
 
-    // Sieve order: clock, coordinates, conformance — each charges fuel.
-    if !fuel.charge(1) || !clock::monotonic(&input.clock, &input.observed) {
+    // Sieve order: clock + causal acyclicity (same causal tier, ONE fuel
+    // unit — fuel-charge ordering unchanged, FR-3 adjudication), then
+    // coordinates, then conformance.
+    if !fuel.charge(1)
+        || !clock::monotonic(&input.clock, &input.observed)
+        || acyclicity::check(&input.lineage).is_err()
+    {
         refuse = true;
     }
 

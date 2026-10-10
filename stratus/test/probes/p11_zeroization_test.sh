@@ -18,7 +18,15 @@ PROBE_NAME=P11
 fail=0
 
 echo "[$PROBE_NAME] 1/2 running real-artifact vector: cargo test -p temprun --release --test fr6_zeroize_test"
-(cd "$STRATA" && cargo test -p temprun --release --test fr6_zeroize_test) || { echo "[$PROBE_NAME] FAIL: fr6_zeroize_test suite failed"; exit 1; }
+if ! (cd "$STRATA" && cargo test -p temprun --release --test fr6_zeroize_test); then
+  # Shared-target contention with concurrent lanes can leave stale
+  # temprun/bcinr-powl artifacts; scoped single-package clean (touches only
+  # those two packages' artifacts, never other lanes' build outputs) and one
+  # retry before declaring failure.
+  echo "[$PROBE_NAME] retry after scoped cargo clean -p temprun -p bcinr-powl"
+  (cd "$STRATA" && cargo clean -p temprun -p bcinr-powl && cargo test -p temprun --release --test fr6_zeroize_test) \
+    || { echo "[$PROBE_NAME] FAIL: fr6_zeroize_test suite failed"; exit 1; }
+fi
 
 WORK=$(mktemp -d)
 trap 'rm -rf "$WORK"' EXIT
@@ -33,6 +41,11 @@ edition = "2021"
 [dependencies]
 temprun = { path = "$STRATA/temprun" }
 
+# match the strata workspace release profile exactly, so the shared path
+# dep never produces panic-strategy-mismatched artifacts
+[profile.release]
+panic = "abort"
+
 [workspace]
 EOF
 
@@ -44,13 +57,21 @@ use temprun::fuel::FuelLease;
 use temprun::{run, scrub, ArenaInput};
 
 fn canary_input() -> ArenaInput {
+    // Admission gates: clock::monotonic(clock, observed), disjoint masks,
+    // conformance::merge_join(lineage, policy). Canary entropy lives in the
+    // non-gated words (lineage/policy lead word, tree, parent, message);
+    // clock/observed keep the minimal admitting monotonic shape.
     ArenaInput {
-        lineage: vec![[0xDEADBEEFCAFEBABEu64, 0x0123456789ABCDEF, 0xFEEDFACE, 0x0BADF00D]; 2],
-        policy: vec![[0xC0FFEE11BADF00Du64, 0x1337C0DE, 0xABAD1DEA, 0xFACEB00C]; 2],
-        clock: vec![0x5EED5EED5EED5EEDu64, 0xDEADC0DE, 0xCAFEBABE],
-        observed: vec![0xD15EA5Eu64, 0xBAADF00D],
-        candidate_mask: 0xDEADBEEFu64,
-        lease_mask: 0xCAFEBABEu64,
+        lineage: vec![[0xDEADBEEFCAFEBABEu64, 2, 3, 10], [0x0123456789ABCDEF, 5, 6, 20]],
+        // (s,p,o) keys must match lineage pairwise (merge-join gate); only
+        // the temporal word differs. Entropy lives in the shared lead word.
+        policy: vec![[0xDEADBEEFCAFEBABEu64, 2, 3, 0], [0x0123456789ABCDEF, 5, 6, 0]],
+        clock: vec![1, 2, 3],
+        observed: vec![1, 1, 2],
+        // masks must match the admitting shape (FR-6 sample); entropy kept
+        // in every scrubbed field
+        candidate_mask: 0b0100,
+        lease_mask: 0b0010,
         tree_entries: vec![([0xFFu8; 32], [0x77u8; 32]); 2],
         parent: [0xA5u8; 32],
         message: 0x55u8.to_be_bytes().iter().cycle().take(64).copied().collect(),
@@ -59,8 +80,8 @@ fn canary_input() -> ArenaInput {
 
 fn total_spare_residual(inp: &ArenaInput) -> (usize, usize) {
     // residual in ELEMENTS per Vec (spare capacity), reported not asserted
-    let elem64 = inp.lineage.iter().map(|r| 4usize).sum::<usize>()
-        * (inp.lineage.capacity().max(inp.policy.capacity()) + inp.clock.capacity() + inp.observed.capacity());
+    let rowsz = 4usize;
+    let elem64 = rowsz * (inp.lineage.capacity().max(inp.policy.capacity()) + inp.clock.capacity() + inp.observed.capacity());
     let elem8 = inp.message.capacity() + inp.tree_entries.capacity() * 64 + 32;
     (elem64, elem8)
 }
@@ -117,7 +138,7 @@ fn main() {
 EOF
 
 echo "[$PROBE_NAME] 2/2 running dedicated canary through compiled release binary"
-if (cd "$WORK" && cargo run --release --quiet); then
+if (cd "$WORK" && CARGO_TARGET_DIR="$WORK/target" cargo run --release --quiet); then
   echo "[$PROBE_NAME] canary fully zeroized on admit, refusal, and scrub paths"
 else
   echo "[$PROBE_NAME] FAIL: nonzero canary bytes survived (offsets above)"

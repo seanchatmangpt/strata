@@ -61,26 +61,32 @@ fn fully_conforming_unrolled_trace_admits() {
     assert_eq!(out.receipt.len(), RECEIPT_LEN);
 }
 
-// ---- (a) cycle: pinned gap — current check is partial-order coverage only ----
+// ---- (a) cycle: FLIPPED 2026-10-10 (operator adjudication: FR-3 cycle
+// rejection is MANDATORY). Was pinned as ADMITTING under the order-coverage
+// join; `acyclicity::check` (wired into run()'s causal tier) now refuses it.
+// The merge_join/merge_join_total order-coverage facts remain true and are
+// kept as module-level pins — the boundary doc in acyclicity.rs records why
+// both sieves are needed.
 
 #[test]
-fn causal_cycle_is_policy_covered_and_admits_under_merge_join() {
+fn causal_cycle_is_order_covered_but_refused_by_the_acyclicity_sieve() {
     // Dependency-edge cycle: e1 -> e2 -> e1 (two lineage rows whose causal
     // relations form a loop). As flat sorted quads with a self-consistent
-    // policy, the coverage join has no cycle oracle and ADMITS.
+    // policy, the coverage join has no cycle oracle and passes — order
+    // coverage is not cycle detection (see acyclicity.rs boundary doc).
     let e1_deps_e2 = [10, 7, 20, 10];
     let e2_deps_e1 = [20, 7, 10, 20];
     let lineage = vec![e1_deps_e2, e2_deps_e1];
     let policy = policy_of(&lineage);
     assert!(
         merge_join(&lineage, &policy),
-        "PINNED GAP: cyclical causal loop passes the order-based coverage join"
+        "order-coverage fact: the join alone cannot see the loop"
     );
-    // Even the stricter total join admits — neither direction is missing.
+    // Even the stricter total join passes — neither direction is missing.
     assert!(merge_join_total(&lineage, &policy));
-    // End-to-end: the arena has no cycle sieve, so the frame is admitted.
+    // End-to-end: the acyclicity sieve (FR-3 adjudication) refuses the frame.
     let out = temprun::run(&mut frame(lineage, policy), FuelLease::new(3));
-    assert!(out.admitted, "PINNED: run() does not refuse causal cycles");
+    assert!(!out.admitted, "FLIPPED: causal cycles must refuse end-to-end");
 }
 
 // ---- (b) clock inversion: fresh frame-level end-to-end court ----

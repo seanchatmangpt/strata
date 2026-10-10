@@ -10,7 +10,8 @@ defmodule Stratus.MixProject do
       releases: releases(),
       deps: [
         {:telemetry, "~> 1.3"},
-        {:credo, "~> 1.7", only: [:dev, :test], runtime: false}
+        {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
+        {:dialyxir, "~> 1.4", only: [:dev], runtime: false}
       ]
     ]
   end

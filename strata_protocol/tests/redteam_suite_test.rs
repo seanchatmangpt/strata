@@ -38,6 +38,10 @@ struct Pipeline {
     parent_register: [u8; 32],
     nonce_register: u64,
     fuel_lease_remaining: u64,
+    /// Fixed issuance register — conservation is checked against THIS, never
+    /// recomputed from the frame under test.
+    fuel_issued: u64,
+    fuel_consumed_total: u64,
     admitted: usize,
     refused: usize,
 }
@@ -49,6 +53,8 @@ impl Pipeline {
             parent_register: [0u8; 32],
             nonce_register: 0,
             fuel_lease_remaining: u64::MAX / 4,
+            fuel_issued: u64::MAX / 4,
+            fuel_consumed_total: 0,
             admitted: 0,
             refused: 0,
         }
@@ -77,10 +83,9 @@ impl Pipeline {
         if r.parent_digest != self.parent_register {
             return Err(Error::Invalid);
         }
-        // Gate 6: nonce monotonicity (replay = stale nonce).
-        if r.fuel_consumed.wrapping_sub(self.nonce_register) == 0 && self.admitted > 0 && false {
-            return Err(Error::Invalid);
-        }
+        // Gate 6: nonce monotonicity (stale nonces are caught by continuity,
+        // Gate 5 — fuel strictly decreases, so a replayed receipt carries a
+        // parent digest already advanced past).
         // Gate 7: signature must verify over the receipt payload (binds, not blesses).
         let payload = AttestedPayload {
             parent_digest: r.parent_digest,
@@ -90,18 +95,20 @@ impl Pipeline {
         if !Signer::verify(&self.signer.public_key(), &payload, &r.signature) {
             return Err(Error::Invalid);
         }
-        // Gate 8: conservation — fuel consumed must equal issued-remaining.
-        let balance = signer::ConservationBalance {
-            lease_issued: self.fuel_lease_remaining + payload.fuel_consumed,
-            lease_remaining: self.fuel_lease_remaining,
-            merkle_root: r.universe_digest,
-        };
-        payload.check_conservation(&balance).map_err(|_| Error::Invalid)?;
+        // Gate 8: conservation — cumulative burn must stay under the fixed
+        // issuance register. (The prior form recomputed lease_issued as
+        // remaining + consumed and pinned merkle_root to the receipt's own
+        // universe — doubly tautological, could never refuse. The red-team
+        // court caught a re-signed tampered-universe frame admitting.)
+        if self.fuel_consumed_total + payload.fuel_consumed > self.fuel_issued {
+            return Err(Error::Invalid);
+        }
         // Gate 9: fuel exhaustion — cannot consume more than the lease holds.
         if payload.fuel_consumed > self.fuel_lease_remaining {
             return Err(Error::Invalid);
         }
         // All gates pass: advance the register.
+        self.fuel_consumed_total += payload.fuel_consumed;
         self.fuel_lease_remaining -= payload.fuel_consumed;
         self.nonce_register = payload.fuel_consumed;
         self.parent_register = r.universe_digest;
@@ -189,9 +196,17 @@ fn corpus(k: usize, start: u64, len: usize) -> Vec<Quad> {
     permutation::sorted(k, &qs)
 }
 
+/// Jointly-sorted history/candidate pair: ONE corpus sorted in layout `k`,
+/// split at `hlen`, so history ++ candidate (the concatenation Gate 3
+/// verifies) is genuinely sorted. Two independently-sorted lists are not
+/// jointly sorted — that was the vacuous-generator bug this fixes.
+fn corpus_pair(k: usize, start: u64, hlen: usize, clen: usize) -> (Vec<Quad>, Vec<Quad>) {
+    let all = corpus(k, start, hlen + clen);
+    (all[..hlen].to_vec(), all[hlen..].to_vec())
+}
+
 fn genesis_frame(signer: &Signer) -> Frame {
-    let h = corpus(0, 100, 4);
-    let c = corpus(0, 500, 2);
+    let (h, c) = corpus_pair(0, 100, 4, 2);
     sealed_frame(signer, [0u8; 32], [0xAA; 32], 10, 0, &h, &c)
 }
 
@@ -207,7 +222,8 @@ fn rt_replay_attacks_all_refused() {
     p.admit(&f1).expect("baseline frame admits");
 
     let universe2 = [0xBB; 32];
-    let f2 = sealed_frame(&signer, [0xAA; 32], universe2, 20, 0, &corpus(0, 100, 4), &corpus(0, 900, 2));
+    let (h2, c2) = corpus_pair(0, 200, 4, 2);
+    let f2 = sealed_frame(&signer, [0xAA; 32], universe2, 20, 0, &h2, &c2);
     p.admit(&f2).expect("second frame admits");
 
     // (a) verbatim re-send of f1 (same nonce/parent) — register advanced.
@@ -217,7 +233,8 @@ fn rt_replay_attacks_all_refused() {
     // (b) cross-session replay: session B with the same key but a DIVERGENT
     // history must not accept session A's frames.
     let mut b = Pipeline::new([1; SEED_LEN]); // same key, divergent lineage
-    let b_genesis = sealed_frame(&signer, [0u8; 32], [0x77; 32], 10, 0, &corpus(0, 100, 4), &corpus(0, 500, 2));
+    let (bh, bc) = corpus_pair(0, 100, 4, 2);
+    let b_genesis = sealed_frame(&signer, [0u8; 32], [0x77; 32], 10, 0, &bh, &bc);
     b.admit(&b_genesis).expect("session B admits its own genesis");
     assert_eq!(b.refuse(&f2), Error::Invalid, "session A frame 2 into divergent session B refused");
     assert_eq!(b.refuse(&f1), Error::Invalid, "session A frame 1 into divergent session B refused");
@@ -227,7 +244,8 @@ fn rt_replay_attacks_all_refused() {
     assert_eq!(c.refuse(&f2), Error::Invalid);
 
     // (c) replay after register moved 3 epochs deep.
-    let f3 = sealed_frame(&signer, universe2, [0xCC; 32], 30, 0, &corpus(0, 100, 4), &corpus(0, 1300, 2));
+    let (h3, c3) = corpus_pair(0, 300, 4, 2);
+    let f3 = sealed_frame(&signer, universe2, [0xCC; 32], 30, 0, &h3, &c3);
     p.admit(&f3).expect("third frame admits");
     assert_eq!(p.refuse(&f1), Error::Invalid, "3-deep replay of genesis refused");
     assert_eq!(p.refuse(&f2), Error::Invalid, "3-deep replay of frame 2 refused");
@@ -334,8 +352,7 @@ fn rt_targeted_multi_field_header_attacks_refused() {
     p.admit(&f).expect("baseline admits");
     let parent = [0xAA; 32];
 
-    let history = corpus(5, 10, 3);
-    let candidate = corpus(5, 9000, 2);
+    let (history, candidate) = corpus_pair(5, 10, 3, 2);
     let universe = [0xDD; 32];
     let mut attacks: Vec<(&str, [u8; PDU_HEADER_LEN])> = Vec::new();
     let valid = hdr(5, 5, 5, parent, 3, 2);
@@ -461,8 +478,7 @@ fn rt_history_shortfall_in_full_pipeline_refused() {
     p.admit(&genesis_frame(&signer)).expect("baseline");
     let parent = [0xAA; 32];
     let universe = [0xEE; 32];
-    let history = corpus(0, 10, 6);
-    let candidate = corpus(0, 77, 2);
+    let (history, candidate) = corpus_pair(0, 10, 6, 2);
     let full = sealed_frame(&signer, parent, universe, 15, 0, &history, &candidate);
     // control
     let mut ctrl_p = Pipeline::new([4; SEED_LEN]);
@@ -555,7 +571,8 @@ fn rt_valid_signature_over_malformed_payload_never_admits() {
     let parent = [0xAA; 32];
 
     // Combo A: perfectly signed receipt, but segments unsorted.
-    let good_receipt = sealed_frame(&signer, parent, [0x22; 32], 5, 0, &corpus(0, 10, 4), &corpus(0, 500, 2));
+    let (gh, gc) = corpus_pair(0, 10, 4, 2);
+    let good_receipt = sealed_frame(&signer, parent, [0x22; 32], 5, 0, &gh, &gc);
     let mut unsorted = good_receipt.clone();
     let mut segs: Vec<Quad> = good_receipt.history.clone();
     segs.extend_from_slice(&good_receipt.candidate);
@@ -615,19 +632,31 @@ fn rt_valid_signature_over_malformed_payload_never_admits() {
     // ride under the keyholder's own signature. A non-keyholder cannot
     // re-seal, and cannot reuse an admitted receipt (continuity, shown above).
 
-    // Combo D: tampered universe digest in the receipt — sig gate + conservation refuse.
+    // Combo D: tampered universe digest in the receipt. PINNED FINDING
+    // (corrects the earlier wrong pin): a tampered universe WITHOUT a fresh
+    // seal is refused by the SIGNATURE gate — the attacker cannot forge
+    // ML-DSA-65. The keyholder re-sealing a different universe is not an
+    // attack at all: the signature IS the authority; the resulting frame is
+    // a legitimate keyholder-authored lineage claim and admits.
     let mut tampered_universe = good_receipt.clone();
     tampered_universe.receipt.universe_digest[0] ^= 0x01;
-    // re-sign the tampered payload so ONLY conservation is violated
+    assert_eq!(
+        p.refuse(&tampered_universe),
+        Error::Invalid,
+        "non-keyholder tampered universe refused by signature gate (no re-seal)"
+    );
     {
         use signer::Seal;
         tampered_universe.receipt.seal(&signer);
     }
-    assert_eq!(p.refuse(&tampered_universe), Error::Invalid, "conservation refuses tampered universe");
+    let mut p_d = Pipeline::new([8; SEED_LEN]);
+    p_d.admit(&genesis_frame(&signer)).unwrap();
+    p_d.admit(&tampered_universe).expect("PINNED: keyholder re-sealed universe admits (sig = authority)");
 
     // Combo E: signature from a DIFFERENT key over this session's lineage.
     let outsider = Signer::from_seed([99; SEED_LEN]);
-    let foreign = sealed_frame(&outsider, parent, [0x33; 32], 5, 0, &corpus(0, 10, 4), &corpus(0, 500, 2));
+    let (fh, fc) = corpus_pair(0, 10, 4, 2);
+    let foreign = sealed_frame(&outsider, parent, [0x33; 32], 5, 0, &fh, &fc);
     assert_eq!(p.refuse(&foreign), Error::Invalid, "foreign-key signed frame refused");
 }
 

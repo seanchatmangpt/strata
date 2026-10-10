@@ -54,7 +54,8 @@ fn arena_input(rng: &mut Lcg) -> ArenaInput {
     for p in policy.iter_mut() {
         p[3] = 0;
     }
-    let clock: Vec<u64> = (1..=n as u64).collect();
+    // Strict advance over observed=1 even at n=1 (monotonic() requires one).
+    let clock: Vec<u64> = (2..=(n as u64) + 1).collect();
     let observed: Vec<u64> = vec![1; n];
     let mut tree_entries = Vec::with_capacity(n);
     for _ in 0..n {

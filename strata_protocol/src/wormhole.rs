@@ -2,8 +2,18 @@
 //!
 //! A [`Wormhole`] ingests per-epoch quad deltas and periodically freezes a
 //! full-state snapshot. `reconstruct_at(epoch)` binary-searches the latest
-//! snapshot with `snapshot_epoch <= epoch` (O(log n)), then replays at most
-//! `k` delta batches between the snapshot and the target (O(k)). Storage
+//! snapshot with `snapshot_epoch <= epoch` (O(log n)), clones its
+//! materialized state basis, then replays at most `k` delta batches between
+//! the snapshot and the target (O(k)).
+//!
+//! Memory cost of the snapshot basis: each snapshot clones the full
+//! BTreeSet<Quad> state at freeze time (~32 bytes/quad + tree overhead).
+//! With a sqrt(n) snapshot policy over n deltas the total basis memory is
+//! O(n^1.5) quads (e.g. n=10000, s=100: ~100 snapshots x ~40k quads). This
+//! trades memory for the O(log n + k) reconstruct bound; density accounting
+//! (`density_bytes_per_quad`) still counts only INDEX_BYTES per snapshot —
+//! the CAS stores each quad payload once and bases are derived, on-disk
+//! derivable state. Storage
 //! density (NFR-3) is tracked as index overhead bytes per corpus quad:
 //! snapshot records + delta epoch-tags, with quad payloads living once in
 //! the CAS (see [`cas`]) and never duplicated by this index.
@@ -20,6 +30,10 @@ pub struct WormholeSnapshot {
     pub commit_hash: [u8; 32],
     /// Inclusive quad-coordinate range this snapshot covers.
     pub quad_range: (Quad, Quad),
+    /// Materialized state basis at freeze time: every quad from deltas with
+    /// `epoch <= self.epoch`. Cloned on reconstruct to skip the O(n) genesis
+    /// prefix replay (NFR-4 fast path).
+    pub state: BTreeSet<Quad>,
     /// Index into the delta log of the first delta NOT included in this
     /// snapshot (replay resumes here).
     pub delta_offset: usize,
@@ -105,6 +119,7 @@ impl Wormhole {
             commit_hash: WormholeSnapshot::hash_state(state),
             quad_range,
             delta_offset,
+            state: state.clone(),
         };
         let pos = self.snapshots.partition_point(|s| s.epoch < epoch);
         if self.snapshots.get(pos) == Some(&rec) {
@@ -115,30 +130,19 @@ impl Wormhole {
     }
 
     /// O(log n + k) point-in-time reconstruction: binary-search the latest
-    /// snapshot at or before `epoch`, then replay deltas from its
-    /// `delta_offset` through `epoch`. Epochs before all snapshots (or all
-    /// deltas) reconstruct from the empty genesis state.
+    /// snapshot at or before `epoch`, clone its materialized state basis,
+    /// then replay deltas from its `delta_offset` through `epoch`. Epochs
+    /// before all snapshots (or all deltas) reconstruct from the empty
+    /// genesis state.
     pub fn reconstruct_at(&self, epoch: u64) -> BTreeSet<Quad> {
         let hi = self.snapshots.partition_point(|s| s.epoch <= epoch);
-        let mut state = BTreeSet::new();
-        let start = if hi > 0 {
+        let (mut state, start) = if hi > 0 {
             let snap = &self.snapshots[hi - 1];
-            state = self.replay_from(0, snap.delta_offset);
-            snap.delta_offset
+            (snap.state.clone(), snap.delta_offset)
         } else {
-            0
+            (BTreeSet::new(), 0)
         };
         self.replay_into(&mut state, start, epoch);
-        state
-    }
-
-    /// Replay deltas `[from, to_epoch]` from scratch (helper for snapshot
-    /// prefix replay).
-    fn replay_from(&self, from: usize, to: usize) -> BTreeSet<Quad> {
-        let mut state = BTreeSet::new();
-        for d in &self.deltas[from..to] {
-            state.extend(d.quads.iter().copied());
-        }
         state
     }
 

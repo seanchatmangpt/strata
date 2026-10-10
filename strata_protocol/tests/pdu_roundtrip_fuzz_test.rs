@@ -9,7 +9,7 @@
 //!   4. segment_len overflow safety at N=M=u32::MAX (expected 274877906688).
 //!   5. Quad encode/decode round-trip for xorshift-generated u64 tuples.
 
-use strata_protocol::pdu::{PduHeader, PDU_HEADER_LEN, PDU_MAGIC, PDU_VERSION};
+use strata_protocol::pdu::{PduHeader, PDU_HEADER_LEN, PDU_VERSION};
 use strata_protocol::quad::Quad;
 
 /// xorshift64* PRNG — deterministic, no dependencies.

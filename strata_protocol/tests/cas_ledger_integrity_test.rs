@@ -108,7 +108,7 @@ fn tampered_parent_detected() {
 
     // Flip one hex nibble of the parent digest in the child's input.
     let tampered_hex = if parent_hex.starts_with('0') {
-        format!("1{}", &parent_hex[1..])
+        format!("1{}", parent_hex.strip_prefix('0').unwrap_or(&parent_hex))
     } else {
         format!("0{}", &parent_hex[1..])
     };
@@ -170,7 +170,6 @@ fn concurrent_snapshot_writes_under_documented_lock_policy() {
                     match l.push(rec.clone()) {
                         Ok(()) => return,
                         Err(Error::Invalid) => drop(l), // transient gap: retry
-                        Err(e) => panic!("unexpected error: {e:?}"),
                     }
                 }
             })

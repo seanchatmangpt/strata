@@ -106,7 +106,10 @@ defmodule Stratus.ProcBinHardeningTest do
 
   test "large sub-binary of a 4 MB parent ingests with flat heap", %{valve: pid} do
     payload_size = 4 * 1024 * 1024 - 64
-    blob = IO.iodata_to_binary([:binary.copy(<<0>>, 32), header(), :binary.copy(<<7>>, payload_size)])
+
+    blob =
+      IO.iodata_to_binary([:binary.copy(<<0>>, 32), header(), :binary.copy(<<7>>, payload_size)])
+
     sub = binary_part(blob, 32, byte_size(blob) - 32)
     assert byte_size(sub) == 64 + payload_size
 
@@ -123,7 +126,9 @@ defmodule Stratus.ProcBinHardeningTest do
   test "100 sequential ingests chain parent register exactly" do
     # Frame-derived commits so each advance is distinct (echo arena).
     {:ok, pid} =
-      GenServer.start(Valve, arena: fn f -> {:ok, %{status: :ok, commit_hash: :crypto.hash(:sha256, f)}} end)
+      GenServer.start(Valve,
+        arena: fn f -> {:ok, %{status: :ok, commit_hash: :crypto.hash(:sha256, f)}} end
+      )
 
     genesis = frame()
 
@@ -194,7 +199,9 @@ defmodule Stratus.ProcBinHardeningTest do
     # The full signing/provenance stack is inside the wasm arena receipt.
     # The valve contract: 32-byte binary in, both registers advance to it.
     {:ok, pid} =
-      GenServer.start(Valve, arena: fn _f -> {:ok, %{status: :ok, commit_hash: :crypto.strong_rand_bytes(32)}} end)
+      GenServer.start(Valve,
+        arena: fn _f -> {:ok, %{status: :ok, commit_hash: :crypto.strong_rand_bytes(32)}} end
+      )
 
     {:ok, %{commit_hash: commit}} = ingest(pid, frame())
     assert is_binary(commit) and byte_size(commit) == 32

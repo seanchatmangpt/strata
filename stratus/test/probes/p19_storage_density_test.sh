@@ -54,11 +54,11 @@ EPOCHS=${EPOCHS:-10000}
 QPX=${QPX:-100}
 TOTAL=$((EPOCHS * QPX))
 RAW=$((TOTAL * 32))
-G="git -C $REPO -c core.compression=9 -c pack.compression=9"
+gitc() { git -C "$REPO" -c core.compression=9 -c pack.compression=9 "$@"; }
 
 rm -rf "$REPO" "$EV"; mkdir -p "$EV" "$REPO"
 git init -q -b main "$REPO"
-$G config user.email p19@court && $G config user.name p19
+gitc config user.email p19@court && gitc config user.name p19
 
 # ---------------------------------------------------------------------------
 # 1. Materialize real git blobs: one epoch payload per commit, stable path
@@ -100,7 +100,7 @@ PYEOF
 # ---------------------------------------------------------------------------
 # 2. Real git packfile writer (delta chains on, aggressive)
 # ---------------------------------------------------------------------------
-$G gc --aggressive --prune=now -q 2>/dev/null
+gitc gc --aggressive --prune=now || { note "FAIL: git gc exited $?"; exit 1; }
 PACK=$(ls "$REPO"/objects/pack/*.pack 2>/dev/null | head -1)
 [ -n "$PACK" ] || { note "FAIL: no packfile produced"; exit 1; }
 IDX="${PACK%.pack}.idx"
@@ -110,7 +110,7 @@ note "packfile: $PACK ($PACK_BYTES bytes)"
 # ---------------------------------------------------------------------------
 # 3. Zero-loss verification: git verify-pack + sampled cat-file round-trip
 # ---------------------------------------------------------------------------
-$G verify-pack -v "$IDX" > "$EV/verify_pack.txt" 2>&1
+gitc verify-pack -v "$IDX" > "$EV/verify_pack.txt" 2>&1
 [ $? -eq 0 ] || { note "FAIL: git verify-pack"; exit 1; }
 OBJ_COUNT=$(grep -cE '^[0-9a-f]{40} blob ' "$EV/verify_pack.txt")
 DELTA_BLOBS=$(awk '$2=="blob" && NF>=7 && $5!=$6' "$EV/verify_pack.txt" | grep -c . || true)

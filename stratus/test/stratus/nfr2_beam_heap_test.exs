@@ -65,6 +65,7 @@ defmodule Stratus.Nfr2BeamHeapTest do
     # constant (header map + call machinery), never proportional to the
     # payload. A copied 1 MiB payload alone would be >= 131_072 words.
     growth = max(0, heap_4mib - heap_1mib)
+
     assert heap_1mib < 65_536,
            "valve heap after 1 MiB ingest = #{heap_1mib} words — frame appears copied"
 

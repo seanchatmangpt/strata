@@ -60,11 +60,15 @@ defmodule ChicagoCourtRunner do
         end
 
       detail = if r.output != "", do: " :: " <> first_line(r.output), else: ""
+
       "#{String.pad_trailing(r.id, 34)} #{String.pad_trailing(status, 9)} exit=#{inspect(r.exit_code)} #{r.duration_ms}ms#{detail}"
     end
 
     defp first_line(output) do
-      output |> String.split("\n") |> Enum.find(&(&1 != "")) |> then(&(&1 || ""))
+      output
+      |> String.split("\n")
+      |> Enum.find(&(&1 != ""))
+      |> then(&(&1 || ""))
       |> String.slice(0, 120)
     end
   end
@@ -130,7 +134,8 @@ defmodule ChicagoCourtRunner do
     do: "GREEN — all probes passed"
 
   defp verdict(passed, 0, known),
-    do: "PARTIAL — #{passed} passed, #{known} known gap(s) (substrate limits, documented per probe); no failures"
+    do:
+      "PARTIAL — #{passed} passed, #{known} known gap(s) (substrate limits, documented per probe); no failures"
 
   defp verdict(_passed, failed, _known),
     do: "RED — #{failed} probe(s) FAILED"

@@ -17,10 +17,13 @@
 #       the commit digest and never validates it, so no 32B receipt exists
 #       for this class. Driven through the prod stratus binary (p05 eval
 #       pattern): admit a genesis-parent frame, then a discontinuous parent.
-#   (3) causal cycle — real run() via a compiled driver (p06 pattern). Per
-#       fr3_causal_test.rs:64-83 the arena has NO cycle sieve: a policy-
-#       covered cycle ADMITS. If it admits: sub-verdict FAIL/KNOWN-GAP citing
-#       fr3, honestly pinned — no refusal payload exists to enter the set.
+#   (3) causal cycle — real run() via a compiled driver (p06 pattern), fr3's
+#       policy-covered e1->e2->e1 vector. fr3 originally pinned this as
+#       admitting (no cycle sieve); the gap was fixed in c180b4a by wiring
+#       acyclicity::check into run()'s causal tier (fr3_causal_test.rs:64,
+#       "FLIPPED 2026-10-10"). This probe re-checks at wire level: if the
+#       cycle ever admits again, sub-verdict FAIL/KNOWN-GAP citing fr3's
+#       original pin — recorded honestly, never faked.
 #   (4) POWL prerequisite skip — real run() (p05 vector).
 #   (5) affine lease collision — real run() (p06 vector).
 #   For (3)-(5) the driver keeps tree_entries/parent/message byte-identical
@@ -143,10 +146,10 @@ for m in cycle powl affine; do
   note "cat[$m]: rc=$RC status=$ST receipt=$(wc -c < "$EV/${m}_receipt.bin" | tr -d ' ')B"
   if [ "$ST" = "admit" ] && [ "$m" = "cycle" ]; then
     CYCLE_GAP=1
-    note "KNOWN-GAP (cat cycle): ADMITS — the fr3 finding surfacing at the \
-arena level (fr3_causal_test.rs:83 pins run() does not refuse cycles); no \
-wire refusal payload exists for this category."
-    echo "cycle-admits (fr3 pinned gap)" > "$EV/cycle_known_gap.txt"
+    note "KNOWN-GAP (cat cycle): ADMITS — fr3's original pin resurfaced at the \
+wire (fr3_causal_test.rs:64 records the 2026-10-10 flip to refusal via \
+acyclicity::check); no wire refusal payload exists for this category."
+    echo "cycle-admits (fr3 pin resurfaced)" > "$EV/cycle_known_gap.txt"
   elif [ "$ST" != "refuse" ]; then
     note "BROKEN: category $m neither refused nor a pinned gap"
     echo 1 > "$EV/verdict"; exit 1
@@ -195,7 +198,7 @@ fi
 read -r H_RECEIPTS IDENTICAL N_RECEIPTS <<< "$(python3 - "$EV" <<'PY'
 import hashlib, math, sys
 ev = sys.argv[1]
-paths = [f"{ev}/{m}_receipt.bin" for m in ("powl", "affine")]
+paths = [f"{ev}/{m}_receipt.bin" for m in ("cycle", "powl", "affine")]
 blobs = [open(p, "rb").read() for p in paths]
 distinct = set(blobs)
 h = math.log2(len(distinct)) if len(distinct) > 1 else 0.0

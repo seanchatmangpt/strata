@@ -94,7 +94,10 @@ defmodule Stratus.TripartitePlaneTest do
         {:error, {:already_started, _}} -> {:ok, nil}
       end
     end
-    def record(frames, reply \\ nil), do: Agent.update(__MODULE__, &Map.put(&1, :frames, frames) |> Map.put(:reply, reply))
+
+    def record(frames, reply \\ nil),
+      do: Agent.update(__MODULE__, &(Map.put(&1, :frames, frames) |> Map.put(:reply, reply)))
+
     def frames, do: Agent.get(__MODULE__, &Map.get(&1, :frames, []))
   end
 
@@ -125,14 +128,15 @@ defmodule Stratus.TripartitePlaneTest do
   def frame(opts \\ []),
     do: IO.iodata_to_binary([header(opts), payload()])
 
-
   defp ingest(pid, frame), do: GenServer.call(pid, {:ingest, frame})
   defp registers(pid), do: GenServer.call(pid, :registers)
+
   defp drain_events do
     drained = []
     drained = Enum.reverse(collect(drained))
     drained
   end
+
   defp collect(acc) do
     receive do
       :admit_event -> collect([:admit | acc])

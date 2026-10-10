@@ -15,6 +15,8 @@ defmodule Stratus.Valve.DefaultArenaRaceTest do
 
   use ExUnit.Case, async: false
 
+  alias Stratus.Valve.DefaultArena
+
   # wasmtime CLI must be on PATH (System.cmd is the real mechanism).
   # Artifact resolved via the same default path as the module under test.
 
@@ -47,12 +49,12 @@ defmodule Stratus.Valve.DefaultArenaRaceTest do
   end
 
   defp serial_expectation(frames) do
-    Map.new(frames, fn f -> {f, Stratus.Valve.DefaultArena.actuate(f)} end)
+    Map.new(frames, fn f -> {f, DefaultArena.actuate(f)} end)
   end
 
   defp parallel_actuate(frames) do
     frames
-    |> Enum.map(fn f -> Task.async(fn -> Stratus.Valve.DefaultArena.actuate(f) end) end)
+    |> Enum.map(fn f -> Task.async(fn -> DefaultArena.actuate(f) end) end)
     |> Task.await_many(60_000)
   end
 
@@ -93,7 +95,7 @@ defmodule Stratus.Valve.DefaultArenaRaceTest do
     results =
       Task.await_many(
         Enum.map(all, fn {f, kind} ->
-          Task.async(fn -> {kind, f, Stratus.Valve.DefaultArena.actuate(f)} end)
+          Task.async(fn -> {kind, f, DefaultArena.actuate(f)} end)
         end),
         60_000
       )
@@ -129,7 +131,7 @@ defmodule Stratus.Valve.DefaultArenaRaceTest do
 
     # Recovery: a valid call through the real artifact succeeds afterwards.
     f = frame(nonce: 99, parent: <<99::256>>)
-    assert {:ok, %{status: :ok, commit_hash: c}} = Stratus.Valve.DefaultArena.actuate(f)
+    assert {:ok, %{status: :ok, commit_hash: c}} = DefaultArena.actuate(f)
     assert bit_size(c) == 256
   end
 
@@ -159,7 +161,7 @@ defmodule Stratus.Valve.DefaultArenaRaceTest do
     frames = for nonce <- 100..149, do: frame(nonce: nonce, parent: <<nonce::256>>)
 
     for f <- frames do
-      assert {:ok, %{status: :ok, commit_hash: c}} = Stratus.Valve.DefaultArena.actuate(f)
+      assert {:ok, %{status: :ok, commit_hash: c}} = DefaultArena.actuate(f)
       assert bit_size(c) == 256
     end
 

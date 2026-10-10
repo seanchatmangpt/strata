@@ -1,1 +1,0 @@
-{application,stratus,[{modules,['Elixir.Stratus.Application','Elixir.Stratus.Telemetry','Elixir.Stratus.Valve','Elixir.Stratus.Valve.Arena','Elixir.Stratus.Valve.DefaultArena']},{optional_applications,[]},{applications,[kernel,stdlib,elixir,logger,telemetry]},{description,"stratus"},{registered,[]},{vsn,"0.1.0"},{mod,{'Elixir.Stratus.Application',[]}}]}.

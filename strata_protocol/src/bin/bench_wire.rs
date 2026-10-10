@@ -9,6 +9,7 @@ use std::time::Instant;
 // The signer module is crate-private in lib.rs (signing is a sealed lane), so
 // it is included here by path — same discipline as src/bin/strata.rs.
 #[path = "../../src/signer.rs"]
+#[allow(dead_code)] // included whole: only the wire bench subset is exercised here
 mod signer;
 
 use signer::{AttestedPayload, Signer, PUBLIC_KEY_LEN, SIGNATURE_LEN};
@@ -34,9 +35,9 @@ fn bench<F: FnMut()>(name: &str, iters: u64, mut f: F) -> f64 {
 }
 
 fn main() {
-    let mut header = PduHeader {
+    let header = PduHeader {
         permutation: 3,
-        epoch_nonce: 0xA11CE_B0B,
+        epoch_nonce: 0xA11C_EB0B,
         fuel_lease: 42,
         parent_receipt_digest: [7u8; 32],
         history_quad_count: 4,
@@ -151,7 +152,7 @@ fn main() {
     slo!("quad round-trip < 1 us", quad_rt, 1.0);
 
     // keep `header` used
-    header.permutation = header.permutation.wrapping_add(sink as u8 & 0);
+    let _ = header;
     if failures > 0 {
         std::process::exit(1);
     }

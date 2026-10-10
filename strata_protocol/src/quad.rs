@@ -64,3 +64,78 @@ impl From<Quad> for [u64; 4] {
         [q.s, q.p, q.o, q.g]
     }
 }
+
+/// FR-2 canonical QLever permutation layouts. Index k is the wire value in
+/// `PduHeader.permutation` (byte 5, bounds-checked `PDU_PERMUTATION_MAX = 5`).
+///
+///   0: SPO  1: POS  2: OSP  3: SOP  4: PSO  5: OPS
+///
+/// A frame declaring permutation k must carry its segments sorted ascending
+/// by the layout-k key; see [`Quad::verify_segment_permutation`].
+pub mod permutation {
+    use super::Quad;
+
+    /// Projection of a quad into the sort key for layout `k` (0..=5).
+    /// Returns the 4-tuple in traversal order; lexicographic compare on the
+    /// tuple is the layout ordering.
+    pub const fn key(k: usize, q: &Quad) -> [u64; 4] {
+        match k {
+            0 => [q.s, q.p, q.o, q.g], // SPO
+            1 => [q.p, q.o, q.s, q.g], // POS
+            2 => [q.o, q.s, q.p, q.g], // OSP
+            3 => [q.s, q.o, q.p, q.g], // SOP
+            4 => [q.p, q.s, q.o, q.g], // PSO
+            _ => [q.o, q.p, q.s, q.g], // OPS
+        }
+    }
+
+    fn sorted_by(k: usize, quads: &[Quad]) -> bool {
+        let mut prev: Option<[u64; 4]> = None;
+        for q in quads {
+            let cur = key(k, q);
+            if let Some(p) = prev {
+                if cur < p {
+                    return false;
+                }
+            }
+            prev = Some(cur);
+        }
+        true
+    }
+
+    /// Sort quads ascending in layout `k`. Deterministic: equal keys keep
+    /// input order (stable), and full 4-tuple equality implies byte equality.
+    pub fn sorted(k: usize, quads: &[Quad]) -> Vec<Quad> {
+        let mut out = quads.to_vec();
+        out.sort_by_key(|q| key(k, q));
+        out
+    }
+
+    /// Verify that `segments` are nondecreasing in layout `k`. `k > 5` is a
+    /// typed [`Error::Invalid`](crate::Error::Invalid) (fail-closed, mirrors
+    /// the header bound).
+    pub fn verify(k: usize, segments: &[Quad]) -> crate::Result<()> {
+        if k > super::super::pdu::PDU_PERMUTATION_MAX as usize {
+            return Err(crate::Error::Invalid);
+        }
+        if sorted_by(k, segments) {
+            Ok(())
+        } else {
+            Err(crate::Error::Invalid)
+        }
+    }
+
+    /// Full-frame conformance check: parse the 64-byte header, bounds-check
+    /// the declared permutation, and verify every segment quad (history then
+    /// candidate, contiguous, 32 bytes each) is nondecreasing in that layout.
+    /// This is the FR-2 gate the wire previously lacked: a frame declaring
+    /// permutation k with mis-sorted segments is refused, typed `Invalid`.
+    pub fn verify_segment_permutation(header_bytes: &[u8], segments: &[Quad]) -> crate::Result<()> {
+        let h = super::super::pdu::PduHeader::from_bytes(header_bytes)?;
+        let expected = h.segment_len() as usize;
+        if segments.len() * super::QUAD_LEN != expected {
+            return Err(crate::Error::Invalid);
+        }
+        verify(h.permutation as usize, segments)
+    }
+}

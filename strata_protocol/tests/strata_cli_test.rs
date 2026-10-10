@@ -8,6 +8,7 @@ use std::process::Command;
 // Same inclusion discipline as the binary: the signer lane is crate-private in
 // lib.rs, so the test includes it by path to mint real keypairs on disk.
 #[path = "../src/signer.rs"]
+#[allow(dead_code)] // included whole: only the signer subset needed here is exercised
 mod signer;
 
 use signer::{Signer, SEED_LEN};

@@ -1,0 +1,7 @@
+# NFR-2: WASM arena hard-capped at 256 pages (16 MiB).
+# Applied only for wasm32 targets so native tests are unaffected.
+[target.wasm32-wasip1]
+rustflags = ["-C", "link-arg=--max-memory=16777216"]
+
+[target.wasm32-unknown-unknown]
+rustflags = ["-C", "link-arg=--max-memory=16777216"]

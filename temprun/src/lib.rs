@@ -14,6 +14,8 @@ pub mod receipt;
 
 use zeroize::Zeroize;
 
+pub use fuel::FuelLease;
+
 /// Status encoded in bit 0 of the opaque receipt's first word layout:
 /// 0 = admit (conformance passed), 1 = refuse (any sieve tripped).
 pub const RECEIPT_LEN: usize = 32;
@@ -74,14 +76,36 @@ pub fn run(input: &mut ArenaInput, mut fuel: fuel::FuelLease) -> ArenaOutput {
     let universe_digest = git::assemble(&input.tree_entries, &input.parent, &input.message);
 
     let receipt = receipt::seal(refuse, &universe_digest);
-    // 5. Zeroization of sensitive intermediates before exit.
-    input.message.zeroize();
+    // 5. Zeroization of ALL allocated input memory before exit (FR-6).
+    scrub(input);
+
+    ArenaOutput { receipt, universe_digest, admitted: !refuse }
+}
+
+/// FR-6 teardown scrub: overwrite every heap-allocated linear-memory region
+/// backing `input` with zero bytes (volatile writes via `zeroize`), so no
+/// lineage/policy/clock/message bytes survive the arena past teardown.
+///
+/// Public so the FR-6 court can assert the real buffer reads all-zero before
+/// deallocation. `run()` calls this unconditionally on every path
+/// (admit and constant-time refusal alike).
+pub fn scrub(input: &mut ArenaInput) {
+    for row in input.lineage.iter_mut() {
+        row.zeroize();
+    }
+    for row in input.policy.iter_mut() {
+        row.zeroize();
+    }
+    input.clock.zeroize();
+    input.observed.zeroize();
+    input.candidate_mask = 0;
+    input.lease_mask = 0;
     for e in input.tree_entries.iter_mut() {
         e.0.zeroize();
         e.1.zeroize();
     }
-
-    ArenaOutput { receipt, universe_digest, admitted: !refuse }
+    input.parent.zeroize();
+    input.message.zeroize();
 }
 
 #[cfg(test)]

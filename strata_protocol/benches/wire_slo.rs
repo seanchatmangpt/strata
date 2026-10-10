@@ -14,6 +14,7 @@ use strata_protocol::{PduHeader, Quad, ML_DSA_65_SIG_LEN};
 // Signer is a crate-private sealed lane; include by path (same discipline
 // as src/bin/strata.rs and src/bin/bench_wire.rs).
 #[path = "../src/signer.rs"]
+#[allow(dead_code)] // included whole: only the signer subset needed here is exercised
 mod signer;
 
 use signer::{AttestedPayload, Signer};
@@ -26,10 +27,10 @@ const DEBUG_MULT: u128 = 50;
 #[cfg(not(debug_assertions))]
 const DEBUG_MULT: u128 = 1;
 
-const HEADER_RT_BOUND_US: u128 = 1 * DEBUG_MULT;
+const HEADER_RT_BOUND_US: u128 = DEBUG_MULT;
 const REFUSAL_DERIVE_BOUND_US: u128 = 10 * DEBUG_MULT;
 const RECEIPT_RT_BOUND_US: u128 = 10 * DEBUG_MULT;
-const QUAD_RT_BOUND_US: u128 = 1 * DEBUG_MULT;
+const QUAD_RT_BOUND_US: u128 = DEBUG_MULT;
 const SIGN_BOUND_US: u128 = 50_000 * DEBUG_MULT; // 50 ms — ML-DSA-65 is ~0.3 ms here
 const VERIFY_BOUND_US: u128 = 50_000 * DEBUG_MULT;
 

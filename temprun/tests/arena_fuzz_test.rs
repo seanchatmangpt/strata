@@ -193,7 +193,7 @@ fn g2_fuel_boundary_exact_exhaustion() {
 #[test]
 fn g3_clock_coord_edge_values() {
     const CASES: usize = 4_000;
-    let mut rng = Lcg::new(0xED6E as u64 ^ 0xC0A5);
+    let mut rng = Lcg::new(0xED6E_u64 ^ 0xC0A5);
     let golden = golden_input();
     let edges = [0u64, 1, u64::MAX, u64::MAX - 1];
     for _ in 0..CASES {
@@ -241,7 +241,7 @@ fn g3_clock_coord_edge_values() {
 #[test]
 fn g4_receipt_determinism_byte_identical() {
     const CYCLES: usize = 6_000;
-    let mut rng = Lcg::new(0xD3E7 as u64 ^ 0xE4A1);
+    let mut rng = Lcg::new(0xD3E7_u64 ^ 0xE4A1);
     let golden = golden_input();
     for _ in 0..CYCLES {
         let mut inp = clone_input(&golden);
@@ -271,7 +271,7 @@ fn g4_receipt_determinism_byte_identical() {
 fn g5_deep_wide_structures_terminate() {
     const CYCLES: usize = 6_000;
     const CASE_TIMEOUT: Duration = Duration::from_millis(500);
-    let mut rng = Lcg::new(0xDEE9 as u64 ^ 0x5CA7);
+    let mut rng = Lcg::new(0xDEE9_u64 ^ 0x5CA7);
     for _ in 0..CYCLES {
         let width = 1 + rng.below(64) as usize;
         let mut inp = golden_input();

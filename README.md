@@ -8,10 +8,12 @@ SELECT/CONSTRUCT/DO separation).
 
 | Component | Standing | Evidence |
 |---|---|---|
-| `strata_protocol/` PDU/quads/receipt/refusal/signer | PARTIAL_ALIVE | 67 tests, 62 pass / 5 fail — all failures confined to Git-CAS suites (`cas_test`, `cas_ledger_integrity_test`, `wormhole_cas_integration_test`); non-CAS suites (pdu, receipt/refusal, signer, wormhole) green. Wire constants verified in code: 64 B header, magic `0x434C_4150`, receipt 3381 B, refusal 32 B, ML-DSA-65 signature 3309 B. |
-| `temprun/` fuel/clock/coords/conformance/git/receipt | ALIVE | 14 tests, 0 failures; wasm32 build 18,351 bytes, imports = ∅ verified byte-level (`just check-wasm-imports`). |
-| `temprun/` soak capability harness | ALIVE | `cargo run -p temprun --release --bin soak -- --mixed` — 2026-10-10, 3 consecutive runs all PASS (Cp ≥ 2.0 / Cpk ≥ 1.5): Cp 6.748/6.424/6.136, Cpk 12.090/11.509/10.984, admit P99.9 12,958/22,250/12,500 ns; constant-time refusal gate (robust-vs-robust: class median & P99.9 ≤ 2× admit) PASS all 4 classes each run. `cargo test -p temprun` 5/5 green. |
-| `stratus/` Elixir valve | PARTIAL_ALIVE | `mix test`: 38 tests, 4 failures (observed; failure set varies run-to-run — flaky, not a clean 0-failure gate). |
+| `strata_protocol/` PDU/quads/receipt/refusal/signer | ALIVE | 122 tests, 0 failures across 17 test binaries (incl. CAS suites, receipt chain-linking, PDU-receipt interop, epoch-nonce, refusal-wire courts) — re-run 2026-10-10. Wire constants verified in code: 64 B header, magic `0x434C_4150`, receipt 3381 B, refusal 32 B, ML-DSA-65 signature 3309 B. Wire benchmarks (`benches/wire_slo.rs`, `bench_wire`): header round-trip ~1.7 ns, ML-DSA sign ~350 µs, smoke SLO gates green. |
+| `strata` CLI binary | ALIVE | `strata_protocol/src/bin/strata.rs` — verbs `pdu inspect`, `pdu sign`, `pdu verify`, `receipt verify`, `cas put`, `cas get`; 15 subprocess tests in `strata_cli_test.rs`, all green. |
+| `stratus/` release build | ALIVE | `MIX_ENV=prod mix release stratus` works (`docs/RELEASE.md`, incl. stale-config recovery note). |
+| `temprun/` fuel/clock/coords/conformance/git/receipt | ALIVE | `cargo test -p temprun`: 55 passed, 0 failed (1 ignored) incl. conformance/git/clock module courts; wasm32 build 18,351 bytes, imports = ∅ verified byte-level (`just check-wasm-imports`). |
+| `temprun/` soak capability harness | ALIVE | `cargo run -p temprun --release --bin soak -- --mixed` — 2026-10-10, 10 runs × 10^6 cycles all PASS (Cp ≥ 2.0 / Cpk ≥ 1.5): min Cp 6.424, mean 6.715, max 6.748 (`docs/SOAK_LOG.md`); constant-time refusal gate PASS all 4 classes all 10 runs. |
+| `stratus/` Elixir valve | ALIVE | `mix test`: 58 tests, 0 failures; valve telemetry events + arena race court landed. |
 | Root integration + adversarial courts | ALIVE | 19 tests, 0 failures (`cargo test` root package). |
 | `packs/`, `ontology.ttl` | LANDED | 5 strata packs in ggen-marketplace; 26 triples. |
 | Ash/AshR2RML SELECT-only projection tier | UNIMPLEMENTED | No Ash/R2RML code exists in any crate or app (PRD FR-4). |
@@ -35,9 +37,9 @@ just test-wasm
 just check-wasm-imports
 ```
 
-Known-red as of this writing: the protocol CAS suites (5 tests), 4 stratus
-tests, and the soak capability verdict. The quickstart commands themselves
-are executable as written.
+Known-red as of this writing: none — protocol (122/0), temprun (55/0,
+1 ignored), stratus (58/0), and the 10-run soak verdict are all green as of
+2026-10-10. The quickstart commands are executable as written.
 
 Git CAS + Knowledge Wormhole snapshots and ML-DSA-65 (FIPS 204) detached
 attestation with BLAKE3 dual-anchor digests live in strata_protocol.

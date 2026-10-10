@@ -59,9 +59,10 @@ semantics, and persistence costs that scale poorly. Strata addresses all four.
   authorized transitions; SELECT and CONSTRUCT never actuate.
 - **FR-3 Temprun Arena**: candidates execute in wasm32-unknown-unknown with ≤5 ms per
   cycle, 16 MB memory cap, and zero host imports (verified `Imports=∅`).
-- **FR-4 Ash Projection Tier**: **UNIMPLEMENTED** (no Ash/R2RML code in the tree as of
-  2026-10-10). Target: SELECT-only projection from quad universe to Ash resources
-  via AshR2RML; projection tier holds no DO authority.
+- **FR-4 Ash Projection Tier**: **DEFER RECOMMENDED** (scope analysis in
+  `docs/ash-tier-scope.md`, 2026-10-10; no Ash/R2RML code written). Target: SELECT-only
+  projection from quad universe to Ash resources via AshR2RML; projection tier holds no DO
+  authority.
 - **FR-5 CLAP-PDU Transport**: all frames conform to the 64-byte CLAP-PDU layout
   (see ARD §Wire Protocol), including permutation index, nonce, fuel, parent digest,
   and N/M quad counts.
@@ -86,7 +87,8 @@ semantics, and persistence costs that scale poorly. Strata addresses all four.
   ≤2.5 bytes/quad.
 - **NFR-4 Quality**: Chicago-school testing with zero mocks; `Imports=∅` verified per
   arena build (verified: `just check-wasm-imports` passes on the 18 KB temprun.wasm);
-  10^6-cycle statistical sampling with Cp ≥ 2.0, Cpk ≥ 1.5. Measured 2026-10-10:
-  soak returns Cp 0.56 / Cpk 0.125 — target not yet met.
+  10^6-cycle statistical sampling with Cp ≥ 2.0, Cpk ≥ 1.5. Measured 2026-10-10
+  (post-waves 3-4): 10 soak runs × 10^6 cycles all PASS — min Cp 6.424, mean 6.715
+  (`docs/SOAK_LOG.md`); target met.
 - **NFR-5 Conservation**: Chatman invariant ΔS_admitted + Φ_lease ≡ R_receipt holds on
   every transition; violations are BLOCKED, not warned.

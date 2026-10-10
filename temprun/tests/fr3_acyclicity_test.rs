@@ -117,13 +117,10 @@ fn oracle_has_cycle(n: usize, edges: &[(usize, usize)]) -> bool {
     fn dfs(u: usize, adj: &Vec<Vec<usize>>, color: &mut Vec<u8>) -> bool {
         color[u] = 1;
         for &v in &adj[u] {
-            match color[v] {
+            let c = color[v];
+            match c {
                 1 => return true,  // back edge
-                0 => {
-                    if dfs(v, adj, color) {
-                        return true;
-                    }
-                }
+                0 if dfs(v, adj, color) => return true,
                 _ => {}
             }
         }

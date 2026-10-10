@@ -2,7 +2,8 @@
 
 Date: 2026-10-10, finalized same date. Ledger of the probe court results
 (probes 01–20) plus the operator adjudications issued on the same date.
-Probe 19 remains PENDING-FINAL-RUN (last verdict byte = broken run).
+Probe 19 adjudicated 2026-10-10: VERDICT 42 (real git packfile confirms the
+NFR-3 gap; see probe row).
 
 ## Probe Verdicts (01–20)
 
@@ -25,7 +26,7 @@ Probe 19 remains PENDING-FINAL-RUN (last verdict byte = broken run).
 | 16 | PASS | Probe evidence cited from probe 16 run. |
 | 17 | PASS (post-fix) | Snapshot-basis fix landed in `strata_protocol/src/wormhole.rs` (WormholeSnapshot); NFR-4 restored — `strata_protocol/tests/nfr4_reconstruct_scaling_test.rs` GREEN. |
 | 18 | PASS | Probe evidence cited from probe 18 run. |
-| 19 | PENDING-FINAL-RUN | Evidence dir `/tmp/court/p19/evidence` exists; last recorded verdict byte = `1` (broken/tool-infrastructure per probe header). Final 42-vs-0 adjudication (real git packfile, NFR-3 corroboration) awaits a clean rerun. |
+| 19 | KNOWN-GAP-42 | Final run executed 2026-10-10: 1,000,000 quads (10,000 epochs × 100, per-epoch-delta segment blobs matching cas.rs emit_blob topology) materialized as byte-exact git loose objects in a real repo, packed by real `git repack --window=250 --depth=250` (compression pinned 9 against the host's global `core.compression=0`). Real packfile measured: ρ = 8.066 B/quad full pack, 7.826 B/quad blobs-only vs the 2.500 bound — REFUTED with a real tool, corroborating nfr3's simulated 7.735 B/quad. Zero-loss verified: `git verify-pack` 10,000/10,000 blobs OK + sampled `git cat-file` round-trips (epochs 1/5000/10000) exact. Verdict byte 42 at `/tmp/court/p19/evidence/verdict`; probe `stratus/test/probes/p19_storage_density_test.sh` exit 42. |
 | 20 | PASS | Probe evidence cited from probe 20 run. |
 
 ## Operator Adjudications (2026-10-10, verbatim-in-substance)

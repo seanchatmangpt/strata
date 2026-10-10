@@ -117,9 +117,12 @@ PYEOF
 # ---------------------------------------------------------------------------
 # 2. Real git packfile writer (delta chains on, aggressive)
 # ---------------------------------------------------------------------------
-# --force: probe-private repo; a stale gc.pid from a killed run (or a
-# recycled live pid on this busy host) must not block the pack pass.
-gitc gc --force --aggressive --prune=now || { note "FAIL: git gc exited $?"; exit 1; }
+# Explicit repack (not `git gc`): gc's internal repack path was observed
+# storing blobs UNCOMPRESSED at 10k-object scale on this host (its global
+# core.compression=0 leaking past -c propagation), while a direct
+# git repack with pinned compression packs the same objects at ~7.8 B/quad.
+gitc repack -adq --window=250 --depth=250 || { note "FAIL: git repack exited $?"; exit 1; }
+gitc prune-packed || true
 PACK=$(ls "$REPO"/.git/objects/pack/*.pack 2>/dev/null | head -1)
 [ -n "$PACK" ] || { note "FAIL: no packfile produced"; exit 1; }
 IDX="${PACK%.pack}.idx"

@@ -301,7 +301,7 @@ fn property_100_randomized_causal_violations_refuse_identical_receipt_shape() {
             ),
             CausalClass::MissingPrerequisite => (vec![M1, M2], [50, 5, 500, 50]),
         };
-        let at = if base.is_empty() { 0 } else { (pos as usize) % base.len() };
+        let at = if base.is_empty() { 0 } else { pos % base.len() };
         let mut lineage = base.clone();
         lineage.insert(at, violating);
         lineage.sort_unstable();

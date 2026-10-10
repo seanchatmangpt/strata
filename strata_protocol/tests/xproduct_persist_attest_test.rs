@@ -202,7 +202,7 @@ fn sig_verifies_and_blob_tamper_localizes_to_binding_commit() {
     let entries = parse_tree(&traw).unwrap();
     assert!(entries.iter().any(|e| e.oid == rec7.blob.oid),
         "victim tree must name the (now-corrupt) blob oid");
-    assert_eq!(verify_object(rec7.blob.oid, &corrupted[&rec7.blob.oid]).is_err(), true);
+    assert!(verify_object(rec7.blob.oid, &corrupted[&rec7.blob.oid]).is_err());
 
     // Localization sweep: exactly epoch 7 fails; all 19 others verify.
     let failed = sweep(&records, &corrupted, &pk);

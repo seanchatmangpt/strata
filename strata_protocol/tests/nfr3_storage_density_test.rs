@@ -78,7 +78,7 @@ const PRD_BOUND_MILLIS: u64 = 2_500; // 2.50 bytes/quad, milli-bytes
 /// Deterministic corpus: epoch `e` adds 100 quads with subject = e*1000+k,
 /// predicates 0..100, object from a small xorshift (repeatable), g = 0.
 fn epoch_quads(epoch: u64) -> Vec<Quad> {
-    let mut state: u64 = 0x9E37_79B9_7F4A_7C15 ^ (epoch.wrapping_mul(0x1000_001));
+    let mut state: u64 = 0x9E37_79B9_7F4A_7C15 ^ (epoch.wrapping_mul(0x0100_0001));
     let mut lcg = move || {
         state ^= state << 13;
         state ^= state >> 7;

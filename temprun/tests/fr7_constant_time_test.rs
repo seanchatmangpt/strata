@@ -179,8 +179,8 @@ fn fr7_frame_granularity_constant_time_refusals() {
     assert_eq!(admit_count, PER_CLASS as u64);
     // classes 1..4 go through run(); class 4 (malformed-magic) is counted by
     // its parse-layer latency samples instead (refusal before the arena path).
-    for cls in 1..4 {
-        assert_eq!(refusal_count[cls], PER_CLASS as u64, "class {cls} tally");
+    for (cls, count) in refusal_count[1..4].iter().enumerate() {
+        assert_eq!(*count, PER_CLASS as u64, "class {} tally", cls + 1);
     }
     assert_eq!(lat[4].len(), PER_CLASS, "class 4 parse-layer sample tally");
 
@@ -215,11 +215,12 @@ fn fr7_frame_granularity_constant_time_refusals() {
 
     // --- (a) per-class robust-vs-robust timing bound (soak.rs bound) ---
     let admit = &lat[0];
-    for cls in 1..CLASSES {
-        let (med_ratio, p999_ratio, pass) = robust_bound_holds(&lat[cls], admit);
+    for (cls, samples) in lat[1..CLASSES].iter().enumerate() {
+        let (med_ratio, p999_ratio, pass) = robust_bound_holds(samples, admit);
         assert!(
             pass,
-            "class {cls} timing diverged: median x{med_ratio:.2}, P99.9 x{p999_ratio:.2} vs admit"
+            "class {} timing diverged: median x{med_ratio:.2}, P99.9 x{p999_ratio:.2} vs admit",
+            cls + 1
         );
     }
 }

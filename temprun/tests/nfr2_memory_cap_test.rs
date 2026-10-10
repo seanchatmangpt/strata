@@ -106,7 +106,7 @@ fn nfr2_frame_forcing_growth_beyond_16mib_fails_closed_not_host_oom() {
         std::process::id() * 1000 + std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap()
-            .subsec_millis() as u32
+            .subsec_millis()
     ));
     std::fs::create_dir_all(&tmp).unwrap();
     let frame_path = tmp.join("frame.bin");
@@ -118,7 +118,7 @@ fn nfr2_frame_forcing_growth_beyond_16mib_fails_closed_not_host_oom() {
     frame[4] = 1; // version
     frame[5] = 1; // perm
     // bytes 6..8 zero (reserved), 8..16 nonce, 16..24 fuel — already zero.
-    frame.extend(std::iter::repeat(0u8).take(20 * 1024 * 1024 - 64));
+    frame.resize(20 * 1024 * 1024, 0);
     std::fs::write(&frame_path, &frame).unwrap();
 
     let output = Command::new("wasmtime")

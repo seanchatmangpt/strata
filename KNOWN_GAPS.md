@@ -74,10 +74,13 @@ FR/NFR test files. Companions: `docs/COURT_ADJUDICATIONS.md` (ledger),
 - **Disposition**: REVISED per operator adjudication — LZ77 baseline pinned at
   7.74 B/quad; columnar varint-delta Elias-Fano encoding slated v27.04
   data-plane milestone; CAS format not compromised to chase the original
-  bound. Probe 19 (real git packfile delta-chain measurement) is
-  PENDING-FINAL-RUN: its evidence dir exists but the last recorded verdict
-  byte is `1` (broken run per the probe header); final 42-vs-0 adjudication
-  awaits a clean rerun.
+  bound. Probe 19 (real git packfile, ADJUDICATED 2026-10-10, verdict 42):
+  1,000,000 quads as byte-exact cas.rs-format loose segments packed by real
+  `git repack --window=250 --depth=250` measured ρ = 7.826 B/quad blobs-only
+  (8.066 with git metadata) — the 2.50 bound is refuted by a real packfile,
+  independently corroborating the simulated 7.735 B/quad; closing NFR-3
+  requires the planned varint-delta encoding, not packfile delta chains
+  (git found zero profitable cross-segment deltas on this corpus).
 
 ## KG-FR5 — FR-5 SLA split (profile artifact)
 

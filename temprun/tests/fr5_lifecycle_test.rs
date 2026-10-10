@@ -33,13 +33,16 @@
 //!     4.45-4.57 ms wall-clock (BLAKE3 over 4 MiB = 131072 quads,
 //!     ~29M quads/s) — UNDER a nominal 5 ms cap but with <10% headroom.
 //!   * debug: the same 4 MiB frame costs ~102 ms (unoptimized BLAKE3).
+//!
 //! Operator adjudication (2026-10-10) — SLA split, encoded below:
+//!
 //!   * frames <= 1000 quads: hard assert <= 5.0 ms wall-clock;
 //!   * batch frames > 1000 quads up to 4 MiB: assert throughput
 //!     >= 5M quads/s (conservative floor; measured ~29M quads/s release).
-//! Gating invocation: `cargo test --release -p temprun --test
-//! fr5_lifecycle_test` (a debug run will fail the throughput floor by
-//! design — that is the documented profile artifact, not a regression).
+//!
+//! Gating invocation: `cargo test --release -p temprun --test fr5_lifecycle_test`
+//! (a debug run will fail the throughput floor by design — that is the
+//! documented profile artifact, not a regression).
 
 use std::io::Write;
 use std::process::{Command, Stdio};

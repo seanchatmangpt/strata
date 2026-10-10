@@ -41,6 +41,9 @@ const PDU_HEADER_LEN: usize = 64;
 const PDU_PERMUTATION_MAX: u8 = 5;
 const QUAD_LEN: usize = 32;
 
+/// Mutation closure over the raw wire frame bytes.
+type FrameMutator = Box<dyn Fn(&mut Vec<u8>)>;
+
 #[derive(Debug, PartialEq)]
 struct Header {
     permutation: u8,
@@ -204,7 +207,7 @@ fn assert_scrubbed(input: &ArenaInput, why: &str) {
 /// input scrubbed, zero persistence artifacts, arena never entered.
 #[test]
 fn wire_refusal_classes_charge_no_fuel_and_scrub() {
-    let classes: Vec<(&str, Box<dyn Fn(&mut Vec<u8>)>)> = vec![
+    let classes: Vec<(&str, FrameMutator)> = vec![
         ("bad magic", Box::new(|b: &mut Vec<u8>| b[0] = b'X')),
         ("bad version", Box::new(|b: &mut Vec<u8>| b[4] = 0x02)),
         ("reserved nonzero", Box::new(|b: &mut Vec<u8>| b[6] = 1)),

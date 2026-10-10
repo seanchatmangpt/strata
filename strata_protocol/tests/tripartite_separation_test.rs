@@ -178,8 +178,8 @@ fn construct_refusal_creates_no_cas_object() {
     assert!(admitted.admitted);
     assert_eq!(admitted.receipt[0] & 1, 0, "admit status bit clear");
     let mut xor = [0u8; 32];
-    for i in 0..32 {
-        xor[i] = admitted.receipt[i] ^ refused.receipt[i];
+    for (x, (a, b)) in xor.iter_mut().zip(admitted.receipt.iter().zip(&refused.receipt)) {
+        *x = a ^ b;
     }
     assert!(xor.iter().skip(1).all(|&b| b == 0), "differ by status bit only");
     assert_eq!(admitted.receipt[0] & !1, refused.receipt[0] & !1);
@@ -206,11 +206,8 @@ fn do_only_admitted_run_binds_cas_commit() {
     // emit a commit anchored on it and verify the object round-trips.
     let tree_state = vec![q(1, 2, 3, 0), q(4, 5, 6, 0)];
     let blob = emit_blob(&tree_state);
-    let raw = {
-        // inflate-free verification via the protocol CAS surface
-        strata_protocol::cas::verify_object(blob.oid, &blob.data).expect("admit-path blob verifies")
-    };
-    let _ = raw;
+    // inflate-free verification via the protocol CAS surface
+    strata_protocol::cas::verify_object(blob.oid, &blob.data).expect("admit-path blob verifies");
     let commit = strata_protocol::cas::emit_commit(&strata_protocol::cas::CommitInput {
         epoch: 11,
         tree_hex: {

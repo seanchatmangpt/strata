@@ -81,6 +81,14 @@ FR/NFR test files. Companions: `docs/COURT_ADJUDICATIONS.md` (ledger),
   independently corroborating the simulated 7.735 B/quad; closing NFR-3
   requires the planned varint-delta encoding, not packfile delta chains
   (git found zero profitable cross-segment deltas on this corpus).
+- **Interim milestone (v26.10.10)**: cold-path field-delta varint packing
+  landed in `strata_protocol/src/cas.rs` (`pack_quads_varint_delta` /
+  `emit_blob_packed`, `"SPV1"`-versioned payload as an ordinary Git blob —
+  hot path and CAS format untouched). Measured **2.577 B/quad** on the nfr3
+  corpus shape (10k quads / 100 additive epochs; court
+  `strata_protocol/tests/fielddelta_packing_test.rs` GREEN, lossless
+  round-trip + determinism 10× + fail-closed malformed inputs). Full
+  Elias-Fano ≈ 2.10 B/quad remains the v27.04 milestone.
 
 ## KG-FR5 — FR-5 SLA split (profile artifact)
 

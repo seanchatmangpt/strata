@@ -54,7 +54,7 @@ fn commit_transition(
         oid: blob.oid,
     };
     let tree = emit_tree(vec![entry]);
-    let anchor: [u8; 32] = prev_anchor.iter().enumerate().map(|(i, b)| b ^ (epoch as u8)).collect::<Vec<_>>().try_into().unwrap();
+    let anchor: [u8; 32] = prev_anchor.iter().map(|b| b ^ (epoch as u8)).collect::<Vec<_>>().try_into().unwrap();
     let commit = emit_commit(&CommitInput {
         epoch,
         tree_hex: tree.oid_hex(),
@@ -74,7 +74,7 @@ fn fr8_object_semantics_are_sha1_real_git_loose_objects() {
     let header_end = raw.iter().position(|b| *b == 0).unwrap();
     let header = std::str::from_utf8(&raw[..header_end]).unwrap();
     assert_eq!(header, format!("blob {}", seg.len() * 32));
-    let mut h = sha1_of(&raw);
+    let h = sha1_of(&raw);
     assert_eq!(h, blob.oid);
     // Payload is exactly the canonical big-endian quad serializations.
     assert_eq!(&raw[header_end + 1..], &seg.iter().flat_map(|q| q.to_bytes()).collect::<Vec<u8>>());
@@ -143,7 +143,7 @@ fn fr8_commit_parent_chain_links_each_transition_to_previous() {
     let mut commits = Vec::new();
     for epoch in 1u64..=4 {
         let (_, _, commit) =
-            commit_transition(epoch, &quads(epoch as u64), parent.clone(), anchor).unwrap();
+            commit_transition(epoch, &quads(epoch), parent.clone(), anchor).unwrap();
         parent = Some(commit.oid_hex());
         anchor = anchor.iter().map(|b| b.wrapping_add(epoch as u8)).collect::<Vec<_>>().try_into().unwrap();
         commits.push(commit);

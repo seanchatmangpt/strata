@@ -333,3 +333,123 @@ impl CasSnapshotLedger {
 pub fn stored_bytes(objects: &[GitObject]) -> usize {
     objects.iter().map(|o| o.data.len()).sum()
 }
+
+// ---------------------------------------------------------------------------
+// 5. Cold-path field-delta varint packing (host-side only, v26.10.10)
+//
+// NFR-3 interim milestone: a purpose-built quad payload encoding for cold-path
+// export/archive surfaces. Contiguous quad sweep: each u64 field is delta'd
+// against the same field of the previous quad (sorted corpora => small
+// deltas), zigzag-mapped, LEB128-encoded, then zlib'd as today. This is a
+// SEPARATE encoding from the raw 32-byte-BE blob payload: the packed payload
+// is versioned with a `"SPV1"` magic prefix and emitted as an ordinary Git
+// blob, so old and new objects coexist under git content addressing (the blob
+// payload is opaque bytes; `git fsck`-equivalent oid verification is
+// unchanged). The hot path (`emit_blob`/`parse_blob`), the wire (PDU), and
+// the arena are untouched — temprun never sees compression; the admission
+// invariant is unaffected.
+// ---------------------------------------------------------------------------
+
+/// Packed-payload format tag: `"SPV1"` + varint quad count + per-field
+/// zigzag-varint delta stream: quad-major, fields in s,p,o,g order; the first
+/// quad deltas against an all-zero previous.
+const PACK_MAGIC: &[u8; 4] = b"SPV1";
+
+fn write_uleb128(out: &mut Vec<u8>, mut v: u64) {
+    loop {
+        let b = (v & 0x7F) as u8;
+        v >>= 7;
+        if v == 0 {
+            out.push(b);
+            break;
+        }
+        out.push(b | 0x80);
+    }
+}
+
+fn read_uleb128(input: &[u8]) -> crate::Result<(u64, usize)> {
+    let mut v: u64 = 0;
+    let mut shift = 0;
+    for (i, &b) in input.iter().enumerate() {
+        if shift >= 64 {
+            return Err(crate::Error::Invalid);
+        }
+        v |= u64::from(b & 0x7F) << shift;
+        if b & 0x80 == 0 {
+            return Ok((v, i + 1));
+        }
+        shift += 7;
+    }
+    Err(crate::Error::Invalid)
+}
+
+fn zigzag(v: u64) -> u64 {
+    (v << 1) ^ (0u64.wrapping_sub(v >> 63))
+}
+
+fn unzigzag(v: u64) -> u64 {
+    (v >> 1) ^ (0u64.wrapping_sub(v & 1))
+}
+
+/// Pack quads via field-delta + zigzag + LEB128. Lossless: the inverse is
+/// [`unpack_quads_varint_delta`], which restores the exact 32-byte BE quads.
+pub fn pack_quads_varint_delta(quads: &[Quad]) -> Vec<u8> {
+    let mut out = Vec::with_capacity(quads.len() * 8 + 16);
+    out.extend_from_slice(PACK_MAGIC);
+    write_uleb128(&mut out, quads.len() as u64);
+    let mut prev = [0u64; 4];
+    for q in quads {
+        for (i, cur) in [q.s, q.p, q.o, q.g].into_iter().enumerate() {
+            write_uleb128(&mut out, zigzag(cur.wrapping_sub(prev[i])));
+            prev[i] = cur;
+        }
+    }
+    out
+}
+
+/// Inverse of [`pack_quads_varint_delta`]. Fail-closed on truncated,
+/// oversized, or malformed streams; returns the exact original quads.
+pub fn unpack_quads_varint_delta(packed: &[u8]) -> crate::Result<Vec<Quad>> {
+    if packed.len() < 4 || &packed[..4] != PACK_MAGIC {
+        return Err(crate::Error::Invalid);
+    }
+    let (count, pos) = read_uleb128(&packed[4..])?;
+    let mut pos = pos + 4;
+    // Cap the allocation at the byte-budget bound: each delta costs >= 1 byte,
+    // so a count far above remaining bytes is malformed, not merely large.
+    if count > (packed.len().saturating_sub(pos)) as u64 {
+        return Err(crate::Error::Invalid);
+    }
+    let mut out = Vec::with_capacity(count as usize);
+    let mut prev = [0u64; 4];
+    for _ in 0..count {
+        let mut cur = [0u64; 4];
+        for i in 0..4 {
+            let (z, n) = read_uleb128(&packed[pos..])?;
+            pos += n;
+            let v = prev[i].wrapping_add(unzigzag(z));
+            cur[i] = v;
+            prev[i] = v;
+        }
+        out.push(Quad::new(cur[0], cur[1], cur[2], cur[3]));
+    }
+    if pos != packed.len() {
+        return Err(crate::Error::Invalid);
+    }
+    Ok(out)
+}
+
+/// Emit a cold-path packed blob: a valid Git loose blob (`blob <len>\0<payload>`)
+/// whose payload is the [`pack_quads_varint_delta`] stream. Same zlib/SHA-1
+/// framing as [`emit_blob`]; the encoding lives entirely in the payload, so
+/// raw and packed blobs coexist and oid verification is unchanged.
+pub fn emit_blob_packed(quads: &[Quad]) -> GitObject {
+    emit_object("blob", &pack_quads_varint_delta(quads))
+}
+
+/// Parse a blob emitted by [`emit_blob_packed`]. Accepts full raw object bytes
+/// (including the `"blob <len>\0"` header) and fails closed on mismatch.
+pub fn parse_blob_packed(raw: &[u8]) -> crate::Result<Vec<Quad>> {
+    let payload = strip_header(raw, "blob")?;
+    unpack_quads_varint_delta(payload)
+}

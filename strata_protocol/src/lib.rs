@@ -4,12 +4,14 @@
 //! typed error with zero diagnostic entropy about the failure cause.
 
 pub mod cas;
+pub mod framing;
 pub mod pdu;
 pub mod quad;
 pub mod receipt;
 pub mod refusal;
 pub mod wormhole;
 
+pub use framing::{frame_parse, frame_wrap, strip_preamble, FRAME_MAGIC, FRAME_VERSION, PREAMBLE_LEN};
 pub use pdu::{PduHeader, PDU_HEADER_LEN, PDU_MAGIC, PDU_VERSION};
 pub use quad::Quad;
 pub use receipt::{AttestationReceipt, ML_DSA_65_SIG_LEN};

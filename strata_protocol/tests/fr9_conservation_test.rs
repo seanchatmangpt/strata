@@ -15,6 +15,7 @@
 //! signer's 1952B public key.
 
 #[path = "../src/signer.rs"]
+#[allow(dead_code)]
 mod signer;
 
 use signer::{AttestedPayload, ConservationBalance, Seal, Signer, SEED_LEN};

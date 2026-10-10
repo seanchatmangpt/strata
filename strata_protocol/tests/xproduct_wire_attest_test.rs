@@ -13,6 +13,7 @@
 //!     (even one that leaves fields parseable) fails verification.
 
 #[path = "../src/signer.rs"]
+#[allow(dead_code)]
 mod signer;
 
 use signer::{AttestedPayload, Seal, Signer};
@@ -58,6 +59,7 @@ fn payload_for(quads: &[Quad], parent: [u8; 32], fuel: u64) -> AttestedPayload {
     }
 }
 
+#[allow(dead_code)] // shared frame builder kept for sibling wire courts
 fn header(perm: u8, n: usize) -> [u8; 64] {
     PduHeader {
         permutation: perm,

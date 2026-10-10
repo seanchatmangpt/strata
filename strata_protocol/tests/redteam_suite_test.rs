@@ -407,7 +407,7 @@ fn rt_short_and_long_header_buffers_refused() {
             valid[..len].to_vec()
         } else {
             let mut b = valid.to_vec();
-            b.extend(std::iter::repeat(0u8).take(len - 64));
+            b.resize(len, 0);
             b
         };
         let res = PduHeader::from_bytes(&buf);

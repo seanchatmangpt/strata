@@ -53,6 +53,38 @@ defmodule Stratus.Valve do
 
   # -- Client API -----------------------------------------------------------
 
+  @framing_magic "STRA"
+  @framing_version 1
+  @framing_preamble_len 16
+  @framing_max_permutation 5
+
+  @doc """
+  Optional ingress pre-check: if the frame carries the 16-byte STRA transport
+  preamble, validate it fail-closed (magic, version, reserved zeros, FF 00
+  endianness canary, permutation bound, quad-count consistency with the inner
+  64-byte CLAP header) and return the raw CLAP frame. Raw CLAP frames pass
+  through byte-identical. Refusals are the zero-entropy atom
+  `:malformed_frame`, constant-time, before any full CLAP validation.
+  """
+  @spec strip_preamble(binary()) :: {:ok, binary()} | {:error, :malformed_frame}
+  def strip_preamble(<<@framing_magic, version::8, 0::8, 0xFF::8, 0x00::8, permutation::8,
+                       quad_count::32, 0::24, rest::binary>>)
+      when version == @framing_version and permutation <= @framing_max_permutation do
+    with <<_::binary-size(64), _::binary>> = clap <- rest,
+         <<_::binary-size(8), 0::16, _nonce::64, _fuel::64, _digest::binary-size(32),
+           history::32, candidate::32, _::binary>> <- clap,
+         true <- history + candidate == quad_count do
+      {:ok, clap}
+    else
+      _ -> {:error, :malformed_frame}
+    end
+  end
+
+  # No STRA magic: raw CLAP frame, pass through untouched (default path).
+  def strip_preamble(<<"CLAP", _::binary>> = frame), do: {:ok, frame}
+
+  def strip_preamble(_frame), do: {:error, :malformed_frame}
+
   def start_link(opts) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end

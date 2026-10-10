@@ -51,6 +51,35 @@ encoding of the quads themselves must change.
    Elias-Fano encoding**, scheduled for the **v27.04 data-plane milestone**.
 3. **Do NOT compromise the CAS format** to chase the original bound.
 
+## Interim milestone (v26.10.10): cold-path field-delta varint packing
+
+Per operator directive 2026-10-10, a host-side **cold-path field-delta
+varint packing** landed at the CAS boundary
+(`strata_protocol/src/cas.rs`: `pack_quads_varint_delta` /
+`unpack_quads_varint_delta` / `emit_blob_packed` / `parse_blob_packed`;
+court `strata_protocol/tests/fielddelta_packing_test.rs`):
+
+- **Encoding**: contiguous quad sweep — each u64 field delta'd against the
+  previous quad's same field, zigzag-mapped, LEB128-varint encoded, then
+  zlib as today. Payload versioned with a `"SPV1"` magic prefix.
+- **On-disk choice**: the packed stream is emitted as an ordinary Git loose
+  blob (`blob <len>\0<payload>`); the hot-path `emit_blob` raw 32-byte BE
+  payload is untouched, so raw and packed objects coexist under git content
+  addressing, `git fsck`-equivalent oid verification is unchanged, and every
+  existing byte-level court (fr8/nfr3/xproduct) stays green without edits.
+  Zero wire/arena impact — temprun never sees compression; the admission
+  invariant is unaffected.
+- **Measured density** (nfr3 corpus shape, 10k quads / 100 additive epochs,
+  whole-corpus packed blob): **2.577 B/quad** — under the operator's
+  3.30–3.80 B/quad projection and within rounding of the original 2.50 PRD
+  bound. 1M-quad synthetic delta-friendly spot: 0.019 B/quad.
+- **Court**: density ≤ 3.80 B/quad asserted; byte-exact lossless round-trip
+  (corpus + random + adversarial shapes); determinism 10×; 1M-quad scale
+  spot; malformed/truncated packed payloads fail closed. Full
+  `cargo test -p strata-protocol`: 204 passed / 0 failed (2026-10-10).
+- **Standing**: full **Elias-Fano ≈ 2.10 B/quad remains the v27.04**
+  data-plane milestone; this is the interim packing, not the final bound.
+
 ## What Remains True Today
 
 The LZ77 baseline of 7.74 B/quad is pinned by

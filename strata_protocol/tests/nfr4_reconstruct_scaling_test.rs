@@ -81,7 +81,7 @@ fn exponent(t1: f64, t2: f64, n1: f64, n2: f64) -> f64 {
     (t2 / t1).log2() / (n2 / n1).log2()
 }
 
-/// 1. Correctness anchor at scale: reconstruct_at == naive oracle at a
+/// 1.\ Correctness anchor at scale: reconstruct_at == naive oracle at a
 /// mid-chain point past the last snapshot (tail replay) and at a snapshot
 /// epoch. Real state comparison, not interaction assertion.
 #[test]
@@ -117,7 +117,7 @@ fn nfr4_reconstruct_matches_oracle_at_scale() {
     assert_ne!(warm, state); // genuinely a mid-tail point, not vacuous
 }
 
-/// 2. The measured scaling curve. Chain lengths n ∈ {100, 1000, 10000} with
+/// 2.\ The measured scaling curve. Chain lengths n ∈ {100, 1000, 10000} with
 /// snapshots every sqrt(n). Times reconstruct_at at a warm point (halfway
 /// into the last snapshot interval, i.e. k ≈ s/2). Per-call cost is
 /// O(|state| + k) (state-basis clone + tail) and must grow at most
@@ -158,7 +158,7 @@ fn nfr4_reconstruct_scaling_is_at_most_linear_measured() {
     assert!(times[2] < 5_000_000.0, "n=10000 reconstruct_at {:.0}ns exceeds 5ms budget", times[2]);
 }
 
-/// 3. Basis court: with snapshot state materialized, `reconstruct_at` at
+/// 3.\ Basis court: with snapshot state materialized, `reconstruct_at` at
 /// n=10000 (basis clone of ~39.6k quads + k=s/2 tail replay) stays within
 /// a bounded factor of the tail-only cost and under the Probe-17 5ms
 /// budget. This is the direct Probe-17 spec assertion surface.
@@ -196,7 +196,7 @@ fn nfr4_snapshot_basis_fast_path_beats_full_prefix_replay() {
     assert_eq!(state.len(), (s / 2) as usize * QUADS_PER_EPOCH); // fast path did real work
 }
 
-/// 4. k-bound: with snapshots every s epochs, the tail-replay cost from the
+/// 4.\ k-bound: with snapshots every s epochs, the tail-replay cost from the
 /// nearest snapshot is bounded by k <= s deltas. Measured cost at k = s/2 vs
 /// k = s must scale sublinearly in k (ratio < 2). NOTE: this courts the
 /// tail slice only (what a snapshot-basis implementation would pay); the
@@ -241,7 +241,7 @@ fn nfr4_tail_cost_bounded_by_snapshot_interval_k() {
     assert!(full / half < 2.0, "tail cost linear-or-worse in k: ratio {:.2}", full / half);
 }
 
-/// 5. Snapshot count check: the sqrt policy actually froze ~sqrt(n)
+/// 5.\ Snapshot count check: the sqrt policy actually froze ~sqrt(n)
 /// snapshots, so the O(log n) search component the PRD asks for is over
 /// log(sqrt(n)) snapshot records — pinning the shape the fast path needs.
 #[test]

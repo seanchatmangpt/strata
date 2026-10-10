@@ -224,7 +224,7 @@ fn sieve_is_blind_to_timestamps_and_attribute_values() {
     ];
     let mut policy = policy;
     policy.sort();
-    let lin: Vec<[u64; 4]> = corrupted.iter().map(|w| *w).collect();
+    let lin: Vec<[u64; 4]> = corrupted.to_vec();
     assert_ne!(
         lin.iter().map(|w| w[3]).collect::<Vec<_>>(),
         encode(&minimal_log()).iter().map(|q| q.g).collect::<Vec<_>>(),

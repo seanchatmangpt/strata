@@ -332,7 +332,7 @@ fn sixty_randomized_cases_inner() {
             }
         }
         // Randomize the milestone payload so layouts genuinely reorder rows.
-        let salt = (rng.next() % 1_000_007) as u64;
+        let salt = rng.next() % 1_000_007;
         for r in case.lineage.iter_mut() {
             r[0] = r[0].wrapping_add(salt);
             r[2] = r[2].wrapping_add(salt);

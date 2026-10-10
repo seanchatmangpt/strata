@@ -126,6 +126,19 @@ defmodule Stratus.ValveTest do
     assert Process.whereis(Valve)
     assert %{parent_digest: pd, commit_hash: ch} = Valve.registers()
     assert byte_size(pd) == 32 and byte_size(ch) == 32
-    assert {:ok, _} = Valve.handoff_to_arena(frame())
+
+    # Real temprun_arena conformance: policy quad must match the lineage quad
+    # (same a,b,c; timestamps may differ), fuel > 0.
+    payload = <<1::64, 2::64, 3::64, 0::64>> <> <<1::64, 2::64, 3::64, 10::64>>
+
+    header =
+      "CLAP" <> <<1, 0>> <> <<0::16>> <> <<7::64>> <> <<10::64>> <>
+        <<0::256>> <> <<1::32>> <> <<1::32>>
+
+    assert {:ok, %{status: :ok, commit_hash: commit}} =
+             Valve.handoff_to_arena(IO.iodata_to_binary([header, payload]))
+
+    assert bit_size(commit) == 256
+    assert <<_::7, 0::1, _::248>> = commit
   end
 end

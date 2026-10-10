@@ -88,15 +88,32 @@ fn emit_chain() -> Chain {
 #[test]
 fn reconstruction_matches_cas_emitted_state() {
     let chain = emit_chain();
+    // Every recorded commit hex matches a stored commit object's oid, and
+    // they are distinct per epoch.
+    assert_eq!(chain.commit_hexes.len(), EPOCHS as usize);
+    for (i, hex) in chain.commit_hexes.iter().enumerate() {
+        assert!(
+            chain.objects.iter().any(|o| &o.oid_hex() == hex),
+            "commit hex {} (epoch {}) not found among stored objects",
+            hex,
+            i + 1
+        );
+    }
+    assert_eq!(
+        chain.commit_hexes.last().unwrap(),
+        &chain.objects.last().unwrap().oid_hex(),
+        "last commit hex must match the last emitted commit object"
+    );
     let mut wh = Wormhole::new();
+    // Interleave: insert deltas 1..=epoch, then snapshot (snapshot must
+    // cover every delta ingested so far).
     for epoch in 1..=EPOCHS {
         wh.insert(WormholeDelta { epoch, quads: epoch_quads(epoch) })
             .expect("delta ingest");
-    }
-    // Snapshot at every 10th epoch.
-    for epoch in (10..=EPOCHS).step_by(10) {
-        wh.snapshot(epoch, &cumulative_state(epoch), full_range())
-            .expect("snapshot");
+        if epoch % 10 == 0 {
+            wh.snapshot(epoch, &cumulative_state(epoch), full_range())
+                .expect("snapshot");
+        }
     }
     // Arbitrary epochs: snapshot points, midpoints, genesis-adjacent, last.
     for &epoch in &[1u64, 5, 10, 11, 25, 37, 50, 73, 99, 100] {
@@ -129,9 +146,9 @@ fn density_index_smaller_than_cas_packfile() {
     let mut wh = Wormhole::new();
     for epoch in 1..=EPOCHS {
         wh.insert(WormholeDelta { epoch, quads: epoch_quads(epoch) }).unwrap();
-    }
-    for epoch in (10..=EPOCHS).step_by(10) {
-        wh.snapshot(epoch, &cumulative_state(epoch), full_range()).unwrap();
+        if epoch % 10 == 0 {
+            wh.snapshot(epoch, &cumulative_state(epoch), full_range()).unwrap();
+        }
     }
     let wh_density = wh.density_bytes_per_quad();
     let cas_density = cas_bytes as f64 / wh.corpus_quads() as f64;
@@ -171,9 +188,9 @@ fn corrupted_blob_detected_and_wormhole_isolated() {
     let mut wh = Wormhole::new();
     for epoch in 1..=EPOCHS {
         wh.insert(WormholeDelta { epoch, quads: epoch_quads(epoch) }).unwrap();
-    }
-    for epoch in (10..=EPOCHS).step_by(10) {
-        wh.snapshot(epoch, &cumulative_state(epoch), full_range()).unwrap();
+        if epoch % 10 == 0 {
+            wh.snapshot(epoch, &cumulative_state(epoch), full_range()).unwrap();
+        }
     }
     for epoch in [49u64, 50, 51, 100] {
         assert_eq!(wh.reconstruct_at(epoch), cumulative_state(epoch));

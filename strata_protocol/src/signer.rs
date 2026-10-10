@@ -58,7 +58,7 @@ pub struct AttestedPayload {
 
 impl AttestedPayload {
     /// Canonical 72-byte wire encoding (big-endian fuel).
-    pub fn to_bytes(&self) -> [u8; PAYLOAD_LEN] {
+    pub fn to_bytes(self) -> [u8; PAYLOAD_LEN] {
         let mut out = [0u8; PAYLOAD_LEN];
         out[0..32].copy_from_slice(&self.parent_digest);
         out[32..64].copy_from_slice(&self.universe_digest);

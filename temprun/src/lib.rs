@@ -56,27 +56,17 @@ pub fn run(input: &mut ArenaInput, mut fuel: fuel::FuelLease) -> ArenaOutput {
     let mut refuse = false;
 
     // Sieve order: clock, coordinates, conformance — each charges fuel.
-    if !fuel.charge(1) {
-        refuse = true;
-    } else if !clock::monotonic(&input.clock, &input.observed) {
+    if !fuel.charge(1) || !clock::monotonic(&input.clock, &input.observed) {
         refuse = true;
     }
 
-    if !refuse {
-        if !fuel.charge(1) {
-            refuse = true;
-        } else if input.candidate_mask & input.lease_mask != 0 {
-            // Affine coordinate lock: intersection -> fail closed.
-            refuse = true;
-        }
+    if !refuse && (!fuel.charge(1) || input.candidate_mask & input.lease_mask != 0) {
+        // Affine coordinate lock: intersection -> fail closed.
+        refuse = true;
     }
 
-    if !refuse {
-        if !fuel.charge(1) {
-            refuse = true;
-        } else if !conformance::merge_join(&input.lineage, &input.policy) {
-            refuse = true;
-        }
+    if !refuse && (!fuel.charge(1) || !conformance::merge_join(&input.lineage, &input.policy)) {
+        refuse = true;
     }
 
     // Always assemble (digest of empty stream is still deterministic) so the

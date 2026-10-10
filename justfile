@@ -18,7 +18,7 @@ test: _ensure_workspace
 # is a lib crate — no [lib] crate-type edit needed in temprun/Cargo.toml.
 test-wasm:
     @test -d temprun || { echo "SKIP: temprun/ absent"; exit 0; }
-    cargo rustc -p temprun --target wasm32-unknown-unknown --release --crate-type cdylib
+    cargo rustc -p temprun --lib --target wasm32-unknown-unknown --release --crate-type cdylib
 
 # Verify temprun.wasm imports = ∅: parse the import section count straight
 # from the binary. Any import at all is a refusal (exit 1).
@@ -71,18 +71,8 @@ lint: _ensure_workspace
 ci: test test-wasm check-wasm-imports lint
     @echo "ci: all gates green"
 
-# Six Sigma statistical harness hook: 10^6 cycle sampling. Runs the soak
-# binary when present; skips otherwise (stub until the harness lane lands it).
-soak:
-    #!/bin/sh
-    BIN=""
-    for c in target/release/soak target/debug/soak; do
-        [ -x "$c" ] && BIN="$c" && break
-    done
-    if [ -z "$BIN" ]; then
-        echo "SKIP: soak sampling binary not built yet (harness lane pending)"
-        exit 0
-    fi
-    CYCLES="${SOAK_CYCLES:-1000000}"
-    echo "soak: sampling $CYCLES cycles"
-    exec "$BIN" --cycles "$CYCLES"
+# Six Sigma statistical harness: N-cycle sampling of the temprun admission
+# path (default 10^6). Exits nonzero if Cp < 2.0. Override cycles:
+#   just soak 10000
+soak cycles='1000000':
+    cargo run --release -p temprun --bin soak -- --cycles {{cycles}}

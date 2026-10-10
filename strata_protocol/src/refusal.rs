@@ -1,7 +1,5 @@
 //! Constant-time refusal: fixed 32-byte opaque receipt, no error entropy.
 
-use zeroize::ZeroizeOnDrop;
-
 /// Opaque constant-size refusal receipt. No structure, no cause channel.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct RefusalReceipt([u8; 32]);

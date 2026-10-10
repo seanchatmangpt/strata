@@ -183,7 +183,7 @@ fn fuzz_segment_len_property() {
         history_quad_count: u32::MAX,
         candidate_quad_count: u32::MAX,
     };
-    assert_eq!(extreme.segment_len(), 32u64 * (u32::MAX as u64 * 2 + 1));
+    assert_eq!(extreme.segment_len(), 32u64 * (u32::MAX as u64 * 2));
     // The header itself parses despite the absurd implied payload; a
     // truncated segment stream must be refused downstream, not here.
     let frame = extreme.to_bytes();

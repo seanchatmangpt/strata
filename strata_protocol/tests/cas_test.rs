@@ -124,109 +124,60 @@ fn commit_carries_parent_and_signature_bytes() {
     assert_ne!(child.oid, parent.oid);
 }
 
-// --- Knowledge Wormhole snapshots: O(log n + k) reconstruction ---------------
+// --- Commit-binding snapshot records (reconstruction lives in wormhole.rs) ---
 
-fn build_wormhole(n_commits: u64, snapshot_every: u64) -> (KnowledgeWormhole, Vec<String>) {
-    build_wormhole_at(n_commits, &|epoch| epoch % snapshot_every == 0)
-}
-
-/// Builds N commits, consolidating a snapshot at every epoch where `f` holds.
-fn build_wormhole_at(n_commits: u64, f: &dyn Fn(u64) -> bool) -> (KnowledgeWormhole, Vec<String>) {
-    let mut wh = KnowledgeWormhole::new();
-    let mut commits = Vec::new();
-    let range = (Quad::new(0, 0, 0, 0), Quad::new(u64::MAX, u64::MAX, u64::MAX, u64::MAX));
-    for epoch in 1..=n_commits {
-        let c = format!("commit-{:04x}", epoch);
-        commits.push(c.clone());
-        wh.push_commit(epoch, c).expect("monotonic");
-        if f(epoch) {
-            wh.consolidate(epoch, format!("snapshot-{}", epoch), range).expect("tile");
-        }
-    }
-    (wh, commits)
-}
-
-#[test]
-fn snapshot_lookup_at_snapshot_boundary() {
-    let (wh, _) = build_wormhole(100, 10);
-    let range = (Quad::ZERO, Quad::new(u64::MAX, u64::MAX, u64::MAX, u64::MAX));
-    let (base, replay) = wh.lookup(50, &range);
-    assert_eq!(base.expect("snapshot at 50").commit_hex, "snapshot-50");
-    assert!(replay.is_empty(), "no tail replay at a snapshot boundary");
-}
-
-#[test]
-fn snapshot_reconstruction_mid_interval_replays_k_tail_commits() {
-    // Single snapshot at epoch 50; commits 51..=100 stay in the tail.
-    let (wh, _) = build_wormhole_at(100, &|e| e == 50);
-    let range = (Quad::ZERO, Quad::new(u64::MAX, u64::MAX, u64::MAX, u64::MAX));
-    let (base, replay) = wh.lookup(57, &range);
-    assert_eq!(base.expect("snapshot at 50").commit_hex, "snapshot-50");
-    assert_eq!(replay.len(), 7, "k = 51..=57");
-    assert_eq!(replay[0].0, 51);
-    assert_eq!(replay[6].0, 57);
-}
-
-#[test]
-fn commits_before_earliest_snapshot_are_fail_visible_not_reconstructible() {
-    // Contract: consolidation folds pre-snapshot commits away. A query before
-    // the earliest snapshot returns no base and an empty replay — the
-    // wormhole never fabricates history.
-    let (wh, _) = build_wormhole_at(100, &|e| e == 50);
-    let range = (Quad::ZERO, Quad::new(u64::MAX, u64::MAX, u64::MAX, u64::MAX));
-    let (base, replay) = wh.lookup(4, &range);
-    assert!(base.is_none());
-    assert!(replay.is_empty());
-    // But the same wormhole reconstructs inside the covered range.
-    let (base, replay) = wh.lookup(55, &range);
-    assert_eq!(base.expect("snapshot at 50").commit_hex, "snapshot-50");
-    assert_eq!(replay.len(), 5, "k = 51..=55");
-}
-
-#[test]
-fn snapshot_arbitrary_point_across_n_commits() {
-    // Snapshots at 100..=900; commits 901..=1000 remain in the tail.
-    let (wh, _) = build_wormhole_at(1000, &|e| e % 100 == 0 && e < 1000);
-    let range = (Quad::ZERO, Quad::new(u64::MAX, u64::MAX, u64::MAX, u64::MAX));
-    for epoch in [100u64, 250, 501, 733, 900, 999, 1000] {
-        let (base, replay) = wh.lookup(epoch, &range);
-        let floor = base.map_or(0, |b| b.end_epoch);
-        assert!(floor <= epoch);
-        assert!(floor % 100 == 0, "floor is a scheduled snapshot");
-        // Tail holds only commits 901..=1000 (everything else consolidated).
-        let expected = epoch.saturating_sub(floor.max(900));
-        assert_eq!(replay.len() as u64, expected, "epoch {}", epoch);
+fn rec(start: u64, end: u64, commit: &str, range: (Quad, Quad)) -> CasSnapshotRecord {
+    CasSnapshotRecord {
+        start_epoch: start,
+        end_epoch: end,
+        commit_hex: commit.into(),
+        quad_range: range,
     }
 }
 
 #[test]
-fn push_commit_rejects_non_monotonic_epoch() {
-    let mut wh = KnowledgeWormhole::new();
-    wh.push_commit(5, "a".into()).expect("ok");
-    assert_eq!(wh.push_commit(5, "b".into()), Err(strata_protocol::Error::Invalid));
-    assert_eq!(wh.push_commit(4, "c".into()), Err(strata_protocol::Error::Invalid));
+fn snapshot_ledger_tiles_and_sorts_commit_bindings() {
+    let full = (Quad::ZERO, Quad::new(u64::MAX, u64::MAX, u64::MAX, u64::MAX));
+    let mut ledger = CasSnapshotLedger::new();
+    // Insert out of order; the ledger sorts by (range, end epoch).
+    ledger.push(rec(10, 20, "s2", full)).expect("second");
+    ledger.push(rec(0, 10, "s1", full)).expect("first");
+    let records = ledger.records();
+    assert_eq!(records.len(), 2);
+    assert_eq!((records[0].start_epoch, records[0].end_epoch), (0, 10));
+    assert_eq!(records[0].commit_hex, "s1");
+    assert_eq!(records[1].commit_hex, "s2");
+    assert_eq!(records[1].quad_range, full);
 }
 
 #[test]
 fn overlapping_snapshots_rejected() {
-    let mut wh = KnowledgeWormhole::new();
+    let mut ledger = CasSnapshotLedger::new();
     let range = (Quad::ZERO, Quad::new(1, 1, 1, 1));
-    wh.push_snapshot(SnapshotRecord {
-        start_epoch: 0,
-        end_epoch: 10,
-        commit_hex: "s1".into(),
-        quad_range: range,
-    })
-    .expect("first");
+    ledger.push(rec(0, 10, "s1", range)).expect("first");
+    // True overlap (5 < 10) is not legal tiling.
     assert_eq!(
-        wh.push_snapshot(SnapshotRecord {
-            start_epoch: 5,
-            end_epoch: 15,
-            commit_hex: "s2".into(),
-            quad_range: range,
-        }),
+        ledger.push(rec(5, 15, "s2", range)),
         Err(strata_protocol::Error::Invalid)
     );
+    // Abutting (start == previous end) is legal tiling.
+    ledger.push(rec(10, 20, "s3", range)).expect("abut");
+    assert_eq!(ledger.records()[1].commit_hex, "s3");
+}
+
+#[test]
+fn snapshot_record_rejects_inverted_interval() {
+    let range = (Quad::ZERO, Quad::new(1, 1, 1, 1));
+    let mut ledger = CasSnapshotLedger::new();
+    assert_eq!(
+        ledger.push(rec(15, 5, "bad", range)),
+        Err(strata_protocol::Error::Invalid)
+    );
+    assert!(ledger.records().is_empty(), "rejecting push must not mutate");
+    // Distinct quad ranges never conflict.
+    ledger
+        .push(rec(0, 15, "ok", (Quad::ZERO, Quad::new(2, 2, 2, 2))))
+        .expect("different range");
 }
 
 // --- Storage density (NFR-3: <= 2.5 bytes/quad on the test corpus) ----------

@@ -5,7 +5,9 @@
 //! Huffman (flate2), satisfying the LZ77 delta-compression requirement at
 //! the object layer. Knowledge Wormhole snapshots map epoch intervals to
 //! commit hashes; point-in-time reconstruction is O(log n + k) by binary
-//! search over sorted intervals plus replay of k tail commits.
+//! search over sorted intervals plus replay of k tail commits. Snapshot
+//! index/reconstruction lives in [`crate::wormhole::Wormhole`]; this module
+//! carries only the commit-binding snapshot record (see [`CasSnapshotRecord`]).
 
 use crate::quad::{Quad, QUAD_LEN};
 use flate2::write::ZlibEncoder;
@@ -101,7 +103,7 @@ pub struct TreeEntry {
 /// (Git's canonical ordering) before serialization; the caller's name
 /// convention must be stable across epochs (see docs/cas.md).
 pub fn emit_tree(mut entries: Vec<TreeEntry>) -> GitObject {
-    entries.sort_by(|a, b| tree_entry_key(&a.name, a.mode).cmp(&tree_entry_key(&b.name, b.mode)));
+    entries.sort_by_key(|e| tree_entry_key(&e.name, e.mode));
     let mut payload = Vec::new();
     for e in &entries {
         payload.extend_from_slice(e.mode.as_bytes());
@@ -226,119 +228,76 @@ fn hex_encode(bytes: &[u8]) -> String {
 // 4. Knowledge Wormhole snapshots
 // ---------------------------------------------------------------------------
 
-/// A snapshot record: epoch interval [start, end] mapped to the commit whose
-/// tree captures the full quad state at `end`, scoped to a quad-coordinate
-/// range (partition key). Interval-scheduled: one record per schedule tick.
+/// The CAS commit-binding snapshot record: epoch interval [start, end] mapped
+/// to the commit whose tree captures the full quad state at `end`, scoped to
+/// a quad-coordinate range (partition key). Interval-scheduled: one record
+/// per schedule tick.
+///
+/// This is a pure snapshot-record bridge binding `commit_hex` ↔ epoch
+/// interval ↔ `quad_range`. It carries **no** index or tail-replay machinery:
+/// point-in-time reconstruction, state hashing, and density tracking live in
+/// [`crate::wormhole::Wormhole`], which is the reconstruction surface.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct SnapshotRecord {
+pub struct CasSnapshotRecord {
     pub start_epoch: u64,
     pub end_epoch: u64,
+    /// Hex oid of the Git commit object binding this snapshot (see
+    /// [`emit_commit`]).
     pub commit_hex: String,
     /// Inclusive quad-coordinate range covered (canonical big-endian key).
     pub quad_range: (Quad, Quad),
 }
 
-/// The Knowledge Wormhole: sorted snapshot intervals plus an unconsolidated
-/// commit tail. Lookup = binary search + O(k) tail replay, k = commits after
-/// the latest snapshot covering the query point.
-#[derive(Debug, Clone, Default)]
-pub struct KnowledgeWormhole {
-    snapshots: Vec<SnapshotRecord>,
-    /// (epoch, commit_hex) tail, sorted by epoch.
-    tail: Vec<(u64, String)>,
-}
-
-impl KnowledgeWormhole {
-    pub fn new() -> Self {
-        KnowledgeWormhole::default()
-    }
-
-    /// Append a snapshot record. Intervals must not overlap existing records
-    /// with the same quad-range key; fail-closed otherwise.
-    pub fn push_snapshot(&mut self, rec: SnapshotRecord) -> crate::Result<()> {
-        if rec.start_epoch > rec.end_epoch {
+impl CasSnapshotRecord {
+    /// Commit binding validity: the interval must be non-empty-ish
+    /// (start <= end) — fail-closed otherwise.
+    pub fn validate(&self) -> crate::Result<()> {
+        if self.start_epoch > self.end_epoch {
             return Err(crate::Error::Invalid);
         }
-        // Same-range intervals must tile monotonically without overlap.
-        for s in &self.snapshots {
-            // Abutting intervals (start == previous end) are legal tiling;
-            // true overlap is not.
-            if s.quad_range == rec.quad_range && rec.start_epoch < s.end_epoch {
+        Ok(())
+    }
+}
+
+/// Append-only set of commit-binding snapshot records. Intervals must not
+/// overlap existing records with the same quad-range key; fail-closed
+/// otherwise. Reconstruction over these records is [`crate::wormhole::Wormhole`]'s
+/// job, not this one's.
+#[derive(Debug, Clone, Default)]
+pub struct CasSnapshotLedger {
+    records: Vec<CasSnapshotRecord>,
+}
+
+impl CasSnapshotLedger {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Append a snapshot record. Same-range intervals must tile monotonically
+    /// without overlap; fail-closed otherwise.
+    pub fn push(&mut self, rec: CasSnapshotRecord) -> crate::Result<()> {
+        rec.validate()?;
+        for s in &self.records {
+            // Half-open overlap test: intervals abutting at an endpoint
+            // ([0,10] then [10,20]) are legal tiling in either insertion
+            // order; true overlap is not.
+            if s.quad_range == rec.quad_range
+                && rec.start_epoch < s.end_epoch
+                && s.start_epoch < rec.end_epoch
+            {
                 return Err(crate::Error::Invalid);
             }
         }
         let pos = self
-            .snapshots
+            .records
             .partition_point(|s| (&s.quad_range, s.end_epoch) < (&rec.quad_range, rec.end_epoch));
-        self.snapshots.insert(pos, rec);
+        self.records.insert(pos, rec);
         Ok(())
     }
 
-    /// Append a commit to the unconsolidated tail. Epochs must be strictly
-    /// increasing (fail-closed).
-    pub fn push_commit(&mut self, epoch: u64, commit_hex: String) -> crate::Result<()> {
-        if let Some(&(last, _)) = self.tail.last() {
-            if epoch <= last {
-                return Err(crate::Error::Invalid);
-            }
-        }
-        self.tail.push((epoch, commit_hex));
-        Ok(())
-    }
-
-    /// Point-in-time lookup: the snapshot covering `epoch` for the given quad
-    /// range (binary search, O(log n)), plus the tail commits after it
-    /// (O(k)). Returns `None` for the base-commit part if no snapshot covers
-    /// the epoch yet; the tail replay then starts from genesis.
-    pub fn lookup(&self, epoch: u64, quad_range: &(Quad, Quad)) -> (Option<&SnapshotRecord>, Vec<(u64, &str)>) {
-        // Rightmost snapshot of this range with end_epoch <= epoch.
-        // Snapshots are sorted by (range, end_epoch), so a single
-        // partition_point locates the candidate: first record with
-        // (range, end_epoch) >= (range, epoch+1).
-        let hi = self.snapshots.partition_point(|s| {
-            s.quad_range < *quad_range || (s.quad_range == *quad_range && s.end_epoch <= epoch)
-        });
-        let base = if hi > 0 {
-            let s = &self.snapshots[hi - 1];
-            (s.quad_range == *quad_range && s.end_epoch <= epoch).then_some(s)
-        } else {
-            None
-        };
-        let floor = base.map_or(0, |s| s.end_epoch);
-        let replay: Vec<(u64, &str)> = self
-            .tail
-            .iter()
-            .filter(|(e, _)| *e > floor && *e <= epoch)
-            .map(|(e, c)| (*e, c.as_str()))
-            .collect();
-        (base, replay)
-    }
-
-    /// Consolidate: fold the tail into a new snapshot record up to `epoch`.
-    pub fn consolidate(&mut self, epoch: u64, commit_hex: String, quad_range: (Quad, Quad)) -> crate::Result<()> {
-        let start = self
-            .snapshots
-            .iter()
-            .filter(|s| s.quad_range == quad_range)
-            .map(|s| s.end_epoch)
-            .max()
-            .unwrap_or(0);
-        self.push_snapshot(SnapshotRecord {
-            start_epoch: start,
-            end_epoch: epoch,
-            commit_hex,
-            quad_range,
-        })?;
-        self.tail.retain(|(e, _)| *e > epoch);
-        Ok(())
-    }
-
-    pub fn snapshots(&self) -> &[SnapshotRecord] {
-        &self.snapshots
-    }
-
-    pub fn tail(&self) -> &[(u64, String)] {
-        &self.tail
+    /// The commit-binding records, sorted by (quad range, end epoch).
+    pub fn records(&self) -> &[CasSnapshotRecord] {
+        &self.records
     }
 }
 

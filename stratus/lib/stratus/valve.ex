@@ -154,19 +154,3 @@ defmodule Stratus.Valve do
   defp actuate(mod, frame) when is_atom(mod), do: mod.actuate(frame)
   defp actuate(fun, frame) when is_function(fun, 1), do: fun.(frame)
 end
-
-defmodule Stratus.Valve.DefaultArena do
-  @moduledoc """
-  Default arena stand-in used in production supervision until the temprun
-  lane supplies the real WASM boundary. Echoes the frame's commit surface
-  as BLAKE3-stand-in `:crypto.hash(:sha256, ...)` — to be replaced by the
-  real temprun actuation.
-  """
-  @behaviour Stratus.Valve.Arena
-
-  @impl true
-  def actuate(frame) do
-    commit = :crypto.hash(:sha256, frame)
-    {:ok, %{status: :ok, commit_hash: commit}}
-  end
-end

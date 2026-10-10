@@ -2,6 +2,24 @@
 resolver = "2"
 members = ["strata_protocol", "temprun"]
 
+[package]
+name = "strata"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dev-dependencies]
+strata-protocol = { path = "strata_protocol" }
+temprun = { path = "temprun" }
+
+[[test]]
+name = "adversarial_court"
+path = "tests/adversarial_court.rs"
+
+[[test]]
+name = "integration_frame_flow"
+path = "tests/integration_frame_flow.rs"
+
 [profile.release]
 opt-level = "z"
 lto = true

@@ -11,3 +11,15 @@ pub fn seal(refused: bool, universe_digest: &[u8; 32]) -> [u8; RECEIPT_LEN] {
     r[0] = (r[0] & !1) | refused as u8;
     r
 }
+
+/// Lane T2 output-register contract extension. The 32B receipt cannot carry
+/// a commit hash in bytes 8..40 (the register is exactly RECEIPT_LEN), so the
+/// commit hash IS the register payload: the universe digest (BLAKE3 over the
+/// assembled git object stream) with the status bit cleared. Consumers read
+/// status from bit 0 of byte 0 and commit hash via this extractor; refusals
+/// must not read the commit hash at all.
+pub fn commit_hash(receipt: &[u8; RECEIPT_LEN]) -> [u8; RECEIPT_LEN] {
+    let mut c = *receipt;
+    c[0] &= !1;
+    c
+}

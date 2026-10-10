@@ -6,3 +6,7 @@ target/
 
 # Tooling caches
 .oclnr-cache/
+
+# Elixir/Mix build artifacts
+stratus/_build/
+stratus/deps/

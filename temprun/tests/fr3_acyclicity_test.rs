@@ -38,8 +38,9 @@ fn frame(lineage: Vec<[u64; 4]>) -> ArenaInput {
 
 #[test]
 fn t1_dependency_stamped_not_after_cause_refused_end_to_end() {
-    // a depends on b; b stamped t=50, a stamped t=10 (a before its cause).
-    let lineage = vec![[20, 7, 10, 50], [10, 7, 5, 10]];
+    // a depends on b: row [a,7,b,t_a]; b depends on c stamped t_b=50 > t_a=10
+    // — a's cause b is stamped after a (within-trace inversion).
+    let lineage = vec![[21, 7, 11, 10], [11, 7, 1, 50]];
     assert_eq!(check(&lineage), Err(AcyclicRefusal::ClockInversion));
     let out = temprun::run(&mut frame(lineage), FuelLease::new(3));
     assert!(!out.admitted);
@@ -91,8 +92,9 @@ fn conforming_acyclic_trace_still_admits_same_fuel() {
 
 #[test]
 fn acyclic_dependency_chain_admits_end_to_end() {
-    // c -> b -> a, stamps strictly increasing toward dependents.
-    let lineage = vec![[30, 7, 20, 10], [20, 7, 10, 20], [10, 7, 5, 30]];
+    // c -> b -> a, causes stamped strictly before dependents (consistent
+    // node ids across subject/object positions: id(n) = n*2+1).
+    let lineage = vec![[61, 7, 41, 30], [41, 7, 21, 20], [21, 7, 11, 10]];
     assert_eq!(check(&lineage), Ok(()));
     let out = temprun::run(&mut frame(lineage), FuelLease::new(3));
     assert!(out.admitted);
@@ -158,22 +160,50 @@ fn property_100_randomized_dag_vs_cyclic_vs_oracle() {
             }
         }
         let cyclic = oracle_has_cycle(n, &edges);
-        // Stamps: for acyclic graphs derive a topological order and stamp
-        // causes strictly before dependents. For cyclic graphs stamps are
-        // arbitrary (cycle refusal must dominate).
+        // Node id is position-independent: id(v) = v*2+1 both as subject and
+        // object, so the sieve's node identity matches the oracle's.
+        // Stamps: for acyclic graphs, peel a topological order and stamp each
+        // node by its depth, so every cause is stamped before its dependent.
+        // Cyclic graphs get row-index stamps (cycle refusal dominates).
+        let id = |v: usize| (v as u64) * 2 + 1;
+        let stamp = if cyclic {
+            None
+        } else {
+            // Independent topo stamping (iterative peeling).
+            let mut indeg = vec![0usize; n];
+            let mut adj: Vec<Vec<usize>> = vec![Vec::new(); n]; // cause->dep
+            for &(c, d) in &edges {
+                adj[c].push(d);
+                indeg[d] += 1;
+            }
+            let mut depth = vec![0u64; n];
+            let mut frontier: Vec<usize> = (0..n).filter(|&i| indeg[i] == 0).collect();
+            let mut d = 0u64;
+            while !frontier.is_empty() {
+                d += 1;
+                let mut next = Vec::new();
+                for &u in &frontier {
+                    depth[u] = d;
+                    for &v in &adj[u] {
+                        indeg[v] -= 1;
+                        if indeg[v] == 0 {
+                            next.push(v);
+                        }
+                    }
+                }
+                frontier = next;
+            }
+            Some(depth)
+        };
         let lineage: Vec<[u64; 4]> = edges
             .iter()
             .enumerate()
             .map(|(k, &(c, d))| {
-                let tc = (c as u64 + 1) * 10 + k as u64;
-                let td = (d as u64 + 1) * 10 + k as u64 + 1;
-                if cyclic || td > tc {
-                    [(c as u64) * 2 + 1, DEP_P, (d as u64) * 2 + 2, td.max(tc + 1)]
-                } else {
-                    // Acyclic-but-stamp-inverted would refuse for inversion,
-                    // not cycle — keep stamps consistent for clean oracle cmp.
-                    [(c as u64) * 2 + 1, DEP_P, (d as u64) * 2 + 2, tc + 1]
-                }
+                let t = match &stamp {
+                    Some(depth) => depth[c] * 10 + 5, // dependent's stamp
+                    None => (k as u64 + 1) * 7,
+                };
+                [id(c), DEP_P, id(d), t]
             })
             .collect();
         let verdict = check(&lineage);

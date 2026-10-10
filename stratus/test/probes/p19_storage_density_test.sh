@@ -101,7 +101,7 @@ PYEOF
 # 2. Real git packfile writer (delta chains on, aggressive)
 # ---------------------------------------------------------------------------
 gitc gc --aggressive --prune=now || { note "FAIL: git gc exited $?"; exit 1; }
-PACK=$(ls "$REPO"/objects/pack/*.pack 2>/dev/null | head -1)
+PACK=$(ls "$REPO"/.git/objects/pack/*.pack 2>/dev/null | head -1)
 [ -n "$PACK" ] || { note "FAIL: no packfile produced"; exit 1; }
 IDX="${PACK%.pack}.idx"
 PACK_BYTES=$(stat -f %z "$PACK")

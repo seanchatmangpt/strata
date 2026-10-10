@@ -235,7 +235,7 @@ if [ "$IDENTICAL" != "true" ]; then
   note "VERDICT: 1 — arena refusal receipts differ across categories (H=$H_RECEIPTS > 0): H(Error)=0 BROKEN at the wire"
   echo 1 > "$EV/verdict"; exit 1
 fi
-note "ADJUDICATION: wire surfaces are zero-entropy. Arena 32B refusal receipts are byte-identical across POWL-skip and affine-collision (H=0; receipt::seal carries only the status bit over a shared universe digest). The valve's :parent_discontinuity is a constant typed atom per class (H=0). CLI stderr differs per corruption class and embeds the file path — that is the developer diagnostic surface, OUT of the H(Error)=0 contract, consistent with p01's 79B finding."
+note "ADJUDICATION: wire surfaces are zero-entropy. Arena 32B refusal receipts are byte-identical across cycle, POWL-skip and affine-collision (H=0; receipt::seal carries only the status bit over a shared universe digest). The valve's :parent_discontinuity is a constant typed atom per class (H=0). CLI stderr differs per corruption class and embeds the file path — that is the developer diagnostic surface, OUT of the H(Error)=0 contract, consistent with p01's 79B finding."
 if [ "$CYCLE_GAP" -eq 1 ]; then
   note "VERDICT: 42 — KNOWN-GAP: the causal-cycle category is untriggerable (admits per fr3, pinned at fr3_causal_test.rs:83); the zero-entropy contract holds on every surface that does refuse"
   echo 42 > "$EV/verdict"; exit 42

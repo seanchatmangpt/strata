@@ -93,7 +93,11 @@ impl Header {
 /// success, run the arena. `watch` records whether the arena was entered.
 /// This is the same order the production harness uses (soak.rs steps 1-2).
 fn pipeline(frame: &[u8], input: &mut ArenaInput, dir: &WatchedDir) -> (bool, Option<temprun::ArenaOutput>) {
-    let header = match Header::from_bytes(&frame[..PDU_HEADER_LEN]) {
+    let header = match if frame.len() < PDU_HEADER_LEN {
+        Err(())
+    } else {
+        Header::from_bytes(&frame[..PDU_HEADER_LEN])
+    } {
         Ok(h) if frame.len() == PDU_HEADER_LEN + h.segment_len() => h,
         _ => {
             // Wire refusal: arena never entered; FR-6 scrub still runs
@@ -345,8 +349,13 @@ fn wire_refused_and_sandbox_refused_indistinguishable_to_persistence() {
     // the refusal status bit; it binds the universe digest (deterministic,
     // no error-class entropy) and exposes no commit-hash consumption path.
     assert_eq!(sandbox_refused.receipt.len(), RECEIPT_LEN);
-    assert_eq!(temprun::receipt::commit_hash(&sandbox_refused.receipt)[0] & 1, 1,
-        "refusal receipt must keep the refusal bit through the extractor");
+    // commit_hash = receipt with bit 0 cleared = universe_digest with bit 0
+    // cleared (receipt = digest | status_bit; the digest's own LSB may be 1).
+    let stripped = temprun::receipt::commit_hash(&sandbox_refused.receipt);
+    let mut digest_stripped = sandbox_refused.universe_digest;
+    digest_stripped[0] &= !1;
+    assert_eq!(stripped, digest_stripped,
+        "extractor strips the status bit: refused receipt binds only the universe digest");
     let mut again = arena_input();
     again.candidate_mask = 0b0110;
     let replay = run(&mut again, FuelLease::new(10_000));

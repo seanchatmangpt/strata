@@ -188,7 +188,7 @@ fn pipeline(
     parent_digest: [u8; 32],
     parent_oid_hex: Option<String>,
     violation: Option<Violation>,
-) -> (bool, Option<String>) {
+) -> (bool, Option<String>, Option<[u8; 32]>) {
     let mut inp = match violation {
         Some(v) => violating_input(v, epoch, parent_digest),
         None => conforming_input(epoch, parent_digest),
@@ -197,8 +197,9 @@ fn pipeline(
     assert_eq!(out.receipt.len(), RECEIPT_LEN, "receipt shape is constant");
     if !out.admitted {
         // Refusal: zero objects written. The store is not touched at all.
-        return (false, None);
+        return (false, None, None);
     }
+    let universe = out.universe_digest;
     // Admitted: persist the epoch's quad blob, then the signed commit that
     // binds it (parent = previous commit oid, anchor = universe digest).
     let quads = epoch_quads(epoch);
@@ -211,13 +212,13 @@ fn pipeline(
         anchor_hex: hex_encode(&out.universe_digest),
         ml_dsa_65_signature: signer.sign(&signer::AttestedPayload {
             parent_digest,
-            universe_digest: out.universe_digest,
+            universe_digest: universe,
             fuel_consumed: FUEL_PER_RUN,
         })
         .to_vec(),
     });
     dir.write(&commit);
-    (true, Some(commit.oid_hex()))
+    (true, Some(commit.oid_hex()), Some(universe))
 }
 
 const EPOCHS: u64 = 50;
@@ -226,7 +227,10 @@ const EPOCHS: u64 = 50;
 /// violating frame emitted immediately BEFORE that epoch's conforming frame.
 /// Returns the sorted final store contents.
 fn run_history(tag: &str, violations: &[Violation]) -> Vec<(String, Vec<u8>)> {
-    assert_eq!(violations.len(), 10);
+    assert!(
+        violations.is_empty() || violations.len() == 10,
+        "purity runs carry either zero or 10 interleaved violations"
+    );
     let dir = CasDir::new(tag);
     let signer = Signer::from_seed([0x5A; SEED_LEN]);
     let mut parent_digest = [0u8; 32]; // genesis
@@ -234,29 +238,23 @@ fn run_history(tag: &str, violations: &[Violation]) -> Vec<(String, Vec<u8>)> {
     let mut admitted = 0usize;
     let mut refused = 0usize;
     for epoch in 1u64..=EPOCHS {
-        let v = violations.get((epoch - 1) as usize).copied();
-        if epoch % 5 == 0 {
+        // Chain the state input through the previous ADMITTED frame's universe
+        // digest — violating frames never advance the chain.
+        if epoch % 5 == 0 && !violations.is_empty() {
             // Interleaved violating frame immediately before epoch 5,10,...,50.
             let kind = violations[(epoch / 5 - 1) as usize];
-            let (ok, _) = pipeline(&dir, &signer, epoch, parent_digest, parent_oid.clone(), Some(kind));
+            let (ok, _, _) = pipeline(&dir, &signer, epoch, parent_digest, parent_oid.clone(), Some(kind));
             assert!(!ok, "epoch {epoch}: violating frame ({kind:?}) was admitted");
             refused += 1;
         }
-        let _ = v;
-        let (ok, oid) = pipeline(&dir, &signer, epoch, parent_digest, parent_oid.clone(), None);
+        let (ok, oid, universe) = pipeline(&dir, &signer, epoch, parent_digest, parent_oid.clone(), None);
         assert!(ok, "epoch {epoch}: conforming frame refused");
         admitted += 1;
         parent_oid = oid;
-        parent_digest = temprun::receipt::commit_hash(&{
-            // Chain the state digest through the admitted frame's receipt
-            // digest so each epoch consumes the previous epoch's output.
-            // (receipt::seal is deterministic; recompute is unnecessary — we
-            // re-derive from the store walk in the tests instead.)
-            [0u8; 32]
-        });
-        let _ = parent_digest;
+        parent_digest = universe.unwrap();
     }
-    assert_eq!(admitted + refused, EPOCHS as usize + 10);
+    assert_eq!(admitted, EPOCHS as usize);
+    assert_eq!(refused, if violations.is_empty() { 0 } else { 10 });
     dir.contents()
 }
 
@@ -272,7 +270,7 @@ fn one_hundred_refused_causal_frames_persist_zero_objects() {
     let mut refusals = 0usize;
     for i in 0..100u64 {
         let kind = kinds[(i % 3) as usize];
-        let (admitted, _) = pipeline(&dir, &signer, i + 1, [0u8; 32], None, Some(kind));
+        let (admitted, _, _) = pipeline(&dir, &signer, i + 1, [0u8; 32], None, Some(kind));
         assert!(!admitted, "frame {i} ({kind:?}): violation slipped through");
         refusals += 1;
         assert_eq!(
@@ -296,10 +294,11 @@ fn fifty_epoch_admitted_chain_is_strictly_linear_no_forks() {
     let mut parent_oid: Option<String> = None;
     let mut oids = Vec::new();
     for epoch in 1u64..=EPOCHS {
-        let (admitted, oid) = pipeline(&dir, &signer, epoch, [epoch - 1; 32], parent_oid.clone(), None);
+        let (admitted, oid, _) =
+            pipeline(&dir, &signer, epoch, [(epoch - 1) as u8; 32], parent_oid.clone(), None);
         assert!(admitted, "epoch {epoch} refused");
         let oid = oid.unwrap();
-        assert_ne!(oids.iter().position(|o: &String| *o == oid), Some(oid.len()), "duplicate commit");
+        assert!(!oids.contains(&oid), "duplicate commit oid {oid}");
         oids.push(oid.clone());
         parent_oid = Some(oid);
     }

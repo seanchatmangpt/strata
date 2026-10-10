@@ -159,21 +159,23 @@ defmodule Stratus.XproductWireWitnessTest do
       detach(tid)
     end
 
-    test "segment_len mismatch ADMITS (pinned): payload length is never checked", %{valve: pid} do
-      # PINNED ACTUAL BEHAVIOR: validate/2 strictly pattern-matches only the
-      # 64-byte header and never re-checks declared quad counts against the
-      # payload length. A well-formed header with a short or long payload is
-      # admitted — this wire class is NOT refused as :malformed_frame.
+    test "segment_len mismatch refuses :malformed_frame, registers untouched", %{valve: pid} do
+      # FIXED: validate/1 now re-checks the header's declared quad counts
+      # against the actual payload length (32 bytes per quad, PDU segment_len
+      # semantics). A well-formed header with a short or long payload is
+      # refused fail-closed as :malformed_frame and never advances the
+      # witness. (Previously pinned as ADMITTING — the gap is closed.)
       tid = attach_telemetry()
       before = registers(pid)
 
-      assert {:ok, %{commit_hash: c1}} = ingest(pid, segment_mismatch_frame(:short))
-      assert {:ok, %{commit_hash: c2}} = ingest(pid, segment_mismatch_frame(:long, parent: c1))
-      assert byte_size(c1) == 32 and byte_size(c2) == 32
+      assert {:error, :malformed_frame} = ingest(pid, segment_mismatch_frame(:short))
 
-      # Consequence: this class DOES advance the witness (both admits fired).
-      assert registers(pid) != before
-      assert drain_telemetry() == [:admit, :admit]
+      assert {:error, :malformed_frame} =
+               ingest(pid, segment_mismatch_frame(:long, parent: before.commit_hash))
+
+      # Consequence: this class does NOT advance the witness.
+      assert registers(pid) == before
+      assert drain_telemetry() == [:refuse, :refuse]
       detach(tid)
     end
   end

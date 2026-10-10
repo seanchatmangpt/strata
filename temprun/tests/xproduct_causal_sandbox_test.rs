@@ -38,9 +38,10 @@ fn policy_of(rows: &[[u64; 4]]) -> Vec<[u64; 4]> {
 
 fn conforming_input() -> ArenaInput {
     let lineage = vec![M1, M2, M3, M4];
+    let policy = policy_of(&lineage);
     ArenaInput {
         lineage,
-        policy: policy_of(&lineage),
+        policy,
         clock: vec![2, 2],
         observed: vec![1, 1],
         candidate_mask: 0b0100,
@@ -55,6 +56,7 @@ fn conforming_input() -> ArenaInput {
 /// conforming frame. Each refuses end-to-end under acyclicity::check and/or
 /// the frame clock sieve; all share the same tree/parent/message so all
 /// produce the same universe digest (receipts differ only by status bit).
+#[derive(Clone, Copy, Debug)]
 enum CausalClass {
     /// Frame vector clock regresses behind observed high-water marks.
     FrameClockInversion,
@@ -283,23 +285,39 @@ fn property_100_randomized_causal_violations_refuse_identical_receipt_shape() {
         let class = ALL_CLASSES[(next() % 4) as usize];
         let pos = (next() % 6) as usize; // row position in the violated trace
 
-        // Base: the well-formed 4-milestone trace (DAG-augmented variants add
-        // their own dep rows before positioning).
-        let mut inp = conforming_input();
-        apply(class, &mut inp);
+        // Build the violated lineage explicitly: base rows + the class's
+        // violating row, inserted at a random index. The policy is compiled
+        // from the BASE rows only for MissingPrerequisite (the stranger must
+        // stay uncovered); other classes are self-consistent
+        // (policy_of(full lineage)).
+        let (base, violating): (Vec<[u64; 4]>, [u64; 4]) = match class {
+            CausalClass::FrameClockInversion => {
+                (vec![M1, M2, M3, M4], [0, 0, 0, 0]) // no extra row; clock mutated below
+            }
+            CausalClass::TraceInversion => (DAG.to_vec(), [30, DEP_P, 20, 10]),
+            CausalClass::Cycle => (
+                vec![[10u64, DEP_P, 20, 10]],
+                [20, DEP_P, 10, 20],
+            ),
+            CausalClass::MissingPrerequisite => (vec![M1, M2], [50, 5, 500, 50]),
+        };
+        let at = if base.is_empty() { 0 } else { (pos as usize) % base.len() };
+        let mut lineage = base.clone();
+        lineage.insert(at, violating);
+        lineage.sort_unstable();
 
-        // Re-position the violation: rotate the lineage so the violating row
-        // (last after apply for dep classes / stranger for prereq) sits at a
-        // random index. Lineage must stay POS-sorted for the join, so rotate
-        // then re-sort — placement in the SPO order is the randomized axis.
-        let n = inp.lineage.len();
-        if n > 1 {
-            let violated = inp.lineage.remove(n - 1);
-            let at = pos % inp.lineage.len().max(1) + (1.min(inp.lineage.len()));
-            let at = at.min(inp.lineage.len());
-            inp.lineage.insert(at, violated);
-            inp.lineage.sort_unstable();
-            inp.policy = policy_of(&inp.lineage);
+        let mut inp = conforming_input();
+        inp.lineage = lineage;
+        inp.policy = if matches!(class, CausalClass::MissingPrerequisite) {
+            policy_of(&base)
+        } else {
+            policy_of(&inp.lineage)
+        };
+        // Clock classes: apply the frame-level mutation (lineage already
+        // carries the violating row at its random position).
+        if matches!(class, CausalClass::FrameClockInversion) {
+            inp.clock = vec![1, 1];
+            inp.observed = vec![2, 1];
         }
 
         let out = run(&mut inp, FuelLease::new(3));

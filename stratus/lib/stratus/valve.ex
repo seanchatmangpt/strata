@@ -143,11 +143,17 @@ defmodule Stratus.Valve do
   defp validate(
          <<@magic, version::8, permutation::8, 0::16, nonce::64, fuel::64,
            parent_digest::binary-size(32), history_count::32, candidate_count::32,
-           _quad_payload::binary>>,
+           quad_payload::binary>>,
          state
        )
        when version == @version and permutation <= @max_permutation do
     cond do
+      # Header-declared quad counts must match the actual payload length:
+      # 32 bytes per quad (PDU segment_len semantics). Fail-closed with a
+      # zero-entropy reason — no distinguishing diagnostics.
+      bit_size(quad_payload) != 32 * 8 * (history_count + candidate_count) ->
+        {:error, :malformed_frame}
+
       fuel == 0 ->
         {:error, :fuel_exhausted}
 

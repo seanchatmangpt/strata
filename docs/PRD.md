@@ -59,6 +59,13 @@ semantics, and persistence costs that scale poorly. Strata addresses all four.
   authorized transitions; SELECT and CONSTRUCT never actuate.
 - **FR-3 Temprun Arena**: candidates execute in wasm32-unknown-unknown with ≤5 ms per
   cycle, 16 MB memory cap, and zero host imports (verified `Imports=∅`).
+  [ADJUDICATED 2026-10-10: acyclicity boundary — merge_join = order-coverage only;
+  the separate acyclicity sieve covers cyclic-DAG traces; both enforced. Evidence:
+  temprun/src/acyclicity.rs, temprun/tests/fr3_acyclicity_test.rs]
+  [ADJUDICATED 2026-10-10: POWL compilation architecture — host-side compile to sorted
+  V_SPO; the wasm arena stays capability-free; bcinr-powl is optional/non-default
+  feature-gated so wasm builds never link it. Evidence: temprun/src/conformance.rs,
+  docs/COURT_ADJUDICATIONS.md "bcinr-POWL boundary", KNOWN_GAPS.md KG-03]
 - **FR-4 Ash Projection Tier**: **DEFER RECOMMENDED** (scope analysis in
   `docs/ash-tier-scope.md`, 2026-10-10; no Ash/R2RML code written). Target: SELECT-only
   projection from quad universe to Ash resources via AshR2RML; projection tier holds no DO
@@ -66,6 +73,10 @@ semantics, and persistence costs that scale poorly. Strata addresses all four.
 - **FR-5 CLAP-PDU Transport**: all frames conform to the 64-byte CLAP-PDU layout
   (see ARD §Wire Protocol), including permutation index, nonce, fuel, parent digest,
   and N/M quad counts.
+  [ADJUDICATED 2026-10-10: SLA split — Transaction frames (≤1000 quads): ≤5.0 ms hard
+  (release profile; debug BLAKE3 ~102 ms on 4 MiB documented). Batch checkpoints (>1000
+  quads, up to 4 MiB): throughput-bound, measured ~29.4M quads/s, floor 5M q/s enforced,
+  adjudicated floor 1.2M. Evidence: temprun/tests/fr5_lifecycle_test.rs]
 - **FR-6 Receipt Minting**: every admitted transition mints a receipt: parent digest
   (32 B), universe digest (32 B), fuel consumed (u64), ML-DSA-65 signature.
 - **FR-7 Git CAS Plane**: receipts and universe snapshots persist as content-addressed
@@ -85,6 +96,10 @@ semantics, and persistence costs that scale poorly. Strata addresses all four.
   reproducible universe digests.
 - **NFR-3 Performance**: arena cycle ≤5 ms; reconstruction O(log n + k); storage
   ≤2.5 bytes/quad.
+  [ADJUDICATED 2026-10-10: revised storage baseline — LZ77/DEFLATE measured 7.74–7.99 B/quad
+  (floor ~5.0 B/quad, information-theoretic per-run overhead); ρ ≤ 2.50 re-scoped to
+  columnar varint-delta Elias-Fano encoding, slated v27.04. Evidence: docs/NFR3_PRD_REVISION.md,
+  strata_protocol/tests/nfr3_storage_density_test.rs]
 - **NFR-4 Quality**: Chicago-school testing with zero mocks; `Imports=∅` verified per
   arena build (verified: `just check-wasm-imports` passes on the 18 KB temprun.wasm);
   10^6-cycle statistical sampling with Cp ≥ 2.0, Cpk ≥ 1.5. Measured 2026-10-10

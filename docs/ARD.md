@@ -76,6 +76,8 @@ asserted against the ml-dsa crate by `signer::assert_wire_sizes`).
 
 **Refusal** = exactly 32 opaque zero bytes, `H(Error)=0`
 (`strata_protocol/src/refusal.rs`); constant-time, zeroized intermediates.
+[ADJUDICATED 2026-10-10 (Probe 05): wire refusal STATUS encoding = LSB refuse-bit
+(byte0 bit0), not a 0x02 byte code. Evidence: KNOWN_GAPS.md KG-42]
 
 ## Invariants
 

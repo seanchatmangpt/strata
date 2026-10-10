@@ -84,6 +84,19 @@ fn cycle_case() -> CausalCase {
     }
 }
 
+/// Causally-conforming trace whose o column DESCENDS while s ascends, so
+/// layout 0 (SPO) and layout 2 (OSP) induce genuinely different wire orders.
+fn anticorrelated_case() -> CausalCase {
+    let lineage = vec![[10, 1, 300, 10], [20, 2, 200, 20], [30, 3, 100, 30]];
+    CausalCase {
+        policy: lineage.iter().map(|r| [r[0], r[1], r[2], 0]).collect(),
+        lineage,
+        clock: vec![3, 3],
+        observed: vec![1, 1],
+        conforming: true,
+    }
+}
+
 fn frame(perm: u8, quads: &[Quad]) -> ([u8; 64], Vec<Quad>) {
     let h = PduHeader {
         permutation: perm,
@@ -223,7 +236,7 @@ fn wire_permutation_gate_takes_precedence_over_causal_admission() {
     // (OSP) but the header still declares A=0 (SPO) — the trace would admit
     // causally, yet the wire gate must refuse FIRST, without the causal tier
     // ever returning a receipt.
-    let case = conforming_case();
+    let case = anticorrelated_case();
     assert!(causal_oracle(&case));
     let payload = permutation::sorted(
         2,

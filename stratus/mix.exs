@@ -8,6 +8,7 @@ defmodule Stratus.MixProject do
       elixir: "~> 1.19",
       start_permanent: Mix.env() == :prod,
       deps: [
+        {:telemetry, "~> 1.3"},
         {:credo, "~> 1.7", only: [:dev, :test], runtime: false}
       ]
     ]

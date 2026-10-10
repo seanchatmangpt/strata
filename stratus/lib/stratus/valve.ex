@@ -94,8 +94,12 @@ defmodule Stratus.Valve do
 
   @impl true
   def handle_call({:ingest, frame}, _from, state) do
+    start = System.monotonic_time()
+    parent_present? = state.parent_digest != @zero_digest
+
     case validate(frame, state) do
       {:error, reason} ->
+        Stratus.Telemetry.refuse(start, reason, nil, parent_present?)
         {:reply, {:error, reason}, state}
 
       {:ok, header} ->
@@ -103,12 +107,15 @@ defmodule Stratus.Valve do
           {:ok, %{status: :ok, commit_hash: commit}}
           when is_binary(commit) and bit_size(commit) == 256 ->
             new_state = %{state | parent_digest: commit, commit_hash: commit}
+            Stratus.Telemetry.admit(start, header, parent_present?)
             {:reply, {:ok, %{commit_hash: commit, header: header}}, new_state}
 
           {:ok, _} ->
+            Stratus.Telemetry.refuse(start, :arena_failure, header.fuel, parent_present?)
             {:reply, {:error, :arena_failure}, state}
 
           {:error, reason} when is_atom(reason) ->
+            Stratus.Telemetry.refuse(start, reason, header.fuel, parent_present?)
             {:reply, {:error, reason}, state}
         end
     end

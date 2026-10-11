@@ -12,3 +12,101 @@ ml-dsa = "0.1.1"
 
 [dev-dependencies]
 temprun = { path = "../temprun" }
+
+[[test]]
+name = "n16_zero_recursion"
+path = "tests/nato/n16_zero_recursion.rs"
+
+# N12 (NATO lane): clock-glitch resilience court; tests/nato/ is not
+# auto-discovered by cargo; explicit target.
+[[test]]
+name = "n12_clock_skew_resilience"
+path = "tests/nato/n12_clock_skew_resilience.rs"
+
+# N05 (NATO lane): dudect statistical constant-time court; tests/nato/ is not
+# auto-discovered by cargo; explicit target.
+[[test]]
+name = "n05_dudect_timing"
+path = "tests/nato/n05_dudect_timing.rs"
+
+# N02 (NATO lane): tests/nato/ is not auto-discovered by cargo; explicit target.
+[[test]]
+name = "n02_coordinate_orthogonality"
+path = "tests/nato/n02_coordinate_orthogonality.rs"
+
+# N17 (NATO lane): tests/nato/ is not auto-discovered by cargo; explicit target.
+[[test]]
+name = "n17_fips204_kat"
+path = "tests/nato/n17_fips204_kat.rs"
+
+# N18 (NATO lane): zero-entropy diagnostics court.
+[[test]]
+name = "n18_sidechannel_entropy"
+path = "tests/nato/n18_sidechannel_entropy.rs"
+
+# N09 (NATO lane): SEU single-bit court; tests/nato/ is not auto-discovered.
+[[test]]
+name = "n09_seu_single_bit"
+path = "tests/nato/n09_seu_single_bit.rs"
+
+# N10 (NATO lane): SEU double-bit court; tests/nato/ is not auto-discovered.
+[[test]]
+name = "n10_seu_double_bit"
+path = "tests/nato/n10_seu_double_bit.rs"
+
+# N11 (NATO lane): torn-write / bus-disconnect court; tests/nato/ is not
+# auto-discovered by cargo; explicit target.
+[[test]]
+name = "n11_torn_write_fuzz"
+path = "tests/nato/n11_torn_write_fuzz.rs"
+
+# N13 (NATO lane): WCET bound court; tests/nato/ is not auto-discovered.
+[[test]]
+name = "n13_wcet_cycles"
+path = "tests/nato/n13_wcet_cycles.rs"
+
+# N07 (NATO lane): cache side-channel interference court; tests/nato/ not
+# auto-discovered by cargo; explicit target.
+[[test]]
+name = "n07_cache_sidechannel"
+path = "tests/nato/n07_cache_sidechannel.rs"
+
+# N06 (NATO lane): branchless disassembly census (wasm + native tiers).
+[[test]]
+name = "n06_branchless_disasm"
+path = "tests/nato/n06_branchless_disasm.rs"
+
+# N08 (NATO lane): Hamming weight/distance profile court; tests/nato/ not
+# auto-discovered by cargo; explicit target.
+[[test]]
+name = "n08_hamming_weight"
+path = "tests/nato/n08_hamming_weight.rs"
+
+# N03 (NATO lane): Bell-LaPadula lattice court over the ronr+dao tables.
+[[test]]
+name = "n03_bell_lapadula"
+path = "tests/nato/n03_bell_lapadula.rs"
+
+# N01 (NATO lane): MILS non-interference court; tests/nato/ is not
+# auto-discovered by cargo; explicit target.
+[[test]]
+name = "n01_mils_separation"
+path = "tests/nato/n01_mils_separation.rs"
+
+# N15 (NATO lane): TLC liveness court (bounded model check of the RONR net +
+# CasRing MPMC starvation freedom); tests/nato/ is not auto-discovered.
+[[test]]
+name = "n15_tlc_liveness"
+path = "tests/nato/n15_tlc_liveness.rs"
+
+# N04 (NATO lane): zero-ambient-authority court; tests/nato/ is not
+# auto-discovered by cargo; explicit target.
+[[test]]
+name = "n04_zero_ambient_audit"
+path = "tests/nato/n04_zero_ambient_audit.rs"
+
+# N14 (NATO lane): CAST-32A multi-core interference court; tests/nato/ is not
+# auto-discovered by cargo; explicit target.
+[[test]]
+name = "n14_cast32a_thrash"
+path = "tests/nato/n14_cast32a_thrash.rs"

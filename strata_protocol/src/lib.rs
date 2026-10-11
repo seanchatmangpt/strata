@@ -3,15 +3,19 @@
 //! Fail-closed deserialization: any length, magic, or version deviation is a
 //! typed error with zero diagnostic entropy about the failure cause.
 
+extern crate self as strata_protocol; // #[path] consumers of signer.rs resolve the crate-qualified paths inside lib too
 pub mod branchless;
 pub mod branchless_ref;
 pub mod cas;
+pub mod consensus;
 pub mod dao_transitions;
 pub mod dao_vocab;
 pub mod dispatch;
 pub mod idmap;
 pub mod invariants;
+pub mod logchain;
 pub mod logsink;
+pub mod ltl;
 pub mod framing;
 pub mod pdu;
 pub mod ocel64;
@@ -28,6 +32,7 @@ pub mod quad;
 pub mod rehydrate;
 pub mod ronr;
 pub mod ronr_full;
+pub mod signer;
 pub mod receipt;
 pub mod refusal;
 pub mod wormhole;

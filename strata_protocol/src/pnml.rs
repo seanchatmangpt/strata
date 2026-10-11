@@ -21,6 +21,11 @@ pub enum PnmlError {
     TooManyPlaces,
     /// Arc source/target references a place id not declared (before use).
     UnknownPlaceRef,
+    /// Arc body carries content (e.g. `<inscription><text>N</text></inscription>`
+    /// with N != the implicit 1). This tier is 1-safe only: weighted arcs are
+    /// OUT OF GRAMMAR, not truncated — a weighted net is refused whole rather
+    /// than silently compiled as a weight-1 net.
+    WeightedArc,
 }
 
 impl core::fmt::Display for PnmlError {
@@ -29,6 +34,7 @@ impl core::fmt::Display for PnmlError {
             PnmlError::Malformed => "malformed PNML",
             PnmlError::TooManyPlaces => "more than 16 places",
             PnmlError::UnknownPlaceRef => "arc references unknown place",
+            PnmlError::WeightedArc => "weighted arc: this tier is 1-safe only",
         };
         f.write_str(s)
     }
@@ -124,7 +130,11 @@ fn attr_value<'a>(s: &'a str, at: usize, name: &str) -> Result<&'a str, PnmlErro
     // search within this tag only (up to '>' from `at`)
     let end = find_sub(&b[at..], b">").ok_or(PnmlError::Malformed)? + at;
     while i + pat.len() <= end {
-        if b[i..i + pat.len()] == *pat.as_bytes() {
+        // Token boundary: `id="` must not false-match the tail of `uid="` or
+        // `data-id="`. The byte before the attribute name must start the
+        // attribute position itself (`at`) or be XML whitespace.
+        let boundary_ok = i == at || matches!(b[i - 1], b' ' | b'\t' | b'\n' | b'\r');
+        if boundary_ok && b[i..i + pat.len()] == *pat.as_bytes() {
             let vs = i + pat.len();
             let ve = find_sub(&b[vs..end], b"\"").ok_or(PnmlError::Malformed)? + vs;
             return Ok(&s[vs..ve]);
@@ -313,7 +323,17 @@ fn parse_arc(sc: &mut Scanner, doc: &mut NetDoc) -> Result<(), PnmlError> {
     if open.ends_with("/>") {
         return Ok(());
     }
+    // Fail-closed body inspection: this tier is 1-safe only. Any content in
+    // the arc body — an `<inscription>` (weight != 1 is the common case), or
+    // any other child element — means a construct outside the accepted
+    // subset. Refuse the whole document as WeightedArc: weighted nets are out
+    // of grammar, not truncated into weight-1 nets.
+    let body_start = sc.pos;
     sc.find(b"</arc>")?;
+    let body = &sc.s_full()[body_start..sc.pos - "</arc>".len()];
+    if body.bytes().any(|b| !matches!(b, b' ' | b'\t' | b'\n' | b'\r')) {
+        return Err(PnmlError::WeightedArc);
+    }
     Ok(())
 }
 

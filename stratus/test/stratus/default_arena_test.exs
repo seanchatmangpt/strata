@@ -37,8 +37,10 @@ defmodule Stratus.Valve.DefaultArenaTest do
 
     assert is_binary(commit)
     assert bit_size(commit) == 256
-    # Status bit (LSB of byte 0) is necessarily 0 on the admit path.
-    assert <<_::7, 0::1, _::248>> = commit
+    # KG-42 wire law: the admit register IS the universe digest — byte 0 is
+    # not the 0x02 refusal status code.
+    assert <<byte0, _::binary>> = commit
+    refute byte0 == 0x02
     # Deterministic: same frame, same universe digest.
     assert {:ok, %{commit_hash: ^commit}} = DefaultArena.actuate(frame())
   end

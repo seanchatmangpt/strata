@@ -159,6 +159,9 @@ defmodule Stratus.ValveTest do
              Valve.handoff_to_arena(IO.iodata_to_binary([header, payload]))
 
     assert bit_size(commit) == 256
-    assert <<_::7, 0::1, _::248>> = commit
+    # KG-42 wire law: admit register IS the universe digest — byte 0 is not
+    # the 0x02 refusal status code.
+    assert <<byte0, _::binary>> = commit
+    refute byte0 == 0x02
   end
 end

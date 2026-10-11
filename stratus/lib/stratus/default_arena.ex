@@ -19,13 +19,16 @@ defmodule Stratus.Valve.DefaultArena do
   ## Output register contract (extended, see temprun/src/receipt.rs)
 
   The output register file is exactly 32 bytes — one opaque receipt. It
-  cannot carry the commit hash in bytes 8..40, so the contract is:
+  cannot carry the commit hash in bytes 8..40, so the contract is (KG-42
+  wire law):
 
-    - status: bit 0 of byte 0 (0 = admit, 1 = refuse, constant-time).
-    - commit hash: the full 32-byte register payload itself — the BLAKE3
+    - status: byte 0 IS the status code — refuse iff byte 0 == 0x02
+      (constant-time, no error-class entropy).
+    - commit hash: on admit the register IS the full 32-byte BLAKE3
       universe digest over the assembled git object stream (the Merkle
-      commit binding) with the status bit necessarily 0 on the admit path
-      (`temprun::receipt::commit_hash` documents the same mapping).
+      commit binding), byte 0 untouched (`temprun::receipt::commit_hash`
+      documents the same mapping; a refusal register must never be read
+      as a commit hash).
 
   ## Frame -> ArenaInput mapping (inside the wrapper)
 
@@ -55,19 +58,18 @@ defmodule Stratus.Valve.DefaultArena do
     end
   end
 
-  # Status = bit 0 of byte 0 (LSB; Elixir matches bits MSB-first, so the
-  # pattern skips 7 high bits first). 0 = admit.
-  defp classify_receipt(
-         <<_::size(7), 0::size(1), _::size(248)>> = receipt,
-         _frame
-       ) do
-    {:ok, %{status: :ok, commit_hash: receipt}}
-  end
-
-  defp classify_receipt(_refused, frame) do
+  # Wire law (KG-42): receipt byte 0 IS the status code — refuse iff it is
+  # the 0x02 code. Admit: the register is the untouched universe digest.
+  # Ambiguity bound: a digest whose byte 0 is 0x02 classifies as a refusal
+  # with p = 1/256 (fail-closed direction); mirrored in temprun receipt.rs.
+  defp classify_receipt(<<0x02, _rest::binary>>, frame) do
     # No error-class entropy on the wire; the fuel field is public
     # frame-header data, not refusal entropy.
     if header_fuel(frame) == 0, do: {:error, :fuel_exhausted}, else: {:error, :refused}
+  end
+
+  defp classify_receipt(receipt, _frame) do
+    {:ok, %{status: :ok, commit_hash: receipt}}
   end
 
   defp header_fuel(<<_::size(128), fuel::64, _::binary>>), do: fuel

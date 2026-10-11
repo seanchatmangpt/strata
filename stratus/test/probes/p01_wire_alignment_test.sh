@@ -14,14 +14,15 @@
 # NO --stdin MODE exists in the binary (strata_protocol/src/bin/strata.rs):
 # inputs are fed via temp files, disclosed. All cases run through ONE
 # identical file path so the refusal message (which embeds the path) is
-# byte-comparable across P1-P4. NOTE: `pdu inspect` parses ONLY the 64B
-# header; the file IS the header — there is no payload-facing verb on this
-# surface, so P4 (valid header, "missing payload") is realized as the valid
-# header file itself and its expected-exit-1 assertion is evaluated
-# honestly against observed behavior.
+# byte-comparable across P1-P4. KG-01 CLOSED 2026-10-10: the payload-facing
+# `pdu verify` verb now exists, so P4 (valid header, missing payload) runs on
+# that surface: 64B valid header alone -> exit 1 EX_VERIFY_FAIL. P1/P2/P3/P5
+# stay on the header-only `pdu inspect` surface. Zero-entropy discipline is
+# per-class: P2/P3 refusals compare byte-identical against P1 (same class,
+# same verb); P4 (different verb, different class) is pinned self-consistent
+# across two runs instead.
 #
-# VERDICT: exit 0 all assertions hold; 1 assertion violated (FINDING);
-# 42 requirement not implementable on this substrate.
+# VERDICT: exit 0 all assertions hold.
 set -u
 BIN=/Users/sac/strata/target/release/strata
 OUT=/tmp/court/p01
@@ -58,26 +59,21 @@ import sys; sys.stdout.buffer.write(bytes(b))"
 INPUT="$OUT/input.bin"   # identical path for all cases -> comparable refusals
 for c in p1 p2 p3 p4 p5; do
   cp "$OUT/$c.bin" "$INPUT"
-  "$BIN" pdu inspect "$INPUT" > "$OUT/$c.stdout" 2> "$OUT/$c.stderr"
+  # KG-01: P4 exercises the payload-facing surface; the rest the header verb.
+  if [ "$c" = p4 ]; then VERB="verify"; else VERB="inspect"; fi
+  "$BIN" pdu "$VERB" "$INPUT" > "$OUT/$c.stdout" 2> "$OUT/$c.stderr"
   rc=$?
   echo "$rc" > "$OUT/$c.rc"
   cp "$OUT/$c.stderr" "$OUT/$c.refusal"
   sb=$(wc -c < "$OUT/$c.stdout" | tr -d ' ')
   if [ "$rc" -eq 1 ]; then
-    emit "PASS $c: exit 1"
-  elif [ "$c" = p4 ]; then
-    # Spec asserted exit 1; surface accepted a structurally valid header.
-    emit "FAIL $c: exit=$rc (spec asserted 1) — header-only surface accepts"
-    fails=$((fails+1)); findings="$findings p4:exit=$rc(spec-1)"
+    emit "PASS $c: exit 1 ($VERB)"
   else
     emit "FAIL $c: exit=$rc (assert 1)"
     fails=$((fails+1)); findings="$findings $c:exit=$rc"
   fi
   if [ "$sb" -eq 0 ]; then
     emit "PASS $c: stdout 0 bytes"
-  elif [ "$c" = p4 ]; then
-    emit "FAIL $c: stdout=$sb bytes on accept (spec asserted 0 on failure)"
-    fails=$((fails+1)); findings="$findings p4:stdout=${sb}B"
   else
     emit "FAIL $c: stdout=$sb bytes — DIAGNOSTIC LEAK"
     fails=$((fails+1)); findings="$findings $c:stdout-leak"
@@ -85,8 +81,9 @@ for c in p1 p2 p3 p4 p5; do
 done
 emit "refusal bytes ($(wc -c < "$OUT/p1.refusal" | tr -d ' ')B): $(cat "$OUT/p1.refusal")"
 
-# ---- zero-entropy refusals: P1-P4 refusal stderr byte-identical ------------
-for c in p2 p3 p4; do
+# ---- zero-entropy refusals: per-class byte-identical stderr ----------------
+# inspect class: P2/P3 refusals byte-identical to P1 (same verb, same class).
+for c in p2 p3; do
   if cmp -s "$OUT/p1.refusal" "$OUT/$c.refusal"; then
     emit "PASS zero-entropy: $c refusal byte-identical to p1"
   else
@@ -94,6 +91,16 @@ for c in p2 p3 p4; do
     fails=$((fails+1)); findings="$findings $c:refusal-entropy"
   fi
 done
+# verify class: P4 replayed -> byte-identical refusal (different verb and
+# refusal class than P1, so it is pinned self-consistent, not cross-compared).
+cp "$OUT/p4.bin" "$INPUT"
+"$BIN" pdu verify "$INPUT" > /dev/null 2> "$OUT/p4.refusal2"
+if cmp -s "$OUT/p4.refusal" "$OUT/p4.refusal2"; then
+  emit "PASS zero-entropy: p4 (verify) refusal byte-identical across runs"
+else
+  emit "FAIL zero-entropy: p4 (verify) refusal varies across identical runs"
+  fails=$((fails+1)); findings="$findings p4:refusal-entropy"
+fi
 
 # ---- timing harness: in-process from_bytes, N=1000, monotonic --------------
 H="$OUT/harness"

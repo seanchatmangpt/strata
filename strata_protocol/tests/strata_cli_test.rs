@@ -120,6 +120,126 @@ fn pdu_inspect_missing_file_is_usage_error_not_panic() {
     assert!(err.contains("cannot read"), "stderr: {err}");
 }
 
+// ---- pdu verify (KG-01 payload-facing refusal surface) ---------------------
+
+/// Two sorted SPO quads: the minimal valid payload for N=1, M=1.
+fn sorted_spo_payload() -> Vec<u8> {
+    let q = |s: u64, p: u64, o: u64, t: u64| {
+        let mut b = Vec::new();
+        b.extend_from_slice(&s.to_be_bytes());
+        b.extend_from_slice(&p.to_be_bytes());
+        b.extend_from_slice(&o.to_be_bytes());
+        b.extend_from_slice(&t.to_be_bytes());
+        b
+    };
+    let mut payload = q(1, 2, 3, 10);
+    payload.extend(q(4, 5, 6, 20));
+    payload
+}
+
+#[test]
+fn pdu_verify_full_valid_frame_exit_zero_prints_frame_ok() {
+    let t = TempDir::new("verify-ok");
+    let mut frame = clap_header(0, 7, 100, 1, 1);
+    frame.extend(sorted_spo_payload());
+    let f = t.write("frame.bin", &frame);
+    let (code, out, err) = run(&["pdu", "verify", f.to_str().unwrap()]);
+    assert_eq!(code, 0, "stderr: {err}");
+    assert!(out.contains("permutation       0"), "stdout: {out}");
+    assert!(out.contains("payload_bytes     64"), "stdout: {out}");
+    assert!(out.contains("frame-ok          2 quads sorted per permutation 0"));
+}
+
+#[test]
+fn pdu_verify_preamble_frame_dual_read_exit_zero() {
+    // The STRA transport preamble must dual-read: a preamble'd frame whose
+    // inner header + payload conform verifies exactly like the raw frame.
+    let t = TempDir::new("verify-preamble");
+    let mut frame = clap_header(0, 7, 100, 1, 1);
+    frame.extend(sorted_spo_payload());
+    let wrapped = strata_protocol::frame_wrap(&frame).expect("valid frame wraps");
+    let f = t.write("framed.bin", &wrapped);
+    let (code, out, err) = run(&["pdu", "verify", f.to_str().unwrap()]);
+    assert_eq!(code, 0, "stderr: {err}");
+    assert!(out.contains("frame-ok          2 quads sorted per permutation 0"));
+}
+
+#[test]
+fn pdu_verify_valid_header_missing_payload_refuses_exit_one() {
+    // The P4 class: structurally valid header, payload entirely absent —
+    // the refusal the header-only `pdu inspect` surface could not express.
+    let t = TempDir::new("verify-nopayload");
+    let f = t.write("hdr.bin", &clap_header(0, 7, 100, 1, 1));
+    let (code, out, err) = run(&["pdu", "verify", f.to_str().unwrap()]);
+    assert_eq!(code, 1, "EX_VERIFY_FAIL expected, stderr: {err}");
+    assert!(out.is_empty(), "no stdout on refusal");
+    assert!(err.contains("refused"), "stderr: {err}");
+    assert!(err.contains("payload missing or short"), "stderr: {err}");
+}
+
+#[test]
+fn pdu_verify_corrupt_preamble_refuses_despite_valid_inner_header() {
+    // Poka-Yoke: preamble-layer corruption refuses before the CLAP parse,
+    // even when the inner 64-byte header is itself valid.
+    let t = TempDir::new("verify-badpreamble");
+    let mut frame = clap_header(0, 7, 100, 1, 1);
+    frame.extend(sorted_spo_payload());
+    let mut wrapped = strata_protocol::frame_wrap(&frame).expect("valid frame wraps");
+    wrapped[4] = 0x09; // preamble version: not 0x01
+    let f = t.write("bad.bin", &wrapped);
+    let (code, out, err) = run(&["pdu", "verify", f.to_str().unwrap()]);
+    assert_eq!(code, 1, "stderr: {err}");
+    assert!(out.is_empty());
+    assert!(err.contains("refused"), "stderr: {err}");
+}
+
+#[test]
+fn pdu_verify_segment_count_mismatch_refuses() {
+    let t = TempDir::new("verify-count");
+    let mut frame = clap_header(0, 7, 100, 2, 0); // declares 2 quads...
+    frame.extend_from_slice(&sorted_spo_payload()[..32]); // ...carries 1
+    let f = t.write("short.bin", &frame);
+    let (code, out, err) = run(&["pdu", "verify", f.to_str().unwrap()]);
+    assert_eq!(code, 1, "stderr: {err}");
+    assert!(out.is_empty());
+    assert!(err.contains("payload missing or short"), "stderr: {err}");
+}
+
+#[test]
+fn pdu_verify_missorted_segments_refuse_for_declared_permutation() {
+    let t = TempDir::new("verify-unsorted");
+    let mut frame = clap_header(0, 7, 100, 0, 2);
+    let payload = sorted_spo_payload();
+    frame.extend_from_slice(&payload[32..]); // (4,5,6,..) first...
+    frame.extend_from_slice(&payload[..32]); // ...(1,2,3,..) second: mis-sorted SPO
+    let f = t.write("unsorted.bin", &frame);
+    let (code, out, err) = run(&["pdu", "verify", f.to_str().unwrap()]);
+    assert_eq!(code, 1, "stderr: {err}");
+    assert!(out.is_empty());
+    assert!(err.contains("mis-sorted"), "stderr: {err}");
+}
+
+#[test]
+fn pdu_verify_refusal_is_zero_entropy_same_input_same_stderr() {
+    // Constant-time refusal discipline at the CLI: the same refusal class on
+    // the same path emits byte-identical stderr across runs.
+    let t = TempDir::new("verify-det");
+    let f = t.write("hdr.bin", &clap_header(0, 7, 100, 1, 1));
+    let (code1, out1, err1) = run(&["pdu", "verify", f.to_str().unwrap()]);
+    let (code2, out2, err2) = run(&["pdu", "verify", f.to_str().unwrap()]);
+    assert_eq!(code1, 1);
+    assert_eq!(code2, 1);
+    assert_eq!(out1, out2);
+    assert_eq!(err1, err2, "same class refusal must be byte-identical");
+}
+
+#[test]
+fn pdu_verify_missing_file_is_usage_error() {
+    let (code, _, err) = run(&["pdu", "verify", "/nonexistent/strata-missing.bin"]);
+    assert_eq!(code, 2, "usage-class exit expected");
+    assert!(err.contains("cannot read"), "stderr: {err}");
+}
+
 // ---- sign / verify --------------------------------------------------------
 
 #[test]

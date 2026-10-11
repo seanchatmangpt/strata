@@ -5,6 +5,8 @@
 //!
 //! Subcommands:
 //!   pdu inspect <file>            parse a 64B CLAP/1.0 header, print fields
+//!   pdu verify <file>             full-frame parse: header + payload length +
+//!                                 segment permutation (KG-01 refusal surface)
 //!   sign <seed> <msg> -o <sig>    ML-DSA-65 deterministic sign (72B payload)
 //!   verify <pub> <msg> <sig>      ML-DSA-65 verify (exit 0 ok / 1 bad)
 //!   receipt verify <file>         3381B wire-length + digest recomputation
@@ -27,7 +29,8 @@ mod signer;
 use signer::{AttestedPayload, Signer, PAYLOAD_LEN, PUBLIC_KEY_LEN, SEED_LEN, SIGNATURE_LEN};
 
 use strata_protocol::receipt::AttestationReceipt;
-use strata_protocol::{pdu::PduHeader, Error};
+use strata_protocol::quad::permutation::verify_segment_permutation;
+use strata_protocol::{frame_parse, pdu::PduHeader, quad::Quad, Error};
 
 const EX_USAGE: u8 = 2; // bad arguments, unreadable files, invalid input
 const EX_VERIFY_FAIL: u8 = 1; // input parsed but verification failed
@@ -93,40 +96,117 @@ fn main() -> ExitCode {
         Some("cas") => cmd_cas(&args[1..]),
         _ => fail(
             EX_USAGE,
-            "usage: strata <pdu inspect|sign|verify|receipt verify|cas put|cas get> ...",
+            "usage: strata <pdu inspect|pdu verify|sign|verify|receipt verify|cas put|cas get> ...",
         ),
     }
 }
 
 fn cmd_pdu(args: &[String]) -> ExitCode {
-    if args.len() != 2 || args[0] != "inspect" {
-        return fail(EX_USAGE, "usage: strata pdu inspect <file>");
+    match (args.first().map(String::as_str), args.len()) {
+        (Some("inspect"), 2) => pdu_inspect(&args[1]),
+        (Some("verify"), 2) => pdu_verify(&args[1]),
+        _ => fail(EX_USAGE, "usage: strata pdu inspect <file> | strata pdu verify <file>"),
     }
-    let bytes = match read_file(&args[1]) {
+}
+
+fn pdu_inspect(path: &str) -> ExitCode {
+    let bytes = match read_file(path) {
         Ok(b) => b,
         Err(e) => return fail(EX_USAGE, &e),
     };
     match PduHeader::from_bytes(&bytes) {
         Ok(h) => {
-            println!("magic             CLAP");
-            println!("version           1");
-            println!("permutation       {}", h.permutation);
-            println!("epoch_nonce       {}", h.epoch_nonce);
-            println!("fuel_lease        {}", h.fuel_lease);
-            println!(
-                "parent_receipt_digest {}",
-                hex(&h.parent_receipt_digest)
-            );
-            println!("history_quad_count {}", h.history_quad_count);
-            println!("candidate_quad_count {}", h.candidate_quad_count);
-            println!("segment_len       {}", h.segment_len());
+            print_header_fields(&h);
             ExitCode::SUCCESS
         }
         Err(Error::Invalid) => fail(
             EX_VERIFY_FAIL,
-            &format!("{}: refused: not a valid 64-byte CLAP/1.0 header", args[1]),
+            &format!("{path}: refused: not a valid 64-byte CLAP/1.0 header"),
         ),
     }
+}
+
+fn print_header_fields(h: &PduHeader) {
+    println!("magic             CLAP");
+    println!("version           1");
+    println!("permutation       {}", h.permutation);
+    println!("epoch_nonce       {}", h.epoch_nonce);
+    println!("fuel_lease        {}", h.fuel_lease);
+    println!(
+        "parent_receipt_digest {}",
+        hex(&h.parent_receipt_digest)
+    );
+    println!("history_quad_count {}", h.history_quad_count);
+    println!("candidate_quad_count {}", h.candidate_quad_count);
+    println!("segment_len       {}", h.segment_len());
+}
+
+/// KG-01 payload-facing refusal surface: full-frame parse (STRA preamble or
+/// raw CLAP dual-read), then payload-length and segment-permutation checks.
+/// Fail-closed: a valid header over a missing/short/mismatched payload or
+/// mis-sorted segments is an EX_VERIFY_FAIL refusal, never a partial accept.
+fn pdu_verify(path: &str) -> ExitCode {
+    let bytes = match read_file(path) {
+        Ok(b) => b,
+        Err(e) => return fail(EX_USAGE, &e),
+    };
+    let (h, payload) = match frame_parse(&bytes) {
+        Ok(hp) => hp,
+        Err(Error::Invalid) => {
+            return fail(
+                EX_VERIFY_FAIL,
+                &format!("{path}: refused: not a valid CLAP/1.0 frame"),
+            )
+        }
+    };
+    let expected = h.segment_len() as usize;
+    if payload.len() < expected {
+        return fail(
+            EX_VERIFY_FAIL,
+            &format!(
+                "{path}: refused: valid header, payload missing or short (declared {expected} payload bytes, got {})",
+                payload.len()
+            ),
+        );
+    }
+    if payload.len() > expected {
+        return fail(
+            EX_VERIFY_FAIL,
+            &format!(
+                "{path}: refused: payload length {} exceeds declared segment_len {expected}",
+                payload.len()
+            ),
+        );
+    }
+    // The 64-byte header sits immediately before the payload slice, in both
+    // the raw-CLAP and preamble'd reads frame_parse admitted.
+    let header_bytes = &bytes[bytes.len() - 64 - payload.len()..bytes.len() - payload.len()];
+    let mut quads = Vec::with_capacity(payload.len() / 32);
+    for chunk in payload.chunks_exact(32) {
+        match Quad::from_bytes(chunk) {
+            Ok(q) => quads.push(q),
+            Err(Error::Invalid) => {
+                return fail(EX_VERIFY_FAIL, &format!("{path}: refused: malformed quad segment"))
+            }
+        }
+    }
+    if verify_segment_permutation(header_bytes, &quads).is_err() {
+        return fail(
+            EX_VERIFY_FAIL,
+            &format!(
+                "{path}: refused: segments mis-sorted for declared permutation {}",
+                h.permutation
+            ),
+        );
+    }
+    print_header_fields(&h);
+    println!("payload_bytes     {}", payload.len());
+    println!(
+        "frame-ok          {} quads sorted per permutation {}",
+        quads.len(),
+        h.permutation
+    );
+    ExitCode::SUCCESS
 }
 
 fn cmd_sign(args: &[String]) -> ExitCode {

@@ -76,8 +76,10 @@ asserted against the ml-dsa crate by `signer::assert_wire_sizes`).
 
 **Refusal** = exactly 32 opaque zero bytes, `H(Error)=0`
 (`strata_protocol/src/refusal.rs`); constant-time, zeroized intermediates.
-[ADJUDICATED 2026-10-10 (Probe 05): wire refusal STATUS encoding = LSB refuse-bit
-(byte0 bit0), not a 0x02 byte code. Evidence: KNOWN_GAPS.md KG-42]
+[ADJUDICATED 2026-10-10 (Probe 05), FIXED same day (KG-42): wire refusal STATUS
+= the spec'd 0x02 byte code — arena receipt byte 0 = 0x02 exactly on refuse, the
+admit register is the untouched universe digest, consumers refuse iff
+byte0 == 0x02 (1/256 fail-closed ambiguity bound; `temprun/src/receipt.rs`)]
 
 ## Invariants
 

@@ -6,7 +6,7 @@ disk 2026-10-10 against probe headers, `docs/COURT_ADJUDICATIONS.md`,
 FR/NFR test files. Companions: `docs/COURT_ADJUDICATIONS.md` (ledger),
 `docs/NFR3_PRD_REVISION.md` (NFR-3 formal revision).
 
-## KG-01 — CLI has no payload-facing refusal surface
+## KG-01 — CLI has no payload-facing refusal surface (FIXED)
 
 - **Requirement ref**: Probe 01 (AGENT-01-WIRE-ALIGNMENT); P4 refusal case.
 - **Gap**: `strata pdu inspect` parses ONLY the 64-byte header
@@ -17,8 +17,12 @@ FR/NFR test files. Companions: `docs/COURT_ADJUDICATIONS.md` (ledger),
   violated, finding recorded).
 - **Evidence**: `stratus/test/probes/p01_wire_alignment_test.sh` header lines
   12–18; `docs/COURT_ADJUDICATIONS.md` probe 01 row (FAIL — finding).
-- **Disposition**: accepted for v26.10.10; refusal path must not be claimed
-  until a payload-facing surface exists.
+- **Disposition**: FIXED 2026-10-10 — payload-facing `strata pdu verify`
+  verb landed: full-frame parse (`framing::frame_parse`, STRA preamble /
+  raw CLAP dual-read) + payload-length check + segment-permutation check;
+  valid header over missing/short/mismatched payload or mis-sorted segments
+  refuses exit 1 (EX_VERIFY_FAIL). CLI court `strata_protocol/tests/
+  strata_cli_test.rs` 23/23; probe re-run PASS exit 0.
 
 ## KG-02 — Commit OIDs are wire-permutation identity
 
@@ -32,7 +36,7 @@ FR/NFR test files. Companions: `docs/COURT_ADJUDICATIONS.md` (ledger),
 - **Disposition**: accepted — universe digests hold; commit-OID
   canonicalization is a recorded finding (hold).
 
-## KG-42 — Wire refusal status is LSB bit, not spec 0x02 byte code
+## KG-42 — Wire refusal status is LSB bit, not spec 0x02 byte code (FIXED)
 
 - **Requirement ref**: Probe 05 (AGENT-05-POWL-PREREQUISITE-SKIP).
 - **Gap**: the observed refuse status is an LSB bit in the status word, not
@@ -41,8 +45,37 @@ FR/NFR test files. Companions: `docs/COURT_ADJUDICATIONS.md` (ledger),
 - **Evidence**: `stratus/test/probes/p05_powl_skip_test.sh` (exit-42
   KNOWN_GAP path, lines 117–137); `docs/COURT_ADJUDICATIONS.md` probe 05 row
   and FR-3 adjudication ("stays KNOWN-GAP-42 for the status bitmask").
-- **Disposition**: accepted as KNOWN-GAP-42 — substrate doc comment corrected
-  to observed/spec'd bit placement; bit-position gap remains open.
+- **Disposition**: FIXED 2026-10-10 — wire law changed to the spec'd byte
+  code: refusal receipt byte 0 = 0x02 exactly (bytes 1..31 = universe digest
+  bytes 1..31); admit register = the untouched universe digest; consumers
+  refuse iff byte0 == 0x02, with the 1/256 fail-closed ambiguity bound
+  documented in `temprun/src/receipt.rs` (zero-entropy law unchanged, commit
+  hash still unrecoverable from refusals). Sealed branchlessly (mask-negate
+  shape parity); golden vectors regenerated as the deliberate diff;
+  `temprun` + `strata_protocol` + stratus courts coherent; probe re-run PASS
+  exit 0 (byte0=0x2, register frozen, CAS empty).
+
+## KG-P14 — chained admit stream vs 1/256 status-code ambiguity (ESCALATED)
+
+- **Requirement ref**: Probe 14 (AGENT-14-ZERO-HEAP-TERM-PASSING), Phase A.
+- **Gap**: under the KG-42 wire law (refuse iff receipt byte0 == 0x02; admit
+  register = untouched universe digest), a universe digest whose byte0 is
+  0x02 classifies as a refusal with p = 1/256 — the documented fail-closed
+  ambiguity. On a chained 1000-admit stream (p14 Phase A: parent = live
+  register, nonce varies), the first collision refuses AND breaks parent
+  chaining, so the "1000/1000 admit" assertion fails deterministically
+  (witnessed at frame 92: all sieves pass, `{:error, :refused}`;
+  P(1000 clean) = (255/256)^1000 ≈ 2%). Phase B additionally carries a
+  pre-existing builder bug (declares N=M=0 while carrying 10240B payload —
+  malformed under the KG-PDU valve law).
+- **Evidence**: `stratus/test/probes/p14_zero_heap_test.sh` (exit 1);
+  manual chain replay frames 1..120 — first refuse at i=92
+  `{:error, :refused}`; `temprun/src/receipt.rs` ambiguity-bound doc.
+- **Disposition**: ESCALATED to operator 2026-10-10 — wire-contract decision
+  required: (a) fallback law (admit → byte0 = 0x00, refuse → 0x02;
+  unambiguous status channel, register carries 31/32 digest bytes) or
+  (b) keep the KG-42 law and re-adjudicate p14's Phase A admission assertion
+  to the ambiguity bound. No unilateral change applied.
 
 ## KG-03 — FR-3 cycle-detection boundary
 

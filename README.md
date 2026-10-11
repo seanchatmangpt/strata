@@ -9,7 +9,7 @@ SELECT/CONSTRUCT/DO separation).
 | Component | Standing | Evidence |
 |---|---|---|
 | `strata_protocol/` PDU/quads/receipt/refusal/signer | ALIVE | 122 tests, 0 failures across 17 test binaries (incl. CAS suites, receipt chain-linking, PDU-receipt interop, epoch-nonce, refusal-wire courts) — re-run 2026-10-10. Wire constants verified in code: 64 B header, magic `0x434C_4150`, receipt 3381 B, refusal 32 B, ML-DSA-65 signature 3309 B. Wire benchmarks (`benches/wire_slo.rs`, `bench_wire`): header round-trip ~1.7 ns, ML-DSA sign ~350 µs, smoke SLO gates green. |
-| `strata` CLI binary | ALIVE | `strata_protocol/src/bin/strata.rs` — verbs `pdu inspect`, `pdu sign`, `pdu verify`, `receipt verify`, `cas put`, `cas get`; 15 subprocess tests in `strata_cli_test.rs`, all green. |
+| `strata` CLI binary | ALIVE | `strata_protocol/src/bin/strata.rs` — verbs `pdu inspect`, `pdu verify` (full-frame KG-01 refusal surface), `sign`, `verify`, `receipt verify`, `cas put`, `cas get`; 23 subprocess tests in `strata_cli_test.rs`, all green. |
 | `stratus/` release build | ALIVE | `MIX_ENV=prod mix release stratus` works (`docs/RELEASE.md`, incl. stale-config recovery note). |
 | `temprun/` fuel/clock/coords/conformance/git/receipt | ALIVE | `cargo test -p temprun`: 55 passed, 0 failed (1 ignored) incl. conformance/git/clock module courts; wasm32 build 18,351 bytes, imports = ∅ verified byte-level (`just check-wasm-imports`). |
 | `temprun/` soak capability harness | ALIVE | `cargo run -p temprun --release --bin soak -- --mixed` — 2026-10-10, 10 runs × 10^6 cycles all PASS (Cp ≥ 2.0 / Cpk ≥ 1.5): min Cp 6.424, mean 6.715, max 6.748 (`docs/SOAK_LOG.md`); constant-time refusal gate PASS all 4 classes all 10 runs. |

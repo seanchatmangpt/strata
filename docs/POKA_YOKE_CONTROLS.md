@@ -113,8 +113,8 @@ FR-3 adjudication: fuel-charge ordering unchanged.
 
 **Fail-closed action**: typed `AcyclicRefusal::{Cycle, ClockInversion,
 OverCap}` (`acyclicity.rs:49-56`) → `refuse = true` → constant-time opaque
-receipt. Exit-code surface: receipt status bit 0 of byte 0 = 1
-(`lib.rs:22-23`).
+receipt. Exit-code surface: receipt byte 0 = the 0x02 refusal status code
+(`receipt.rs` `REFUSED_STATUS`; KG-42 wire law, 2026-10-10).
 
 **Evidence**: `temprun/tests/fr3_acyclicity_test.rs`, `fr3_causal_test.rs`
 (pins the formerly-admitting `e1→e2→e1` case),
@@ -199,8 +199,9 @@ refuses constant-time (`lib.rs:58`; court: `lib.rs:153-160`
 `fuel_exhaustion_constant_time_refusal` — identical receipts under equal
 exhaustion, no error entropy). Gas assembly (`git::assemble`) runs on BOTH
 paths so refusal and admission do identical shape work (`lib.rs:81-84`),
-then `receipt::seal` (`temprun/src/receipt.rs:8-14`: refusal differs from
-admit only in bit 0 of byte 0; remaining 255 bits are the universe digest).
+then `receipt::seal` (`temprun/src/receipt.rs`: refusal differs from admit
+only in byte 0, which becomes the fixed 0x02 status code; bytes 1..31 are the
+universe digest — KG-42 wire law, 2026-10-10).
 
 **GATE 2's position**: the BEAM valve check (`valve.ex:152-156`) is upstream
 of this entire pipeline — it gates frame INGRESS (continuity + positive

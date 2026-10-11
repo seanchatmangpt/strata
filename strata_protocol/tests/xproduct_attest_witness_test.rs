@@ -13,11 +13,7 @@
 //!      pipeline accepts ONLY the immediate predecessor; there is no
 //!      ancestor-walk tolerance, no genesis shortcut past epoch 1.
 
-#[path = "../src/signer.rs"]
-#[allow(dead_code)]
-mod signer;
-
-use signer::{Seal, Signer};
+use strata_protocol::signer::{Seal, Signer};
 
 use strata_protocol::receipt::AttestationReceipt;
 use strata_protocol::ML_DSA_65_SIG_LEN;

@@ -14,11 +14,7 @@
 //! message = 72-byte payload bytes, signature = 3309B, verified under the
 //! signer's 1952B public key.
 
-#[path = "../src/signer.rs"]
-#[allow(dead_code)]
-mod signer;
-
-use signer::{AttestedPayload, ConservationBalance, Seal, Signer, SEED_LEN};
+use strata_protocol::signer::{AttestedPayload, ConservationBalance, Seal, Signer, SEED_LEN};
 
 use strata_protocol::{AttestationReceipt, ML_DSA_65_SIG_LEN};
 

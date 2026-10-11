@@ -12,11 +12,7 @@
 //!   - At the raw-payload level the sig binds BYTES: any payload byte flip
 //!     (even one that leaves fields parseable) fails verification.
 
-#[path = "../src/signer.rs"]
-#[allow(dead_code)]
-mod signer;
-
-use signer::{AttestedPayload, Seal, Signer};
+use strata_protocol::signer::{AttestedPayload, Seal, Signer};
 
 use strata_protocol::pdu::PduHeader;
 use strata_protocol::quad::permutation;

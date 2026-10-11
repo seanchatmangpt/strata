@@ -7,11 +7,7 @@
 //! Real collaborators only (Chicago): real ML-DSA-65 keys, real BLAKE3
 //! digests, real zlib/SHA-1 CAS objects. No mocks.
 
-#[path = "../src/signer.rs"]
-#[allow(dead_code)]
-mod signer;
-
-use signer::{AttestedPayload, Signer, SEED_LEN};
+use strata_protocol::signer::{AttestedPayload, Signer, SEED_LEN};
 use strata_protocol::pdu::{PduHeader, PDU_HEADER_LEN, PDU_PERMUTATION_MAX};
 use strata_protocol::quad::permutation;
 use strata_protocol::receipt::AttestationReceipt;
@@ -166,7 +162,7 @@ fn sealed_frame(
         fuel_consumed: payload.fuel_consumed,
         signature: [0u8; strata_protocol::ML_DSA_65_SIG_LEN],
     };
-    use signer::Seal;
+    use strata_protocol::signer::Seal;
     receipt.seal(signer);
     Frame {
         header: hdr(permutation, fuel, fuel, parent, history.len() as u32, candidate.len() as u32),
@@ -646,7 +642,7 @@ fn rt_valid_signature_over_malformed_payload_never_admits() {
         "non-keyholder tampered universe refused by signature gate (no re-seal)"
     );
     {
-        use signer::Seal;
+        use strata_protocol::signer::Seal;
         tampered_universe.receipt.seal(&signer);
     }
     let mut p_d = Pipeline::new([8; SEED_LEN]);

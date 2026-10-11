@@ -16,8 +16,14 @@
 //! Per input: no panic (direct call; a panic fails the run naturally);
 //! `Ok` results must be structurally sane (>=1 transition, masks within
 //! 16 bits — trivially true of u16, asserted anyway); `Err` results must be
-//! one of the three typed `PnmlError` variants. Non-vacuity guard: every
+//! one of the four typed `PnmlError` variants. Non-vacuity guard: every
 //! stratum must produce >=1 Ok and >=1 Err. Total asserted == 1_000_000.
+//!
+//! LAW-CHANGE DISCLOSURE (lane W4-P3): `PnmlError::WeightedArc` was added —
+//! arc bodies with content (e.g. `<inscription><text>2</text></inscription>`)
+//! previously accepted-as-skipped now refuse. This can only convert previous
+//! `Ok` results into typed `Err`; the non-vacuity thresholds (>=1 per stratum)
+//! are unchanged and were re-run green against the new law.
 
 use strata_protocol::pnml::{parse, initial_marking, PnmlError};
 
@@ -99,7 +105,10 @@ fn court_one(input: &str) -> (bool, bool) {
             // Typed error only — no panic, no stringly failure.
             assert!(matches!(
                 e,
-                PnmlError::Malformed | PnmlError::TooManyPlaces | PnmlError::UnknownPlaceRef
+                PnmlError::Malformed
+                | PnmlError::TooManyPlaces
+                | PnmlError::UnknownPlaceRef
+                | PnmlError::WeightedArc
             ));
             (false, true)
         }

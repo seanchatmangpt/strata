@@ -43,7 +43,7 @@ checksum = "2af50177e190e07a26ab74f8b1efbfe2ef87da2116221318cb1c2e82baf7de06"
 
 [[package]]
 name = "bcinr-cmca"
-version = "26.9.28"
+version = "26.10.11"
 dependencies = [
  "bcinr-logic",
  "blake3",
@@ -53,18 +53,18 @@ dependencies = [
 
 [[package]]
 name = "bcinr-logic"
-version = "26.9.28"
+version = "26.10.11"
 
 [[package]]
 name = "bcinr-mfw-ir"
-version = "26.9.28"
+version = "26.10.11"
 dependencies = [
  "blake3",
 ]
 
 [[package]]
 name = "bcinr-powl"
-version = "26.9.28"
+version = "26.10.11"
 dependencies = [
  "bcinr-cmca",
  "bcinr-logic",

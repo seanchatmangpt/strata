@@ -1,16 +1,9 @@
 //! Chicago integration flow: Signer (ML-DSA-65) -> cas::emit_commit with the
 //! hex-encoded signature in the `ml-dsa-65-sig` header -> re-parse -> verify.
-//! Real keys, real objects, no doubles. signer.rs is included by path (same
-//! pattern as signer_test.rs); everything else comes from the crate's public API.
+//! Real keys, real objects, no doubles. signer.rs comes from the crate's
+//! public API (`pub mod signer;` in lib.rs).
 
-// signer.rs is a shared module also fully exercised by signer_test.rs; this
-// test only drives the sign/verify surface, so silence dead-code for the
-// rest of the included module (signer_test owns those items).
-#[path = "../src/signer.rs"]
-#[allow(dead_code)]
-mod signer;
-
-use signer::{AttestedPayload, Signer, SEED_LEN, SIGNATURE_LEN};
+use strata_protocol::signer::{AttestedPayload, Signer, SEED_LEN, SIGNATURE_LEN};
 use strata_protocol::cas::{emit_commit, inflate_object, CommitInput};
 
 /// Extract the value of a commit header line like `ml-dsa-65-sig <hex>\n`.

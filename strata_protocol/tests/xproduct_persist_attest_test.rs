@@ -19,11 +19,7 @@
 //!    persisted commits (anchor bind + sig verify + object-graph legs);
 //!    a single epoch's tamper is reported by index, not as a global failure.
 
-#[path = "../src/signer.rs"]
-#[allow(dead_code)]
-mod signer;
-
-use signer::{AttestedPayload, Signer, SEED_LEN, SIGNATURE_LEN};
+use strata_protocol::signer::{AttestedPayload, Signer, SEED_LEN, SIGNATURE_LEN};
 use strata_protocol::cas::{
     emit_blob, emit_commit, emit_tree, inflate_object, parse_tree, verify_object, CommitInput,
     TreeEntry,

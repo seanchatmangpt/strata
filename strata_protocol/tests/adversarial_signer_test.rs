@@ -2,13 +2,7 @@
 //! message-substitution, and edge-input attacks against the ML-DSA-65 signer.
 //! Real sign/verify ops only — no doubles. Included by path, owns no src.
 
-// Include-by-path compiles the full lib module into this test target; items the
-// court itself does not exercise trip dead_code here (they are live in the lib).
-#[path = "../src/signer.rs"]
-#[allow(dead_code)]
-mod signer;
-
-use signer::{
+use strata_protocol::signer::{
     AttestedPayload, Signer, PAYLOAD_LEN, PUBLIC_KEY_LEN, SEED_LEN, SIGNATURE_LEN,
 };
 

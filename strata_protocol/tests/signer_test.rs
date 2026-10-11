@@ -2,10 +2,7 @@
 //! round-trips over real keys, no doubles. The module is included by path so
 //! these tests own zero source files outside the lane boundary.
 
-#[path = "../src/signer.rs"]
-mod signer;
-
-use signer::{
+use strata_protocol::signer::{
     AttestedPayload, ConservationBalance, Seal, Signer, PAYLOAD_LEN, PUBLIC_KEY_LEN, SEED_LEN,
     SIGNATURE_LEN,
 };

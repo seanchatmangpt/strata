@@ -23,11 +23,7 @@
 //! the 72-byte signed payload) — no timestamp or wall-clock input anywhere,
 //! so identical traces attest identically.
 
-#[path = "../src/signer.rs"]
-#[allow(dead_code)]
-mod signer;
-
-use signer::{Seal, Signer};
+use strata_protocol::signer::{AttestedPayload, Seal, Signer};
 
 use strata_protocol::{logsink, ocel64, pn64, pnabi, receipt::AttestationReceipt, ronr};
 use strata_protocol::ML_DSA_65_SIG_LEN;
@@ -118,8 +114,8 @@ fn sealed_receipt(signer: &Signer, trace_digest: [u8; 32], fuel: u64) -> Attesta
 }
 
 /// The 72-byte attested payload for a trace digest + fuel.
-fn payload_for(trace_digest: [u8; 32], fuel: u64) -> signer::AttestedPayload {
-    signer::AttestedPayload {
+fn payload_for(trace_digest: [u8; 32], fuel: u64) -> AttestedPayload {
+    AttestedPayload {
         parent_digest: trace_digest,
         universe_digest: trace_digest,
         fuel_consumed: fuel,

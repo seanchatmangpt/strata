@@ -24,11 +24,8 @@ use temprun::{ArenaInput, ArenaOutput, RECEIPT_LEN};
 
 // signer.rs is a shared module also fully exercised by signer_test.rs; this
 // test only drives the sign surface for commit attestation.
-#[path = "../src/signer.rs"]
-#[allow(dead_code)]
-mod signer;
-
-use signer::{Signer, SEED_LEN};
+#[allow(unused_imports)]
+use strata_protocol::signer::{AttestedPayload, Signer, SEED_LEN};
 
 const FUEL_PER_RUN: u64 = 3;
 
@@ -210,7 +207,7 @@ fn pipeline(
         tree_hex: hex_encode(&det_hash(epoch)),
         parent_hex: parent_oid_hex,
         anchor_hex: hex_encode(&out.universe_digest),
-        ml_dsa_65_signature: signer.sign(&signer::AttestedPayload {
+        ml_dsa_65_signature: signer.sign(&AttestedPayload {
             parent_digest,
             universe_digest: universe,
             fuel_consumed: FUEL_PER_RUN,

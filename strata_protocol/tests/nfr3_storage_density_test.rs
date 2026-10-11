@@ -132,6 +132,58 @@ fn measure() -> Measurement {
     Measurement { loose_bytes: cas::stored_bytes(&objects) as u64 + index_overhead, pack_bytes: packed + index_overhead }
 }
 
+/// Second-surface measurement (C): the fielddelta varint packed topology
+/// (`cas::emit_blob_packed`, one packed loose blob per epoch delta). The
+/// raw `emit_blob` path above remains the DEFAULT stored topology (fail-closed
+/// conservatism: no byte-level court surface changes); this court pins the
+/// packed path's density on the same corpus so NFR-3's interim milestone is
+/// measured where it actually lives, not courted-but-unwired.
+#[test]
+fn nfr3_packed_second_surface_holds_operator_bound() {
+    let mut objects = Vec::new();
+    for epoch in 0..EPOCHS {
+        let quads = epoch_quads(epoch);
+        objects.push(cas::emit_blob_packed(&quads));
+    }
+    // Determinism: repeat, byte-for-byte.
+    for _ in 0..9 {
+        let again: Vec<cas::GitObject> =
+            (0..EPOCHS).map(|e| cas::emit_blob_packed(&epoch_quads(e))).collect();
+        assert_eq!(cas::stored_bytes(&again), cas::stored_bytes(&objects), "packed footprint nondeterministic");
+    }
+    // Integrity: every packed blob verifies by oid and parses back exactly.
+    for (epoch, obj) in objects.iter().enumerate() {
+        cas::verify_object(obj.oid, &obj.data).expect("packed object verifies");
+        let inflated = cas::inflate_object(&obj.data).expect("packed inflates");
+        let parsed = cas::parse_blob_packed(&inflated).expect("packed blob parses");
+        assert_eq!(parsed, epoch_quads(epoch as u64), "packed round-trip epoch {epoch}");
+    }
+    let packed_bytes = cas::stored_bytes(&objects) as u64 + EPOCHS * WormholeDelta::INDEX_OVERHEAD_BYTES as u64;
+    let packed_per_quad_millis = packed_bytes * 1000 / TOTAL_QUADS;
+    assert!(
+        packed_per_quad_millis <= 3_800,
+        "packed second surface {}.{:03} B/quad exceeds the 3.800 B/quad operator target",
+        packed_per_quad_millis / 1000,
+        packed_per_quad_millis % 1000,
+    );
+    // The packed topology must strictly dominate the raw loose topology on
+    // this corpus — otherwise the encoding adds nothing and this court is vacuous.
+    let raw_first = measure();
+    assert!(
+        packed_per_quad_millis < raw_first.loose_bytes * 1000 / TOTAL_QUADS,
+        "packed density does not beat raw loose density — second surface is vacuous",
+    );
+    eprintln!(
+        "NFR-3 second surface (packed fielddelta topology): {} B = {}.{:03} B/quad \
+         (raw loose: {}.{:03} B/quad; operator target <= 3.800 HELD)",
+        packed_bytes,
+        packed_per_quad_millis / 1000,
+        packed_per_quad_millis % 1000,
+        raw_first.loose_bytes * 1000 / TOTAL_QUADS / 1000,
+        raw_first.loose_bytes * 1000 / TOTAL_QUADS % 1000,
+    );
+}
+
 #[test]
 fn nfr3_density_measurements_pinned_bound_reported_as_gap() {
     // 1. Determinism: 10 identical passes, byte-for-byte.

@@ -17,6 +17,77 @@
 use strata_protocol::invariants::reachable_bitset;
 use strata_protocol::pnml::{initial_marking, parse, PnmlError};
 
+/// Courts 5-6 (lane W4-P3): rejection census for the two fail-closed gaps —
+/// weighted arcs (C1) and attribute-name false-match (C4).
+
+/// Court 5: a weight-2 arc (`<inscription><text>2</text></inscription>`)
+/// must be a typed `WeightedArc` refusal, never a silent weight-1 compile.
+/// This tier is 1-safe only: weighted nets are out of grammar, not truncated.
+#[test]
+fn weighted_arc_refused() {
+    // weight-2 pre-arc on t0
+    let w2 = net3().replace(
+        "<arc id=\"a0\" source=\"p0\" target=\"t0\"/>",
+        "<arc id=\"a0\" source=\"p0\" target=\"t0\"><inscription><text>2</text></inscription></arc>",
+    );
+    assert_eq!(parse(&w2), Err(PnmlError::WeightedArc));
+    assert_eq!(initial_marking(&w2), Err(PnmlError::WeightedArc));
+
+    // weight-2 post-arc on t0
+    let w2post = net3().replace(
+        "<arc id=\"a1\" source=\"t0\" target=\"p1\"/>",
+        "<arc id=\"a1\" source=\"t0\" target=\"p1\"><inscription><text>2</text></inscription></arc>",
+    );
+    assert_eq!(parse(&w2post), Err(PnmlError::WeightedArc));
+
+    // any other arc child element is equally out of grammar
+    let other = net3().replace(
+        "<arc id=\"a2\" source=\"p1\" target=\"t1\"/>",
+        "<arc id=\"a2\" source=\"p1\" target=\"t1\"><toolspecific tool=\"x\"/></arc>",
+    );
+    assert_eq!(parse(&other), Err(PnmlError::WeightedArc));
+
+    // whitespace-only arc bodies remain legal (cosmetic formatting)
+    let ws = net3().replace(
+        "<arc id=\"a3\" source=\"p2\" target=\"t1\"/>",
+        "<arc id=\"a3\" source=\"p2\" target=\"t1\">\n  </arc>",
+    );
+    assert!(parse(&ws).is_ok(), "whitespace-only arc body stays legal");
+}
+
+/// Court 6: attribute lookup is exact-name, not substring. A doc using
+/// `uid=` (or `data-id=`) instead of `id=` must NOT bind the uid value as
+/// the id — the correct attribute is absent, so the outcome is a typed
+/// refusal (Malformed), never a structurally different net.
+#[test]
+fn attr_name_token_boundary() {
+    // `uid="zz"` must not satisfy an `id=` lookup.
+    let uid_doc = net3().replace("id=\"p0\"", "uid=\"p0\"");
+    assert_eq!(
+        parse(&uid_doc),
+        Err(PnmlError::Malformed),
+        "uid= must not false-match id="
+    );
+    assert_eq!(initial_marking(&uid_doc), Err(PnmlError::Malformed));
+
+    // `data-id=` on the arc must not false-match `source=`'s neighbour either;
+    // rename arc id attr and the arc's id attr is unused — instead probe a
+    // place where only `data-id` exists.
+    let data_doc = net3().replace("id=\"p1\"", "data-id=\"p1\"");
+    assert_eq!(parse(&data_doc), Err(PnmlError::Malformed));
+
+    // Injection shape from the ERRC falsifier: `uid="zz"` adjacent to a real
+    // `id=` attribute — the real id must still win exactly.
+    let both = net3().replace("<place id=\"p0\">", "<place uid=\"zz\" id=\"p0\">");
+    let arcs = parse(&both).expect("real id= still parses with uid= alongside");
+    assert_eq!(arcs, vec![(0b001, 0b010), (0b110, 0b000)]);
+
+    // ...and a swapped order must parse identically (exact name, not
+    // first-substring).
+    let both_rev = net3().replace("<place id=\"p0\">", "<place id=\"p0\" uid=\"zz\">");
+    assert_eq!(parse(&both_rev).unwrap(), arcs);
+}
+
 /// The canonical valid 3-place / 2-transition PNML document.
 fn net3() -> String {
     r#"<?xml version="1.0"?>

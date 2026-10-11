@@ -2,11 +2,10 @@
 
 Mechanical witness valve for CLAP/1.0 frame ingress (Erlang/OTP, Elixir).
 
-## Environment (recorded deviation)
+## Environment
 
-PRD specifies Erlang/OTP 29. Implemented and tested on **Erlang/OTP 28
-(erts-16.2) with Elixir 1.19.5** — the available environment. No OTP-29-only
-features are used.
+PRD specifies Erlang/OTP 29. Implemented and tested on **Erlang/OTP 29
+(erts-17.1) with Elixir 1.20.4-otp-29**.
 
 ## Supervision tree
 

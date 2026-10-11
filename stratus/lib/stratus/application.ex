@@ -5,9 +5,6 @@ defmodule Stratus.Application do
   Children:
     - `Registry.Stratus` — process registry (future per-frame valve lanes).
     - `Stratus.Valve` — the mechanical witness valve GenServer.
-
-  Deviation note: PRD specifies Erlang/OTP 29; this environment provides
-  OTP 28 (erts-16.2) with Elixir 1.19.5. Implemented and tested on 28.
   """
   use Application
 

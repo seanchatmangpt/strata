@@ -26,3 +26,4 @@ stratus/_build-lane*/
 
 # Workflow phase artifacts (session scratch, regenerated per run)
 artifacts/
+__pycache__/

@@ -70,4 +70,46 @@ defmodule Stratus.Valve.ProvenanceTest do
     assert {:ok, turtle} = Provenance.to_turtle([ev(7, [], 1)], st, @base)
     assert turtle =~ "  ocel:activity <http://example.org/act/a~pprove> ;"
   end
+
+  test "shared vector parity court — canonical Turtle blocks" do
+    # Mirror of `shared_vector_parity_canonical_turtle` in
+    # strata_protocol/src/provenance.rs (W4-P4). The Rust vector uses
+    # NON-positional ids (evt-42/43/44); the Elixir shape has no id at all,
+    # so byte equality here proves both tiers derive event IRIs from the
+    # positional index only.
+    events = [
+      ev(7, [{1, 3}], 9),
+      ev(7, [{1, 3}, {2, 252}], 10),
+      ev(7, [{1, 3}], 11)
+    ]
+
+    assert {:ok, turtle} = Provenance.to_turtle(events, elem(@st, 1), @base)
+
+    canonical =
+      "@prefix ex: <http://example.org/> .\n" <>
+        "@prefix ocel: <http://w3id.org/ocel/2/> .\n" <>
+        "@prefix prov: <http://www.w3.org/ns/prov#> .\n" <>
+        "\n" <>
+        "ex:e_0 a ocel:Event ;\n" <>
+        "  ocel:activity <http://example.org/act/approve> ;\n" <>
+        "  ocel:hasObject <http://example.org/o_1> ;\n" <>
+        "  ocel:qualifier \"3\" ;\n" <>
+        "  ex:tick 9 .\n" <>
+        "\n" <>
+        "ex:e_1 a ocel:Event ;\n" <>
+        "  ocel:activity <http://example.org/act/approve> ;\n" <>
+        "  ocel:hasObject <http://example.org/o_1> ;\n" <>
+        "  ocel:qualifier \"3\" ;\n" <>
+        "  ocel:hasObject <http://example.org/o_2> ;\n" <>
+        "  ocel:qualifier \"252\" ;\n" <>
+        "  ex:tick 10 .\n" <>
+        "\n" <>
+        "ex:e_2 a ocel:Event ;\n" <>
+        "  ocel:activity <http://example.org/act/approve> ;\n" <>
+        "  ocel:hasObject <http://example.org/o_1> ;\n" <>
+        "  ocel:qualifier \"3\" ;\n" <>
+        "  ex:tick 11 .\n"
+
+    assert turtle == canonical
+  end
 end

@@ -20,8 +20,12 @@ defmodule Stratus.Valve.Provenance do
         ocel:qualifier "3" ;
         ex:tick 9 .
 
-  * one block per event, event IRI = `ex:e_{index}` (positional, matching
-    the Rust vectors' `e_0`, `e_1`, ... ids).
+  * one block per event, event IRI = `ex:e_{index}` derived from the
+    event's POSITIONAL index in the list — the same law as the Rust tier
+    (`strata_protocol/src/provenance.rs`), whose `OcelEvent.id` field is
+    likewise ignored for IRI derivation. Identical logical inputs produce
+    byte-identical Turtle on both tiers even when Rust event ids are
+    non-positional (e.g. `evt-42`).
   * `ocel:activity` is emitted only when the activity id is mapped in the
     table; unmapped ids are `{:error, :unmapped_id}` (fail-closed).
   * `ocel:hasObject` uses the mapped IRI when the object id is mapped, else

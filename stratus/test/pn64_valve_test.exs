@@ -187,51 +187,85 @@ defmodule Stratus.Valve.Pn64Test do
     end
   end
 
-  describe "cross-language hex vector table (RONR canonical six)" do
-    # Each row: {pn_in, ocel, invariant_mask, expected}
-    # Expected is either {:ok, pn_out} or {:error, reason}. All values
-    # hand-computed from the shared law; identical vectors asserted green in
-    # the Rust suite (pnabi.rs semantics, ronr.rs table).
+  describe "golden vector table (parsed from docs/PN64_VECTORS.md)" do
+    # The drifted hand-copied "cross-language hex vector table" that stood
+    # here asserted words that were NOT V01-V14 of the shared contract
+    # (docs/innovation/ERRC2_abi_evolution.md finding #3 / C5). This block
+    # now PARSES the single source, docs/PN64_VECTORS.md, at test time and
+    # runs every golden vector through the valve — the Elixir tier asserts
+    # the real contract, not a hand-computed mirror of it.
+    # Parser mirrors stratus/test/pn64_vector_doc_test.exs.
 
-    test "six transitions advance bit-identically" do
-      vectors = [
-        # t1: m=0x0081 pre=0x0081 post=0x0082 → m'=0x0082
-        {0x0001_0082_0081_0081, 0x0102_000B_000A_0001, 0x0000,
-         {:ok, 0x0001_0082_0081_0082}},
-        # t2: m=0x0002 pre=0x0002 post=0x000C → m'=0x000C (flags 0xA5 preserved)
-        {0xA502_000C_0002_0002, 0x0700_0000_0000_0102, 0x0000,
-         {:ok, 0xA502_000C_0002_000C}},
-        # t3: m=0x0008 pre=0x0008 post=0x0010 → m'=0x0010
-        {0x0003_0010_0008_0008, 0x0000_0000_0000_0003, 0x0000,
-         {:ok, 0x0003_0010_0008_0010}},
-        # t4: m=0x0010 pre=0x0010 post=0x0008 → m'=0x0008 (tick 0xFF)
-        {0x0004_0008_0010_0010, 0xFF00_0000_0000_0004, 0x0000,
-         {:ok, 0x0004_0008_0010_0008}},
-        # t5: m=0x0008 pre=0x0008 post=0x0060 → m'=0x0060 (flags/tick/qual max)
-        {0xFF05_0060_0008_0008, 0x80FF_FFFF_FFFF_0005, 0x0000,
-         {:ok, 0xFF05_0060_0008_0060}},
-        # t6: m=0x0024 pre=0x0024 post=0x0101 → m'=0x0101
-        {0x0006_0101_0024_0024, 0x0000_0000_0000_0006, 0x0000,
-         {:ok, 0x0006_0101_0024_0101}}
-      ]
+    @vector_doc_path Path.expand("../../docs/PN64_VECTORS.md", __DIR__)
 
-      for {pn, ocel, mask, expected} <- vectors do
-        assert Pn64.validate_and_advance(pn, ocel, mask) == expected
-      end
+    @err_classes %{
+      1 => :malformed,
+      2 => :token_starvation,
+      3 => :invariant_violation
+    }
+
+    # Mirror of the Rust court's adjudication: err:04 vectors are tick-law
+    # vectors, refused by the monotonic tick guard (prev = V01's ocel, tick
+    # 0x10), not by `validate_and_advance/3`.
+    @tick_prev_ocel 0x1001_00B2_00A1_0001
+
+    defp parse_doc_vectors do
+      assert File.exists?(@vector_doc_path),
+             "missing contract doc: #{@vector_doc_path}"
+
+      @vector_doc_path
+      |> File.read!()
+      |> String.split(["\r\n", "\n"])
+      |> Enum.flat_map(fn line ->
+        row = String.trim(line)
+
+        if String.starts_with?(row, "| V") do
+          case row |> String.split("|") |> Enum.map(&String.trim/1) do
+            ["", id, pn, ocel, inv_mask, expected, _description, ""] ->
+              [
+                {String.trim(id), decode_hex!(pn), decode_hex!(ocel),
+                 decode_hex!(inv_mask), parse_expected(expected)}
+              ]
+
+            _ ->
+              []
+          end
+        else
+          []
+        end
+      end)
     end
 
-    test "error vectors match the Rust error classes" do
-      vectors = [
-        # malformed: activity 0x0103 low byte != tid 0x02
-        {0x0002_000C_0002_0082, 0x4100_0046_0055_0103, 0x0000, {:error, :malformed}},
-        # token_starvation: marking 0x0004 lacks pre bit 0x0002
-        {0x0002_000C_0002_0004, 0x4100_0046_0055_0102, 0x0000, {:error, :token_starvation}},
-        # invariant_violation: m'=0x008C & mask 0x0004
-        {0x0002_000C_0002_0082, 0x4100_0046_0055_0102, 0x0004, {:error, :invariant_violation}}
-      ]
+    defp decode_hex!(s) do
+      assert String.match?(s, ~r/^[0-9a-fA-F]{1,16}$/), "bad hex field: #{inspect(s)}"
+      String.to_integer(s, 16)
+    end
 
-      for {pn, ocel, mask, expected} <- vectors do
-        assert Pn64.validate_and_advance(pn, ocel, mask) == expected
+    # `ok:<pn word>` or `err:<discriminator>`
+    defp parse_expected("ok:" <> word), do: {:ok, decode_hex!(word)}
+    defp parse_expected("err:" <> disc), do: {:err, decode_hex!(disc)}
+
+    test "valve satisfies every golden vector V01-V15 from the doc table" do
+      vectors = parse_doc_vectors()
+      assert length(vectors) == 15, "expected 15 golden vectors, got #{length(vectors)}"
+
+      for {id, pn, ocel, mask, expected} <- vectors do
+        case expected do
+          {:ok, word} ->
+            assert {:ok, ^word} = Pn64.validate_and_advance(pn, ocel, mask),
+                   "#{id}: expected ok:0x#{Integer.to_string(word, 16) |> String.pad_leading(16, "0")}"
+
+          {:err, 4} ->
+            # Tick-law vector: the tick guard must refuse replay/skip/backwards.
+            refute Pn64.expected_tick_ok?(ocel, @tick_prev_ocel),
+                   "#{id}: replayed/skipped tick must be refused"
+
+          {:err, disc} ->
+            expected_class = Map.fetch!(@err_classes, disc)
+
+            assert {:error, ^expected_class} = Pn64.validate_and_advance(pn, ocel, mask),
+                   "#{id}: expected err:0#{disc} (#{expected_class})"
+        end
       end
     end
   end

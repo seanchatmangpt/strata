@@ -26,8 +26,10 @@ defmodule Stratus.Pn64VectorDocTest do
   # Drift tripwires — computed from docs/PN64_VECTORS.md as committed.
   # If either fires, the doc table and this test (and the Rust suite) have
   # drifted apart; update BOTH sides in the same change and re-pin.
-  @expected_vector_count 14
-  @expected_pn_xor 0x8307007F003F003F
+  @expected_vector_count 15
+  # 0x8307007F003F003F ^ V15 pn 0x0007000400030001 (partial-pre re-pin
+  # 2026-10-11, same change as the doc table and the Rust CHECKSUM_XOR pin).
+  @expected_pn_xor 0x8300007B003C003E
 
   @err_classes %{
     0 => :ok,

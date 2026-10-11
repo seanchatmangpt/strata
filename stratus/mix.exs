@@ -8,10 +8,14 @@ defmodule Stratus.MixProject do
       elixir: "~> 1.19",
       start_permanent: Mix.env() == :prod,
       releases: releases(),
+      # NATO N21: also load lane-named property-court files (test/..._proper.exs)
+      test_load_filters: [~r{_test\.exs$}, ~r{_proper\.exs$}],
       deps: [
         {:telemetry, "~> 1.3"},
         {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
-        {:dialyxir, "~> 1.4", only: [:dev], runtime: false}
+        {:dialyxir, "~> 1.4", only: [:dev], runtime: false},
+        # NATO N21: PropEr property courts, test profile only (lane-disclosed dep edit)
+        {:proper, "~> 1.5", only: :test, runtime: false}
       ]
     ]
   end

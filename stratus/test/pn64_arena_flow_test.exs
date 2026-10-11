@@ -49,6 +49,11 @@ defmodule PN64ArenaFlowTest do
     nonce = Keyword.get(opts, :nonce, 7)
     fuel = Keyword.get(opts, :fuel, 10)
     payload = Keyword.get(opts, :payload, pn64_payload())
+    # Quad counts n/m in the trailing two 32-bit header words. Default 1/1
+    # matches the default 64-byte two-quad payload; a real-wire 16-byte PN
+    # frame carries n=m=0 ( Keyword opts :n / :m).
+    n = Keyword.get(opts, :n, 1)
+    m = Keyword.get(opts, :m, 1)
 
     header =
       "CLAP" <>
@@ -56,7 +61,7 @@ defmodule PN64ArenaFlowTest do
         <<0::16>> <>
         <<nonce::64>> <>
         <<fuel::64>> <>
-        <<0x11::256>> <> <<1::32>> <> <<1::32>>
+        <<0x11::256>> <> <<n::32>> <> <<m::32>>
 
     header <> payload
   end
@@ -148,6 +153,18 @@ defmodule PN64ArenaFlowTest do
     assert {:ok, %{status: :ok, commit_hash: commit}} =
              DefaultArena.actuate(frame(payload: payload), pn_law: true)
     assert is_binary(commit)
+    assert bit_size(commit) == 256
+  end
+
+  test "pn_law: true on the REAL wire shape (n=m=0 header, 16-byte payload) admits" do
+    # E26 vacuity correction: the wrapper's quad gate is
+    # payload.len() >= (n+m)*32; a genuine 16-byte PN frame carries n=m=0.
+    # expand_to_quads/3 rewrites n/m to 1/1 to match the two emitted quads,
+    # so the wrapper's own gate READS the pn_law quads — this court is the
+    # real-wire witness (without the rewrite it is unreachable).
+    payload = pn_frame_payload()
+    assert {:ok, %{status: :ok, commit_hash: commit}} =
+             DefaultArena.actuate(frame(payload: payload, n: 0, m: 0), pn_law: true)
     assert bit_size(commit) == 256
   end
 

@@ -105,9 +105,22 @@ defmodule Stratus.Valve.DefaultArena do
   # history quad (pn, ocel, pn, t0) then candidate quad (pn, ocel, pn, t0):
   # the candidate's first 3 words match the history quad, so the wrapper's
   # quad-conformance law admits.
+  #
+  # The trailing two 32-bit header words are the quad counts n and m (bytes
+  # 56..60 and 60..64). They are REWRITTEN to 1/1 to match the two emitted
+  # quads: a genuine 16-byte PN frame carries n=m=0 on the wire, and the
+  # wrapper's gate `payload.len() >= (n+m)*32` would then skip the quad law
+  # entirely (vacuous expansion). With n=m=1 the wrapper's own gate reads
+  # the quads pn_law shipped — the witness is reachable on the real wire
+  # shape (16-byte payload, n=m=0 header in, n=m=1 header out).
   defp expand_to_quads(frame, pn, ocel) do
-    header = binary_part(frame, 0, clap_header_size())
-    header <> <<pn::64, ocel::64, pn::64, 0::64>> <> <<pn::64, ocel::64, pn::64, 0::64>>
+    <<prefix::binary-size(56), _n::binary-size(4), _m::binary-size(4)>> =
+      binary_part(frame, 0, clap_header_size())
+
+    prefix <>
+      <<1::32, 1::32>> <>
+      <<pn::64, ocel::64, pn::64, 0::64>> <>
+      <<pn::64, ocel::64, pn::64, 0::64>>
   end
 
   defp payload_size(frame), do: byte_size(frame) - clap_header_size()

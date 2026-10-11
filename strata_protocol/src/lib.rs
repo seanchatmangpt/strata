@@ -3,10 +3,25 @@
 //! Fail-closed deserialization: any length, magic, or version deviation is a
 //! typed error with zero diagnostic entropy about the failure cause.
 
+pub mod branchless;
+pub mod branchless_ref;
 pub mod cas;
+pub mod dao_vocab;
+pub mod dispatch;
+pub mod invariants;
+pub mod logsink;
 pub mod framing;
 pub mod pdu;
+pub mod ocel64;
+pub mod ocel_xml;
+pub mod parquet_out;
+pub mod pn64;
+pub mod pnml;
+pub mod provenance;
+pub mod pnabi;
 pub mod quad;
+pub mod rehydrate;
+pub mod ronr;
 pub mod receipt;
 pub mod refusal;
 pub mod wormhole;

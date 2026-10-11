@@ -382,6 +382,130 @@ fn cas_get_bad_oid_refuses_usage() {
     assert!(err.contains("invalid oid"), "stderr: {err}");
 }
 
+// ---- pn step / replay / rehydrate ------------------------------------------
+
+use strata_protocol::{ocel64, pn64};
+
+/// One 16-byte logsink entry: pn word then ocel word, little-endian.
+fn log_entry_bytes(pn: u64, ocel: u64) -> Vec<u8> {
+    let mut b = Vec::with_capacity(16);
+    b.extend_from_slice(&pn.to_le_bytes());
+    b.extend_from_slice(&ocel.to_le_bytes());
+    b
+}
+
+/// Valid 2-entry trace: markings 0b0010 -> 0b1000 -> 0b0100, tids 1,2,
+/// ticks 10,20 (non-decreasing), activity low byte == tid (conformance law).
+fn valid_two_step_trace_bytes() -> Vec<u8> {
+    let p0 = pn64::pack(0b0010, 0b0010, 0b1000, 1, 0);
+    let p1 = pn64::pack(0b1000, 0b1000, 0b0100, 2, 0);
+    let o = |tid: u16, tick: u8| ocel64::pack(tid, tid + 2, tid + 3, 0, tick);
+    let mut b = log_entry_bytes(p0, o(1, 10));
+    b.extend(log_entry_bytes(p1, o(2, 20)));
+    b
+}
+
+#[test]
+fn pn_step_happy_path_prints_advanced_word_exit_zero() {
+    // pn: marking=0x0082 pre=0x0002 post=0x000C tid=0x02; ocel activity low
+    // byte 0x02 == tid. pn64::fire: m' = (m & !pre) | post = 0x008C.
+    let (code, out, err) = run(&[
+        "pn",
+        "step",
+        "--pn",
+        "0002000c00020082",
+        "--ocel",
+        "4100004600550102",
+    ]);
+    assert_eq!(code, 0, "stderr: {err}");
+    assert_eq!(out.trim(), "0002000c0002008c", "stdout: {out}");
+}
+
+#[test]
+fn pn_step_malformed_conformance_refusal_exit_one() {
+    // activity low byte 0x03 != tid 0x02: typed Malformed refusal.
+    let (code, out, err) = run(&[
+        "pn",
+        "step",
+        "--pn",
+        "00020c00020082",
+        "--ocel",
+        "4100004600550103",
+    ]);
+    assert_eq!(code, 1, "stderr: {err}");
+    assert!(out.is_empty(), "no stdout on refusal");
+    assert!(err.contains("refused"), "stderr: {err}");
+    assert!(err.contains("malformed"), "stderr: {err}");
+}
+
+#[test]
+fn pn_step_bad_hex_is_usage_error_not_panic() {
+    let (code, _, err) = run(&["pn", "step", "--pn", "zz", "--ocel", "00"]);
+    assert_eq!(code, 2);
+    assert!(err.contains("invalid hex u64"), "stderr: {err}");
+}
+
+#[test]
+fn pn_step_missing_flags_is_usage_error() {
+    let (code, _, err) = run(&["pn", "step", "--pn", "00"]);
+    assert_eq!(code, 2);
+    assert!(err.contains("usage:"), "stderr: {err}");
+}
+
+#[test]
+fn pn_replay_valid_two_entry_trace_exit_zero_pass_per_step() {
+    let t = TempDir::new("pn-replay-ok");
+    let f = t.write("trace.bin", &valid_two_step_trace_bytes());
+    let (code, out, err) = run(&["pn", "replay", "--file", f.to_str().unwrap()]);
+    assert_eq!(code, 0, "stderr: {err}");
+    assert!(out.contains("step 0          PASS"), "stdout: {out}");
+    assert!(out.contains("step 1          PASS"), "stdout: {out}");
+    assert!(out.contains("trace-ok         2 steps"), "stdout: {out}");
+}
+
+#[test]
+fn pn_replay_corrupted_second_entry_refuses_exit_one() {
+    let t = TempDir::new("pn-replay-bad");
+    let mut bytes = valid_two_step_trace_bytes();
+    // Corrupt entry 2's marking: chain break at step 1's verdict.
+    bytes[16] ^= 0x01;
+    let f = t.write("trace.bin", &bytes);
+    let (code, out, err) = run(&["pn", "replay", "--file", f.to_str().unwrap()]);
+    assert_eq!(code, 1, "stderr: {err}");
+    assert!(out.is_empty(), "no stdout on refusal");
+    assert!(err.contains("refused"), "stderr: {err}");
+}
+
+#[test]
+fn pn_replay_short_file_refuses_not_multiple_of_16() {
+    let t = TempDir::new("pn-replay-short");
+    let f = t.write("trace.bin", &[0u8; 20]); // 1.25 entries
+    let (code, _, err) = run(&["pn", "replay", "--file", f.to_str().unwrap()]);
+    assert_ne!(code, 0);
+    assert!(err.contains("multiple of 16"), "stderr: {err}");
+}
+
+#[test]
+fn pn_rehydrate_prints_ocel_json_with_activity_id() {
+    let t = TempDir::new("pn-rehydrate");
+    let f = t.write("trace.bin", &valid_two_step_trace_bytes());
+    let (code, out, err) = run(&["pn", "rehydrate", "--file", f.to_str().unwrap()]);
+    assert_eq!(code, 0, "stderr: {err}");
+    assert!(out.contains("\"ocel:events\""), "stdout: {out}");
+    assert!(out.contains("\"e_0\""), "stdout: {out}");
+    assert!(out.contains("\"ocel:activity\":1"), "stdout: {out}");
+    // src_obj 3 / tgt_obj 4 render as o_3 / o_4 per the rehydrate id convention.
+    assert!(out.contains("\"ocel:oid\":\"o_3\""), "stdout: {out}");
+    assert!(out.contains("\"ocel:oid\":\"o_4\""), "stdout: {out}");
+}
+
+#[test]
+fn pn_rehydrate_missing_file_is_usage_error() {
+    let (code, _, err) = run(&["pn", "rehydrate", "--file", "/nonexistent/strata-missing.bin"]);
+    assert_eq!(code, 2);
+    assert!(err.contains("cannot read"), "stderr: {err}");
+}
+
 // ---- global fail-closed surface -------------------------------------------
 
 #[test]

@@ -9,6 +9,7 @@
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix owl:  <http://www.w3.org/2002/07/owl#> .
 @prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+@prefix pn:   <https://strata.chatman.ai/ontology/pn64#> .
 
 <https://strata.chatman.ai/ontology> a owl:Ontology ;
     rdfs:label "Strata Ontology" ;
@@ -138,3 +139,93 @@ st:GenesisReceipt a st:AttestationReceipt ;
     st:receiptStanding "ALIVE" ;
     st:nonce "nonce-genesis-0001" ;
     st:causedBy st:GenesisCommit .
+
+# ── PN64 / OCEL64 vocabulary ─────────────────────────────────────────
+# 16 place slots packed into a u16 status word; transitions are RONR
+# opcode individuals with pre/post masks over that word. Integer values
+# below are the hex constants of the PN64 ABI in decimal (e.g. 0x0081=129).
+
+pn:Place a rdfs:Class ; rdfs:label "Place" ;
+    rdfs:comment "One of 16 PN64 place slots packed into the u16 status word." .
+
+pn:Transition a rdfs:Class ; rdfs:label "Transition" ;
+    rdfs:comment "A PN64 transition with opcode and pre/post masks over the status word." .
+
+pn:DaoVerb a rdfs:Class ; rdfs:label "DaoVerb" ;
+    rdfs:comment "DAO action verb sector (high nibble sector class)." .
+
+pn:DaoNoun a rdfs:Class ; rdfs:label "DaoNoun" ;
+    rdfs:comment "DAO action noun sector (object class)." .
+
+pn:bitOffset a rdf:Property ; rdfs:label "bit offset" ;
+    rdfs:domain pn:Place ; rdfs:range xsd:integer ;
+    rdfs:comment "Bit offset of a place slot within the u16 status word." .
+
+pn:opcode a rdf:Property ; rdfs:label "opcode" ;
+    rdfs:domain pn:Transition ; rdfs:range xsd:integer .
+
+pn:preMask a rdf:Property ; rdfs:label "pre mask" ;
+    rdfs:domain pn:Transition ; rdfs:range xsd:integer ;
+    rdfs:comment "Required status-word bits before firing." .
+
+pn:postMask a rdf:Property ; rdfs:label "post mask" ;
+    rdfs:domain pn:Transition ; rdfs:range xsd:integer ;
+    rdfs:comment "Status-word bits set after firing." .
+
+pn:value a rdf:Property ; rdfs:label "value" ;
+    rdfs:range xsd:integer ;
+    rdfs:comment "Named-constant byte value of a DAO verb or noun." .
+
+# Place slots 0..15 (pn:slot0 = bit 0 ... pn:slot15 = bit 15)
+pn:slot0 a pn:Place ; pn:bitOffset 0 .
+pn:slot1 a pn:Place ; pn:bitOffset 1 .
+pn:slot2 a pn:Place ; pn:bitOffset 2 .
+pn:slot3 a pn:Place ; pn:bitOffset 3 .
+pn:slot4 a pn:Place ; pn:bitOffset 4 .
+pn:slot5 a pn:Place ; pn:bitOffset 5 .
+pn:slot6 a pn:Place ; pn:bitOffset 6 .
+pn:slot7 a pn:Place ; pn:bitOffset 7 .
+pn:slot8 a pn:Place ; pn:bitOffset 8 .
+pn:slot9 a pn:Place ; pn:bitOffset 9 .
+pn:slot10 a pn:Place ; pn:bitOffset 10 .
+pn:slot11 a pn:Place ; pn:bitOffset 11 .
+pn:slot12 a pn:Place ; pn:bitOffset 12 .
+pn:slot13 a pn:Place ; pn:bitOffset 13 .
+pn:slot14 a pn:Place ; pn:bitOffset 14 .
+pn:slot15 a pn:Place ; pn:bitOffset 15 .
+
+# RONR canonical six transitions (0x01..0x06)
+pn:MoveMainMotion a pn:Transition ;
+    pn:opcode 1 ; pn:preMask 129 ; pn:postMask 130 .
+
+pn:SecondMotion a pn:Transition ;
+    pn:opcode 2 ; pn:preMask 2 ; pn:postMask 12 .
+
+pn:MoveToAmend a pn:Transition ;
+    pn:opcode 3 ; pn:preMask 8 ; pn:postMask 16 .
+
+pn:AdoptAmendment a pn:Transition ;
+    pn:opcode 4 ; pn:preMask 16 ; pn:postMask 8 .
+
+pn:CallPreviousQuestion a pn:Transition ;
+    pn:opcode 5 ; pn:preMask 8 ; pn:postMask 96 .
+
+pn:VoteAdoptMainMotion a pn:Transition ;
+    pn:opcode 6 ; pn:preMask 36 ; pn:postMask 257 .
+
+# DAO verbs (Propose 0x01 .. AcquireLease 0x94)
+pn:Propose a pn:DaoVerb ; pn:value 1 .
+pn:Second a pn:DaoVerb ; pn:value 2 .
+pn:Amend a pn:DaoVerb ; pn:value 3 .
+pn:ExecuteTransaction a pn:DaoVerb ; pn:value 11 .
+pn:Ragequit a pn:DaoVerb ; pn:value 116 .
+pn:Delegate a pn:DaoVerb ; pn:value 144 .
+pn:AcquireLease a pn:DaoVerb ; pn:value 148 .
+
+# DAO nouns (MainProposal 0x01 .. ReceiptRoot 0x92)
+pn:MainProposal a pn:DaoNoun ; pn:value 1 .
+pn:ExecutiveSpell a pn:DaoNoun ; pn:value 2 .
+pn:TreasuryVault a pn:DaoNoun ; pn:value 96 .
+pn:EscrowContract a pn:DaoNoun ; pn:value 98 .
+pn:ExecutionLease a pn:DaoNoun ; pn:value 145 .
+pn:ReceiptRoot a pn:DaoNoun ; pn:value 146 .

@@ -12,6 +12,10 @@
 //!   receipt verify <file>         3381B wire-length + digest recomputation
 //!   cas put <dir> <file>          store file as a Git-CAS blob; prints oid
 //!   cas get <dir> <oid>           inflate + verify oid; payload to stdout
+//!   pn step --pn <hex> --ocel <hex> [--invariant <hex>]
+//!                                 dual-word transition: prints advanced PN word
+//!   pn replay --file <path>       verify a 16B/entry binary log trace
+//!   pn rehydrate --file <path>    print OCEL 2.0 JSON for a binary log
 
 // The path-included signer module carries items (Seal, generate, ...) this
 // binary never calls; that is inclusion of the whole lane, not dead code.
@@ -28,6 +32,7 @@ mod signer;
 
 use signer::{AttestedPayload, Signer, PAYLOAD_LEN, PUBLIC_KEY_LEN, SEED_LEN, SIGNATURE_LEN};
 
+use strata_protocol::logsink;
 use strata_protocol::receipt::AttestationReceipt;
 use strata_protocol::quad::permutation::verify_segment_permutation;
 use strata_protocol::{frame_parse, pdu::PduHeader, quad::Quad, Error};
@@ -94,11 +99,153 @@ fn main() -> ExitCode {
         Some("verify") => cmd_verify(&args[1..]),
         Some("receipt") => cmd_receipt(&args[1..]),
         Some("cas") => cmd_cas(&args[1..]),
+        Some("pn") => cmd_pn(&args[1..]),
         _ => fail(
             EX_USAGE,
-            "usage: strata <pdu inspect|pdu verify|sign|verify|receipt verify|cas put|cas get> ...",
+            "usage: strata <pdu inspect|pdu verify|sign|verify|receipt verify|cas put|cas get|pn step|pn replay|pn rehydrate> ...",
         ),
     }
+}
+
+/// Parse a full `u64` in hex (`0x` prefix optional), matching the CLI's
+/// fail-closed argument discipline: any non-hex or overflowing input is a
+/// usage error, never a panic or partial parse.
+fn parse_hex_u64(s: &str) -> Result<u64, String> {
+    let body = s.strip_prefix("0x").unwrap_or(s);
+    if body.is_empty() || body.len() > 16 || !body.bytes().all(|b| b.is_ascii_hexdigit()) {
+        return Err(format!("invalid hex u64 {s:?}"));
+    }
+    u64::from_str_radix(body, 16).map_err(|_| format!("invalid hex u64 {s:?}"))
+}
+
+fn cmd_pn(args: &[String]) -> ExitCode {
+    match args.first().map(String::as_str) {
+        Some("step") if args.len() >= 5 => pn_step(&args[1..]),
+        Some("replay") if args.len() == 3 && args[1] == "--file" => pn_replay(&args[2]),
+        Some("rehydrate") if args.len() == 3 && args[1] == "--file" => pn_rehydrate(&args[2]),
+        _ => fail(
+            EX_USAGE,
+            "usage: strata pn step --pn <hex> --ocel <hex> [--invariant <hex>] | strata pn replay --file <path> | strata pn rehydrate --file <path>",
+        ),
+    }
+}
+
+fn flag_value<'a>(args: &'a [String], name: &str) -> Result<Option<&'a str>, String> {
+    let mut it = args.iter();
+    while let Some(a) = it.next() {
+        if a == name {
+            let v = it.next().ok_or_else(|| format!("missing value for {name}"))?;
+            return Ok(Some(v.as_str()));
+        }
+    }
+    Ok(None)
+}
+
+fn pn_step(args: &[String]) -> ExitCode {
+    let (pn_s, ocel_s, inv_s) = match (
+        flag_value(args, "--pn"),
+        flag_value(args, "--ocel"),
+        flag_value(args, "--invariant"),
+    ) {
+        (Ok(Some(p)), Ok(Some(o)), Ok(i)) => (p, o, i),
+        _ => {
+            return fail(
+                EX_USAGE,
+                "usage: strata pn step --pn <hex> --ocel <hex> [--invariant <hex>]",
+            )
+        }
+    };
+    let pn_word = match parse_hex_u64(pn_s) {
+        Ok(v) => v,
+        Err(e) => return fail(EX_USAGE, &e),
+    };
+    let ocel_word = match parse_hex_u64(ocel_s) {
+        Ok(v) => v,
+        Err(e) => return fail(EX_USAGE, &e),
+    };
+    let invariant = match inv_s {
+        Some(s) => match parse_hex_u64(s) {
+            Ok(v) => v,
+            Err(e) => return fail(EX_USAGE, &e),
+        },
+        None => 0,
+    };
+    match strata_protocol::pnabi::validate_and_advance(pn_word, ocel_word, invariant) {
+        Ok(next) => {
+            println!("{:016x}", next);
+            ExitCode::SUCCESS
+        }
+        Err(strata_protocol::pnabi::PnAbiError::Malformed) => fail(
+            EX_VERIFY_FAIL,
+            "refused: malformed: ocel activity low byte does not name the pn transition id",
+        ),
+        Err(strata_protocol::pnabi::PnAbiError::TokenStarvation) => fail(
+            EX_VERIFY_FAIL,
+            "refused: token starvation: transition not enabled under current marking",
+        ),
+        Err(strata_protocol::pnabi::PnAbiError::InvariantViolation) => fail(
+            EX_VERIFY_FAIL,
+            "refused: invariant violation: post-fire marking hits the forbidden mask",
+        ),
+    }
+}
+
+fn pn_replay(path: &str) -> ExitCode {
+    let bytes = match read_file(path) {
+        Ok(b) => b,
+        Err(e) => return fail(EX_USAGE, &e),
+    };
+    if bytes.len() % 16 != 0 {
+        return fail(
+            EX_VERIFY_FAIL,
+            &format!(
+                "{path}: refused: log length {} is not a multiple of 16-byte entries",
+                bytes.len()
+            ),
+        );
+    }
+    let entries = match logsink::read_log(&mut std::io::Cursor::new(&bytes)) {
+        Ok(e) => e,
+        Err(e) => return fail(EX_VERIFY_FAIL, &format!("{path}: refused: {e}")),
+    };
+    match logsink::verify_trace(&entries, logsink::mask::ALL) {
+        Ok(()) => {
+            for i in 0..entries.len() {
+                println!("step {}          PASS", i);
+            }
+            println!("trace-ok         {} steps", entries.len());
+            ExitCode::SUCCESS
+        }
+        Err(step) => fail(
+            EX_VERIFY_FAIL,
+            &format!("{path}: refused: trace fails at step {step}"),
+        ),
+    }
+}
+
+fn pn_rehydrate(path: &str) -> ExitCode {
+    let bytes = match read_file(path) {
+        Ok(b) => b,
+        Err(e) => return fail(EX_USAGE, &e),
+    };
+    if bytes.len() % 16 != 0 {
+        return fail(
+            EX_VERIFY_FAIL,
+            &format!(
+                "{path}: refused: log length {} is not a multiple of 16-byte entries",
+                bytes.len()
+            ),
+        );
+    }
+    let entries = match logsink::read_log(&mut std::io::Cursor::new(&bytes)) {
+        Ok(e) => e,
+        Err(e) => return fail(EX_VERIFY_FAIL, &format!("{path}: refused: {e}")),
+    };
+    let words: Vec<u64> = entries.iter().map(|e| e.ocel).collect();
+    println!("{}", strata_protocol::rehydrate::to_ocel_json(
+        &strata_protocol::rehydrate::rehydrate_log(&words),
+    ));
+    ExitCode::SUCCESS
 }
 
 fn cmd_pdu(args: &[String]) -> ExitCode {

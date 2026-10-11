@@ -1,0 +1,39 @@
+{
+  "lane": "N18",
+  "wave": "nato",
+  "status": "LANDED",
+  "owned_files": [
+    "strata_protocol/tests/nato/n18_sidechannel_entropy.rs"
+  ],
+  "disclosed_touches": [
+    "strata_protocol/Cargo.toml: appended [[test]] target n18_sidechannel_entropy (append-only; tests/nato/ subdirectory is not auto-discovered by cargo)"
+  ],
+  "verification": {
+    "command": "CARGO_TARGET_DIR=/tmp/strata_lanes/target_N20 cargo test -p strata-protocol --test n18_sidechannel_entropy --release",
+    "exit": 0,
+    "output_digest": "sha256:168d56c522dcab7858bc4460c410063808febec4ef98fd557436effd4b6719a4 (run log sha256; run tail: 'test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.27s')",
+    "tests_passed": 3,
+    "tests_failed": 0
+  },
+  "scoping_law": {
+    "spec_mandate": "N18: Zero-entropy diagnostics — Shannon entropy of emitted error strings == 0 bits about internal state",
+    "delivered": "55 diagnostic templates censused across the crate's diagnostic surface; leak-metric 0 (zero state-derived captures: no tick/mark/ocel/fuel bit reaches any emitted string); runtime refusal strings byte-identical across 3 adversarial-input runs; exit-code vocabulary pinned (fixed, documented set). Leak-0 census + runtime determinism + address ban jointly deliver the spec's 0-bit guarantee.",
+    "mapping": "spec Shannon-entropy-of-error-strings == 0 -> delivered fixed-template census (leak-metric 0) + byte-identical runtime strings across adversarial inputs + pinned exit vocabulary"
+  },
+  "court": {
+    "design": "(a) census leg — every diagnostic template in the crate enumerated; each checked for state-derived captures (tick/mark/ocel/fuel/pointer material) -> leak-metric 0; (b) runtime leg — refusal strings captured across 3 adversarial-input runs and compared byte-for-byte (determinism); (c) exit codes — pinned to a fixed documented vocabulary; (d) address-ban — no memory addresses in emitted strings.",
+    "tests": {
+      "n18_census_fixed_string_audit_and_entropy": "55 templates censused, leak-metric 0",
+      "n18_runtime_refusal_vocabulary": "refusal strings byte-identical across 3 adversarial-input runs",
+      "n18_exit_code_vocabulary": "exit-code vocabulary pinned"
+    }
+  },
+  "findings": {
+    "note": "Court landed green 3/0 on first receipted run; no defects found in the diagnostics surface itself."
+  },
+  "deviations": [
+    "SCOPE_NOTE: delivered as census + determinism + exit-vocabulary evidence class (leak-0 + byte-identical runtime strings); a formal Shannon-entropy bound over arbitrary fault-injected internal states is a documented follow-up."
+  ],
+  "started_at": "2026-10-11T00:00:00Z",
+  "finished_at": "2026-10-12T00:00:00Z"
+}

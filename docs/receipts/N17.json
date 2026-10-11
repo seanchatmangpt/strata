@@ -1,0 +1,44 @@
+{
+  "lane": "N17",
+  "wave": "nato",
+  "status": "LANDED",
+  "owned_files": [
+    "strata_protocol/tests/nato/n17_fips204_kat.rs"
+  ],
+  "disclosed_touches": [
+    "strata_protocol/Cargo.toml: appended [[test]] target n17_fips204_kat (append-only; tests/nato/ subdirectory is not auto-discovered by cargo — required to run the owned file; same pattern as N02's existing entry)",
+    "transient probe file tests/n17_kat_probe.rs created at lane time to harvest frozen KAT values, DELETED before landing (verified absent)"
+  ],
+  "verification": {
+    "command": "CARGO_TARGET_DIR=/tmp/strata_lanes/target_N17 cargo test -p strata-protocol --test n17_fips204_kat --release",
+    "exit": 0,
+    "output_digest": "sha256:8ae544aadc660a2352914a7fdc505be37db636a3774af8adaa23c198f77f8b4a (owned-file digest; run tail: 'test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s')",
+    "tests_passed": 7,
+    "tests_failed": 0
+  },
+  "scoping_law": {
+    "spec_mandate": "N17: official NIST ML-DSA-65 vectors vs signer (vendored ACVP subset per E33)",
+    "delivered": "PIPELINE-KAT, clearly labeled NOT official-ACVP. The official NIST ACVP ML-DSA-65 corpus is not available offline in this lane's environment; no network fetch at test time. Vectors are self-described frozen records (seed -> pk -> deterministic signature) of the signer's documented pipeline, pinned at lane time (2026-10-12) and re-asserted bit-for-bit on every run. Upgrade path to official-ACVP is drop-in: replace the frozen hex with ACVP pk|message|signature triples; no other court logic changes. Difference is stated verbatim in the court header (tests/nato/n17_fips204_kat.rs lines 1-27)."
+  },
+  "court": {
+    "domain": "ML-DSA-65 (FIPS 204) signer pipeline: 2 frozen KATs (seeds 0x01+j and 0x02+j, j=0..31), fixed 72-byte attested payloads; every verdict asserted against real sign/verify via strata_protocol::signer (Chicago: real keys, no doubles)",
+    "tests": {
+      "wire_sizes_match_fips204": "sig=3309B, pk=1952B, seed=32B, payload=72B against FIPS 204 constants",
+      "kat_frozen_vectors_reproduce_bit_for_bit_across_3_runs": "both KATs: pk byte-identical to frozen hex; signature byte-identical across 3 sign runs AND to frozen lane-time values (sign determinism 3x)",
+      "kat_verify_accepts_legitimate": "frozen signatures verify accept under frozen public keys",
+      "kat_rejects_64_sampled_single_bit_flips": "64 sampled flips, byte index (i*3309)/64 stride across full signature, bit i%8; every corrupted signature verify-REJECTS (64/64)",
+      "kat_signature_is_payload_bound": "signature for payload A refuses payload B: fuel change, parent-digest change, universe-digest change, PLUS exhaustive single-bit flip census over all 72 payload bytes (75 refusing variants total)",
+      "kat_signature_is_key_bound": "KAT0 sig refuses under KAT1 pk and vice versa",
+      "malformed_inputs_fail_closed": "truncated/empty sig, truncated/empty pk all fail closed (return false, no panic)"
+    }
+  },
+  "findings": {
+    "kat_vector_drift": 0,
+    "corruption_accepted": 0,
+    "payload_binding_breaches": 0,
+    "note": "All 7 tests green on first fully-compiling run. Zero drift of the frozen vectors across runs, zero accepted corruptions, zero binding breaches. Pre-existing workspace warnings (unused imports in trace_slice.rs, bin bins) are unrelated to this lane and untouched."
+  },
+  "deviations": [],
+  "started_at": "2026-10-12T00:00:00Z",
+  "finished_at": "2026-10-12T23:59:00Z"
+}

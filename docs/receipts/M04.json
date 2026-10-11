@@ -1,0 +1,29 @@
+{
+  "lane": "M04",
+  "wave": "mutation",
+  "status": "LANDED",
+  "owned_files": [
+    "strata_protocol/tests/mutation_dispatch_ronr_court.rs"
+  ],
+  "disclosed_touches": [],
+  "verification": {
+    "command": "CARGO_TARGET_DIR=/tmp/strata_lanes/target_M04 cargo test -p strata-protocol --test mutation_dispatch_ronr_court --release",
+    "output_digest": "sha256:736bf994eb79080774cf7bbfcd392d56e8eaef3f9fa5c32bd94aa99f6c612dd1 (source file digest; run tail: 'test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.06s')",
+    "tests_passed": 7,
+    "tests_failed": 0
+  },
+  "mutants": {
+    "killed": 5,
+    "survivors": 0,
+    "detail": {
+      "m04_1_pre_bit_cleared": "0x02 pre N_STATED cleared: mutant fires from unseconded 0x0082 to 0x008E vs real 0x008C; sweep-localized at 0x02",
+      "m04_2_post_bit_set": "0x03 post |= N_ADOPTED: mutant deposits 0x0110 vs real 0x0010; sweep-localized at 0x03",
+      "m04_3_opcode_transposed": "0x03 masks on 0x04: mutant fires where real TokenStarvation-refuses; mutant lifecycle starves at step 0x03; sweep-localized",
+      "m04_4_precedence_rank_inverted": "rank(0x03)=5/rank(0x05)=2 swapped: RONR §10 arbitration flips winner 0x05 -> 0x03 (mask-invisible; killed by arbitration divergence)",
+      "m04_5_verb_dropped": "0x07 absent: dropped entry refused (TokenStarvation) where real fires to N_TABLED; sweep-localized at 0x07"
+    }
+  },
+  "deviations": [],
+  "started_at": "2026-10-11T00:00:00Z",
+  "finished_at": "2026-10-11T23:59:00Z"
+}

@@ -1,0 +1,67 @@
+{
+  "lane": "N15",
+  "wave": "NATO",
+  "status": "LANDED",
+  "owned_files": [
+    "strata_protocol/tests/nato/n15_tlc_liveness.rs"
+  ],
+  "disclosed_touches": [
+    "strata_protocol/Cargo.toml: appended [[test]] stanza n15_tlc_liveness (tests/nato/ subdirectory is not auto-discovered by cargo — required to run the owned file; mirrors the N02/N09 pattern)"
+  ],
+  "verification": {
+    "command": "CARGO_TARGET_DIR=/tmp/strata_lanes/target_N15 cargo test -p strata-protocol --test n15_tlc_liveness --release",
+    "exit": 0,
+    "tests_passed": 6,
+    "tests_failed": 0,
+    "run_tail": "test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.39s"
+  },
+  "scoping_law": {
+    "spec_mandate": "N15: model-check (Erlang TLC or Elixir property equivalent) box-diamond-admitted under weak fairness",
+    "delivered": "bounded model checking as the honest TLC substitute — exhaustive state-space model check of the net itself. The in-repo capital is already formal (1-safe Petri net over u16 masks: ronr::RONR + invariants::reachable_bitset), so the court fully enumerates the reachable marking graph (40 markings from 0x0081 under all 12 verbs — complete enumeration, zero sampling) and evaluates CTL □◇disposition as graph reachability from every reachable marking, plus explicit witness/adversary schedules. TLC's automaton-product liveness is replaced by the reachability reduction: terminal (disposition) markings are absorbing and every non-trap marking has a path to one, so every weakly-fair infinite run reaches a disposition; the fairness definition is spelled out precisely in the test module header. Erlang TLC (PlusCal spec + TLC launcher) = documented follow-up, not delivered."
+  },
+  "court": {
+    "fairness_definition": "Weak fairness (TLC default): every transition continuously enabled from some point on must eventually fire. From any marking with N_DEBATABLE set, verb 0x05 (previous question) is enabled; the only verbs that do not clear N_DEBATABLE are 0x03/0x04 (amend/unamend — re-produce it) and 0x0C (division, pre=0x0000). Any infinite schedule looping on those keeps 0x05 continuously enabled, so a weakly fair schedule must fire 0x05, after which 0x06 (adopt) is continuously enabled (only 0x06 itself consumes SECONDED|PREV_QUESTION_MOVED), so fairness forces adoption. Hence every weakly-fair run from a non-trap marking reaches a disposition and the □◇ verdict reduces exactly to the reachability check executed.",
+    "part1_model_check": {
+      "net": "ronr::RONR, 12 verbs, boolean 1-safe u16 place masks, m0 = 0x0081 (MAIN_MOTION|FLOOR)",
+      "property": "□◇disposition, DISPOSITION = ADOPTED|TABLED|POSTPONED_INDEF|ADJOURNED (0x1700)",
+      "full_net": {
+        "reachable_markings": 40,
+        "liveness_violations": 4,
+        "traps": ["0x0884", "0x2084", "0x4884", "0x6084"],
+        "trap_structure": "RECESS_PENDING and/or POINT_OF_ORDER_RAISED with DEBATABLE cleared and no resolving arc in the table — a modeled-vocabulary gap (the net has no recess-end / ruling arc), reachable only through the non-admission interrupt verbs 0x09/0x0B",
+        "witness_path": "0x0081 -0x01-> 0x0082 -0x02-> 0x008C -0x09-> 0x0884 (and -0x0B-> 0x2084)",
+        "verdict": "□◇disposition holds on 36/40 markings; the 4 counterexamples are typed and pinned — any ronr::RONR change that adds/removes a trap or resizes the reachable set fails the court"
+      },
+      "admission_subnet": {
+        "excluded_verbs": "0x09 (recess), 0x0B (point of order) — interrupt verbs with no resolving arc",
+        "reachable_markings": 32,
+        "liveness_violations": 0,
+        "verdict": "□◇disposition holds on the ENTIRE admission subnet reachable set; adoption is reachable (non-vacuous) and absorbing (no transition consumes N_ADOPTED). Combined with the fairness reduction this is the delivered liveness theorem: every weakly-fair run reaches a disposition."
+      }
+    },
+    "part2_mpmc_starvation_freedom": {
+      "shape": "4 producers x 250k claims (1M ops), 4 consumers, real threads under contention, 3 independent runs",
+      "correctness_precondition": "sum of per-consumer tallies == 1,000,000 every run (exactly-once delivery)",
+      "fair_share": 250000,
+      "documented_slack": "enforced floor TOTAL/32 = 31,250 (1/8 of fair share) — the honest bound a non-realtime OS scheduler admits; no consumer may drain below it",
+      "measured": [
+        "run 0: [415799, 216870, 182233, 185098]",
+        "run 1: [349077, 185008, 265517, 200398]",
+        "run 2: [267723, 197382, 177771, 357124]"
+      ],
+      "verdict": "starvation-free within documented slack; min observed 177,771 (5.7x the floor)"
+    },
+    "part3_starvation_counterexample": {
+      "purpose": "exhibit a deliberately unfair schedule that DOES starve, typed — proving the monitor can see starvation",
+      "exhibit_A_RingFullPinnedClaims": "claim all 4 slots, never commit: every subsequent claim() refuses (ConsensusError::RingFull domain, claim()==None); monitor reads it exactly: claimed_count()==capacity, abandoned_count()==0; typed recovery via abandon() unblocks claim()",
+      "exhibit_B_DrainHogging": "8 committed words, unfair scheduler runs consumer A first: A drains 8, B drains 0 (< fair share 4) — per-consumer tallies (the monitor) exhibit the starvation exactly; claimed_count()==0 proves it was scheduling, not word loss",
+      "type_guard": "n15_starvation_types_are_consensus_types pins the vocabulary to the real consensus surface (ConsensusError::RingFull)"
+    }
+  },
+  "findings": {
+    "note": "Model-check finding: the full 12-verb RONR net is NOT trap-free — 4 of 40 reachable markings (recess/point-of-order traps, witness path 01-02-09) admit no disposition. Honest-scoping handling: traps typed, pinned, and excluded from the liveness theorem via the admission subnet (which is fully live, 0 violations). During development, two scratch-calculation errors (mis-transcribed t2/t3 post masks producing phantom states 0x2884/0x6884 and a 1020-state estimate) were caught by the court itself — the exhaustive pin (40, exact trap set) refused both, which is the pin doing its job."
+  },
+  "deviations": [],
+  "started_at": "2026-10-12T00:00:00Z",
+  "finished_at": "2026-10-12T00:30:00Z"
+}

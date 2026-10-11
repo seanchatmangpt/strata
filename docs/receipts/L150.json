@@ -1,0 +1,27 @@
+{
+  "lane": "L150",
+  "wave": "W3",
+  "status": "LANDED",
+  "owned_files": [
+    "strata_protocol/tests/mev_falsify_court.rs"
+  ],
+  "disclosed_touches": [],
+  "verification": {
+    "command": "cargo test --release -p strata_protocol --test mev_falsify_court 4/0",
+    "output_digest": "sha256:7eb2dbbf2b689a5056401b7d7c9b29b953f21b49114f1a2177039aae3c545c03",
+    "tests_passed": 4,
+    "tests_failed": 0
+  },
+  "deviations": [
+    {
+      "kind": "SUPERSEDED",
+      "note": "supersedes interim 1 FAILED entry: that failure encoded the wrong law (demanded arrival-order drain from a bag container)"
+    },
+    {
+      "kind": "RULING",
+      "note": "COORDINATOR RULING: CasRing = unordered transport (bag), ordering belongs to Sequence at consumer; settled order == order(schedule) incl. source order tie-break"
+    }
+  ],
+  "started_at": "2026-10-11T10:00:00Z",
+  "finished_at": "2026-10-11T14:30:00Z"
+}

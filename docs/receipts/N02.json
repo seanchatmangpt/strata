@@ -1,0 +1,44 @@
+{
+  "lane": "N02",
+  "wave": "nato",
+  "status": "LANDED",
+  "owned_files": [
+    "strata_protocol/tests/nato/n02_coordinate_orthogonality.rs"
+  ],
+  "disclosed_touches": [
+    "strata_protocol/Cargo.toml: appended [[test]] target n02_coordinate_orthogonality (append-only; tests/nato/ subdirectory is not auto-discovered by cargo — required to run the owned file)"
+  ],
+  "verification": {
+    "command": "CARGO_TARGET_DIR=/tmp/strata_lanes/target_N02 cargo test -p strata-protocol --test n02_coordinate_orthogonality --release",
+    "exit": 0,
+    "output_digest": "sha256:8740989fada368fe4daca16cc79907468ebd4d1f27cf59a0fc67e3ededc67065 (owned-file digest; run tail: 'test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s')",
+    "tests_passed": 5,
+    "tests_failed": 0
+  },
+  "scoping_law": {
+    "spec_mandate": "N02: exhaustive bit-spill census — fully exhaustive, real proof",
+    "delivered": "exactly the spec court — fully exhaustive over the enumerated boundary domain, no sampling or calibration substitute"
+  },
+  "court": {
+    "domain": "5 dimensions D0.marking[15:0] D1.pre[31:16] D2.post[47:32] D3.tid[55:48] D4.flags[63:56]; boundary values per lane contract: {0x0000,0x0001,0x7FFF,0x8000,0xFFFF} per 16-bit field, {0x00,0x7F,0x80,0xFF} per 8-bit field; crossed with all 5 field positions x 3 canary baselines (all dimensions non-boundary canaries so spill reads are not masked by zero baselines)",
+    "write_paths": [
+      "pn64::pack (construction; identity advance, neighbor-preservation census)",
+      "pn64::fire (advance; forced-enable m=0xFFFF so enablement never masks the advance leg; law: pre/post/tid/flags preserved bit-exact AND m' == (m^pre)|post closed-form — tid/flags leakage into advance arithmetic fails)",
+      "pnabi::validate_and_advance (ABI commit; conformed ocel word per cell, invariant mask 0; same two-sided advance law)"
+    ],
+    "tests": {
+      "n02_pack_path_is_bit_spill_free": "5 fields x 5/5/5/4/4 boundary values x 3 canaries, neighbor bit-exactness",
+      "n02_fire_path_is_bit_spill_free": "same domain, two-sided advance law",
+      "n02_pnabi_commit_path_is_bit_spill_free": "same domain, two-sided advance law over the dual-word commit",
+      "n02_pack_bit_sentinel_diff": "direct bit-level supplement: packed word vs 0xA5A5-sentinel word differs ONLY inside D_k's bit range (catches spills even if field getters were wrong)",
+      "n02_fire_chain_preserves_high_fields": "256-hop forced-enable chain for all 16 (tid,flags) boundary pairs — catches spills that only manifest under repeated advance"
+    }
+  },
+  "findings": {
+    "bit_spills": 0,
+    "note": "Zero bit spills across all write paths. Two initial court-harness failures during development were harness defects (D0 is a legitimate output of the advance paths; sentinel lo-bit formula wrong for D1/D2), not pn64 defects — corrected in-court; pn64/pnabi passed on every correctly-specified cell."
+  },
+  "deviations": [],
+  "started_at": "2026-10-11T00:00:00Z",
+  "finished_at": "2026-10-11T23:59:00Z"
+}

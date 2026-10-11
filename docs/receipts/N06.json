@@ -1,0 +1,47 @@
+{
+  "lane": "N06",
+  "audit": "branchless disassembly census (wasm + native tiers)",
+  "owned_files": [
+    "strata_protocol/tests/nato/n06_branchless_disasm.rs",
+    "scripts/n06_disasm_audit.sh"
+  ],
+  "disclosed_touches": [
+    "strata_protocol/Cargo.toml: [[test]] stanza for n06_branchless_disasm (required; tests/nato is not auto-discovered)",
+    "strata_protocol/Cargo.toml: removed concurrent-lane duplicate [[test]] n05_dudect_timing stanza that broke target resolution (compile-freeze SLA unblock)"
+  ],
+  "deviations": [
+    "native tier audited via compiler-emitted .s text census rather than otool/objdump object disassembly: the nightly-LLVM-22-produced .o is unreadable by host LLVM 21 / Xcode tools; .s is the same codegen rendered as text, so the census subject is identical",
+    "step_branchless has no standalone symbol in the lib release build (#inline, no in-crate callers); the audit subject is the #[inline(never)] kernel_step wrapper in the test target whose body is the fully inlined kernel"
+  ],
+  "status": "PASS",
+  "assertion": "zero conditional branches in the state-execution path",
+  "tiers": {
+    "wasm": {
+      "artifact": "temprun/pn_kernel/target/wasm32-unknown-unknown/release/pn_kernel.g0.wasm",
+      "tool": "wasm-objdump -d",
+      "branch_opcodes_br_br_if_br_table_if_else": 0,
+      "bound": 0
+    },
+    "native": {
+      "subject": "kernel_step wrapper (inlined strata_protocol::branchless::step_branchless)",
+      "asm_source": "/tmp/strata_lanes/target_N06/release/deps/n06_branchless_disasm-74cf25b47c7aa39e.s",
+      "tool": "compiler-emitted .s text census (arm64)",
+      "mode": "asm-text",
+      "conditional_branches_b_cond_cbz_cbnz_tbz_tbnz": 0,
+      "unconditional_b": 0,
+      "ret": 1,
+      "instruction_count": 18,
+      "bound": 0
+    }
+  },
+  "tools": {
+    "wasm-objdump": true,
+    "otool": true,
+    "objdump": true
+  },
+  "host": {
+    "arch": "arm64",
+    "os": "darwin"
+  },
+  "finished_at": "2026-10-11T21:37:18Z"
+}

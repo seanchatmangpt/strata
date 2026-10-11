@@ -1,0 +1,52 @@
+{
+  "lane": "N12",
+  "wave": "nato",
+  "status": "LANDED",
+  "owned_files": [
+    "strata_protocol/tests/nato/n12_clock_skew_resilience.rs"
+  ],
+  "disclosed_touches": [
+    "strata_protocol/Cargo.toml: appended [[test]] target n12_clock_skew_resilience (append-only; tests/nato/ subdirectory is not auto-discovered by cargo — required to run the owned file). Concurrent lane append (N03) observed on the same seam; both appends intact."
+  ],
+  "verification": {
+    "command": "CARGO_TARGET_DIR=/tmp/strata_lanes/target_N12 cargo test -p strata-protocol --test n12_clock_skew_resilience --release",
+    "exit": 0,
+    "output_digest": "sha256:a58a3a0470838234 (owned-file digest prefix; run tail: 'test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s')",
+    "tests_passed": 5,
+    "tests_failed": 0
+  },
+  "scoping_law": {
+    "spec_mandate": "N12 clock-glitch resilience: jitter injection (~1% backwards/0-jump/huge-jump/duplicate) with zero silent acceptance; wrap-boundary glitches at 0xFF<->0x00 and u64::MAX<->0; monotonic-enforcement composition through pnabi::expected_tick_ok; honest macOS surrogate host note.",
+    "delivered": "5-court Chicago court over the real tick law (L158), real deterministic sequencer, and real ABI tick guard. Every glitch is either typed-refused (TickError::Regression with exact pair + zero-entropy Display asserted) or lawfully ordered — fed-pair census equals adjudication census in every court; court 3 sweeps the FULL 256x256 byte-tick transition space (exactly one lawful successor per prev, 65280 refusals)."
+  },
+  "court": {
+    "audited_modules": [
+      "src/consensus/tick.rs",
+      "src/consensus/fifo_sequencer.rs",
+      "src/pnabi.rs",
+      "src/ocel64.rs"
+    ],
+    "courts": {
+      "court1_jitter_injection": "2000-sample real-clock chain, glitches injected at ~1% (every 100th position, cycling backwards-replay / 0-jump-replay / real-2ms-huge-jump). Expected class computed independently of the law, then the law is required to agree: backwards+0-jump refuse typed (13/19), huge jumps admit as lawful forward (6/19), clean positions all admit, frontier never moves on refusal.",
+      "court2a_u64_wrap": "Sequence::starting_at(u64::MAX) -> 0 -> 1 documented wrap pinned; Sequence::order determinism across the boundary pinned exactly ([2002,2003,1001,1002]); u64::MAX->0 folded into the byte domain admits as the lawful modular wrap.",
+      "court2b_byte_tick_wrap": "0xFF->0x00 wrap admits; all six boundary glitch classes (0-jump x2, skip-over, backwards-across, late-landing, pre-wrap-backwards, huge-skip 0x00->0x80) refuse.",
+      "court3_composition": "exhaustive 256x256 sweep of pnabi::expected_tick_ok over the byte domain: 256 admissions (exactly t+1 each), 65280 typed-lawful refusals; then real-sample fold drives the guard with frontier advancing only on lawful successors.",
+      "court4_host_note": "macOS mach_absolute_time surrogate declared via source_name(), pinned literally in the compiled source (include_str!); 'No wall-clock UTC is ever read' and 'XDP/Linux wave' scope lines pinned (N16-tier discipline)."
+    }
+  },
+  "findings": {
+    "glitch_class_census": {
+      "backwards_refused_typed": "court 1: 6, court 2b/3: exhaustive",
+      "zero_jump_refused_typed": "court 1: 7, court 2b/3: exhaustive",
+      "huge_forward_jump": "LAWFUL: admitted by the strict law (it only demands strict forward motion) — asserted ADMITTED, never dropped, in court 1 (6/6); huge skips in the byte domain refuse (0x00->0x80)",
+      "silent_acceptances": 0
+    },
+    "note": "Honest host: no userspace rdtsc via std on macOS; HwTick::now() is the documented monotonic surrogate (mach_absolute_time via std::time::Instant). Glitch construction without touching L158's owned file: HwTick exposes no public raw constructor (same constraint disclosed in monotonic_tick_court.rs), so backwards/0-jump glitches are REAL samples replayed out of position and the huge jump is a REAL 2 ms clock gap — no synthesized constants."
+  },
+  "deviations": [
+    "mono_checked adjudication AT the raw u64::MAX boundary itself requires a public raw HwTick constructor L158 does not expose; that residual class is DISCLOSED in court2a (not silently skipped) — same L158-coordination class as the synthetic backwards pair disclosed in monotonic_tick_court.rs. The u64::MAX<->0 boundary is instead covered through the sequencer's documented starting_at seam, Sequence::order boundary determinism, and the byte-domain modular wrap.",
+    "Court 1 huge-jump probe is one-shot against the frontier (frontier stays on the real chain): adopting a real 2 ms jump as frontier would lawfully refuse every remaining real sample for 2 ms — that refusal class is instead exercised by court 3's real-sample fold sweep."
+  ],
+  "started_at": "2026-10-11T00:00:00Z",
+  "finished_at": "2026-10-11T23:59:00Z"
+}

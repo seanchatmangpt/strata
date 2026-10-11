@@ -1,0 +1,23 @@
+{
+  "lane": "L156",
+  "wave": "W3",
+  "status": "LANDED",
+  "owned_files": [
+    "strata_protocol/src/consensus/slot.rs"
+  ],
+  "disclosed_touches": [],
+  "verification": {
+    "command": "cargo test -p strata_protocol --lib consensus::slot 6/0",
+    "output_digest": "sha256:408454120d156f18927eb6d280a13841675b11a8c8cedc970e4bd5a096957aed",
+    "tests_passed": 6,
+    "tests_failed": 0
+  },
+  "deviations": [
+    {
+      "kind": "SCOPE_NOTE",
+      "note": "64B alignment verified by address; torn-write hammer clean; blake3-u64 checksum honestly non-adversarial"
+    }
+  ],
+  "started_at": "2026-10-11T09:00:00Z",
+  "finished_at": "2026-10-11T11:00:00Z"
+}

@@ -1,0 +1,35 @@
+{
+  "lane": "N11",
+  "wave": "NATO",
+  "status": "LANDED",
+  "owned_files": [
+    "strata_protocol/tests/nato/n11_torn_write_fuzz.rs"
+  ],
+  "disclosed_touches": [
+    "strata_protocol/Cargo.toml ([[test]] stanza n11_torn_write_fuzz was already present before this lane started — no edit made to it; the only session change is the new owned test file)"
+  ],
+  "verification": {
+    "command": "CARGO_TARGET_DIR=/tmp/strata_lanes/target_N11 cargo test -p strata-protocol --test n11_torn_write_fuzz --release",
+    "output_digest_tail4_sha256": "c03fb275a85611887314f14f58fea377228d36a018378cefd4e10286cffbde18",
+    "tests_passed": 4,
+    "tests_failed": 0
+  },
+  "court": {
+    "spec_mandate": "(1) model-level: every interleaving of (word, checksum, seq) partial states — 3! orderings x every truncated prefix x bit-flip corruption of each field — read(expected_seq) never returns a torn word; (2) hammer-level: 4 writers x 4 readers x 1M ops with random writer abort mid-sequence — readers never observe checksum-valid garbage; slot recovers after abandon; (3) zero torn words admitted, typed refusals only",
+    "executed": {
+      "model_tier": "884,736 model checks (6 orderings x 3 prefixes x 3 fields x 64 bits x 256 deterministic vectors); 4,608 torn states examined; torn words admitted = 0; corrupted words admitted = 0",
+      "hammer_tier": "4 writers x 4 readers x 1,000,000 ops, 7 random mid-sequence writer aborts (LCG-driven ~10% of 10 chunks per writer); checksum-valid garbage = 0; final-seq recovery self-verifies",
+      "casring_tier": "10,000 words committed+drained, 1,151 typed abandons (mid-sequence abort recycle), 0 garbage words, 0 in-flight typed refusals; deterministic post-run census: double abandon and out-of-range abandon both refuse Err(SlotNotClaimed)"
+    },
+    "oracle": "checksum independently re-derived in the test (blake3 over 16 LE bytes of (seq, word), truncated u64) — not a call into slot.rs, same discipline as N10's lawful_image oracle",
+    "determinism": "Knuth LCG, seeds 0x4E413131_0000_0001 (model), _0002.._0005 (hammer writers), _000A.._000D (casring writers); 2 green runs observed this session"
+  },
+  "deviations": [
+    {
+      "kind": "DISCLOSURE",
+      "note": "Partial-state corruption is applied at the model level (SlotModel mirror of the exact read law) because Slot's fields are private to slot.rs and the lane contract owns only the test file — the model's checksum comes from the independent oracle and the real Slot is exercised for every reachable state in the hammer tier. Also disclosed: the mandate's 'slot recovers after abandon' is witnessed on the CasRing surface (typed abandon), since Slot has no abandon API; the Slot hammer recovers via re-publish of the final seq after mid-sequence aborts."
+    }
+  ],
+  "started_at": "2026-10-11T00:00:00Z",
+  "finished_at": "2026-10-11T00:00:00Z"
+}

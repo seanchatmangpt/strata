@@ -1,0 +1,40 @@
+{
+  "lane": "N09",
+  "wave": "NATO",
+  "status": "LANDED",
+  "owned_files": [
+    "strata_protocol/tests/nato/n09_seu_single_bit.rs"
+  ],
+  "disclosed_touches": [
+    "strata_protocol/Cargo.toml ([[test]] stanza n09_seu_single_bit, mirroring the N02 pattern)"
+  ],
+  "verification": {
+    "command": "CARGO_TARGET_DIR=/tmp/strata_lanes/target_N09 cargo test -p strata-protocol --test n09_seu_single_bit --release",
+    "output_digest": "sha256:1e21fa9fc391e78ebab1bb3c4b85ce3cca2ba4f6d644588e4c106ecb71d26e9b",
+    "tests_passed": 1,
+    "tests_failed": 0
+  },
+  "court": {
+    "spec_mandate": "1,000,000 randomized single-bit flips during pnabi evaluation; 100% fail-closed-or-halt; 0% SDC",
+    "executed": "full spec scale — 1,000,000 faults, no calibration needed (release run < 1s)",
+    "class_histogram": {
+      "REFUSED": 258125,
+      "LAWFUL-DEAD": 741875,
+      "LAWFUL-DEAD_dead_equivalent": 453535,
+      "LAWFUL-DEAD_lawful_but_different": 288340,
+      "SDC": 0,
+      "HALT": 0
+    },
+    "sdc_rate": "0.000%",
+    "determinism": "Knuth LCG, seed 0x4E413039_0000_0001; identical histogram reproduced across 3 runs",
+    "classification_law": "REFUSED = typed PnAbiError; SDC = admitted word != lawful image of the corrupted input under the spec law (fault amplification), or non-marking field drift, or panic; LAWFUL-DEAD = admitted word IS the lawful image (outcome-equivalent dead flips vs lawful-but-different states sub-classified). Matches repo doctrine in adversarial_pn_court.rs court 2. HALT structurally 0: validate_and_advance is a total fn returning Result; a fault-induced panic is scored SDC-class (admits-by-crash), never credited as halt."
+  },
+  "deviations": [
+    {
+      "kind": "DISCLOSURE",
+      "note": "Honest-scoping: spec 1M target executed at full 1M; lane contract wording 'fail-closed refusal OR lawful-but-different state OR halt, zero SDC' implemented with SDC defined as fault amplification (admitted output != lawful image of corrupted input), not as 'any admitted corrupted word' — the latter reading would also condemn the dead/payload flips the same contract explicitly exempts as LAWFUL-DEAD. Fix found and fixed during the lane: naive LCG '% n' bit-selection has period-2 low bits and never selected the OCEL word (trial histogram: ocel=0/1M); court now samples high LCG bits (ocel=500287/1M)."
+    }
+  ],
+  "started_at": "2026-10-12T00:00:00Z",
+  "finished_at": "2026-10-12T00:00:00Z"
+}

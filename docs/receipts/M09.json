@@ -1,0 +1,23 @@
+{
+  "lane": "M09",
+  "wave": "W2",
+  "status": "LANDED",
+  "owned_files": [
+    "strata_protocol/tests/mutation_ltl_court.rs"
+  ],
+  "disclosed_touches": [],
+  "verification": {
+    "command": "CARGO_TARGET_DIR=/tmp/strata_lanes/target_M09 cargo test -p strata-protocol --test mutation_ltl_court --release",
+    "output_digest": "sha256:0eb1cb38891686d1",
+    "tests_passed": 6,
+    "tests_failed": 0
+  },
+  "deviations": [
+    {
+      "kind": "SCOPE_NOTE",
+      "note": "Six mutants killed via in-test one-mutation eval reimplementations over real wire-built traces (base5 + RONR meeting6 + empty-trace probes): (1) G-final-only killed by mid-trace tick-9 corruption and injected-refusal meeting; (2) F-first-only killed by act-4@idx3 and adoption bit from idx4; (3) U arg-swap killed twice (f-always/g-never: real=false mutant=true; f-never/g-always: real=true mutant=false); (4) X-skips-last (tail accepts) killed via F(X(act1)) on base5 and meeting; (5) empty-trace G=false — the exact Wave-4 bug — killed by the vacuous-true court; (6) atom-true-on-empty killed (Not(atom)-on-empty probe dropped: mutant delegates Not to real eval, verdict identical, not a distinguishing probe). No survivors. Real ltl::eval is the reference on every probe; no mocks."
+    }
+  ],
+  "started_at": "2026-10-11T19:55:00Z",
+  "finished_at": "2026-10-11T20:20:16Z"
+}

@@ -102,6 +102,13 @@ gate-pn-fast:
     cargo test -p strata-protocol --bench pn_slo -- --test --nocapture
     cargo run -p temprun --release --bin gate0
 
+# Docs/structure gate: ontology check (incl. --rust RONR cross-check) +
+# module ratchet (one pub mod per src file, both directions). CI-callable;
+# exits nonzero on any violation.
+gate-docs:
+    scripts/ontology_check.sh --rust
+    scripts/module_ratchet.sh
+
 # Print the PN64 documentation index: file listing + first header per file.
 docs-pn:
     #!/bin/sh

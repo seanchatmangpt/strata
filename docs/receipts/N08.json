@@ -1,0 +1,38 @@
+{
+  "lane": "N08",
+  "wave": "nato",
+  "status": "LANDED",
+  "owned_files": [
+    "strata_protocol/tests/nato/n08_hamming_weight.rs"
+  ],
+  "disclosed_touches": [
+    "strata_protocol/Cargo.toml: appended [[test]] target n08_hamming_weight (append-only; tests/nato/ subdirectory is not auto-discovered by cargo)"
+  ],
+  "verification": {
+    "command": "CARGO_TARGET_DIR=/tmp/strata_lanes/target_N20 cargo test -p strata-protocol --test n08_hamming_weight --release",
+    "exit": 0,
+    "output_digest": "sha256:a702b2e93704d7fe48ad8148b81dde263a83a2f5732118285abf87e8bd4b3cea (run log sha256; run tail: 'test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s')",
+    "tests_passed": 2,
+    "tests_failed": 0
+  },
+  "scoping_law": {
+    "spec_mandate": "N08: Hamming weight/distance profile across successive states",
+    "delivered": "bin-by-bin Hamming weight/distance profile of the 64-bit state words across successive transitions, compared across high/low payload classes: every bin matches EXACTLY (Welch t = 0.0000, max per-bin diff/N = 0.000000). Identity proven STRUCTURAL — the kernel never reads OCEL64 above the activity byte, so no input bit above it can reach the emitted state. Negative control with an injected +8-bit leak FIRES (Welch t = -894.9 receipted; in-repo control t = +882), proving the court non-vacuous.",
+    "mapping": "spec Hamming weight/distance profile -> delivered per-bin profile + cross-payload-class Welch identity + leaky negative control (non-vacuity witnessed)"
+  },
+  "court": {
+    "design": "(a) profile leg — kernel_step state words captured per transition for high and low payload classes; per-bin Hamming weight/distance compared; Welch t-test over per-bin diff/N with zero-variance guard; (b) negative-control leg — leaky mutant emitting +8 payload bits must be detected by the same statistic (in-repo control t = +882 fires); (c) structural identity — profile identity is derived from the kernel's OCEL64 read window (activity byte ceiling), not merely sampled.",
+    "tests": {
+      "n08_hamming_profile_is_input_independent": "every bin matches exactly across payload classes; Welch t = 0.0000; structural (not sampled) identity",
+      "n08_negative_control_court_has_power": "leaky +8-bit control detected — court proven non-vacuous"
+    }
+  },
+  "findings": {
+    "note": "Two genuine chain-construction bugs caught by the court during development. Landing history: three sessions converged on the owned file (triple-landing); final on-disk state = last rewrite (aligned seeds, zero-variance Welch guard, in-repo negative control t = +882), coordinator-verified green x2. Binding dispatch-playbook rule minted: grep for a lane's owned file before re-launch; if present, re-dispatch as review-and-extend, never write-fresh."
+  },
+  "deviations": [
+    "SCOPE_NOTE: profile identity is cross-payload-class exact match with a structural read-window derivation, not a hardware power-trace Hamming-distance measurement (DPA/CPA-grade power profiling = documented follow-up)."
+  ],
+  "started_at": "2026-10-11T00:00:00Z",
+  "finished_at": "2026-10-12T00:00:00Z"
+}

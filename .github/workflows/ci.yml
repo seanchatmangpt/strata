@@ -43,6 +43,15 @@ jobs:
           just test-wasm
           just check-wasm-imports
 
+      - name: PN64 fast gate (SLO bench + gate0 court; full gate with 10x10^6 soak is local-only, see `just gate-pn`)
+        run: just gate-pn-fast
+
+      - name: Install rdflib for the ontology gate
+        run: python3 -m pip install rdflib
+
+      - name: Ontology + module ratchet gates
+        run: just gate-docs
+
       - name: temprun wasm32-wasip1 build
         run: cargo build -p temprun --target wasm32-wasip1 --release
 

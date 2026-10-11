@@ -1,0 +1,76 @@
+{
+  "lane": "N07",
+  "wave": "nato",
+  "status": "LANDED",
+  "owned_files": [
+    "strata_protocol/tests/nato/n07_cache_sidechannel.rs"
+  ],
+  "disclosed_touches": [
+    "strata_protocol/Cargo.toml: appended [[test]] target n07_cache_sidechannel (append-only; tests/nato/ subdirectory is not auto-discovered by cargo — required to run the owned file)"
+  ],
+  "verification": {
+    "command": "CARGO_TARGET_DIR=/tmp/strata_lanes/target_N07 cargo test -p strata-protocol --test n07_cache_sidechannel --release",
+    "exit": 0,
+    "output_digest": "sha256:c695a6f4f82fbc35d19739277c8965b74c20f5ca12f10b3b23097225e298d4b8 (owned-file digest; run tail: 'test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.34s')",
+    "tests_passed": 2,
+    "tests_failed": 0
+  },
+  "scoping_law": {
+    "spec_mandate": "N07: Prime+Probe-style concurrent eviction vs sequencer; latency invariance assertion",
+    "delivered": "bounded honest SUBSTITUTE delivered: a cache-INTERFERENCE court, not a real Prime+Probe attack. Real Prime+Probe infers victim cache-set residency from attacker-side timing of its own prime/probe sets — out of scope for an in-process court on shared silicon. Delivered instead: 4 adversarial eviction threads each streaming an 8 MiB buffer (2x the host L2 of 4 MiB, hw.l2cachesize) with full-period LCG strides over every cache set at all cache levels, concurrent with a sequencer executing 1,000,000 chained pnabi::validate_and_advance transitions. The measured latency invariance is reported honestly (table below); the spec's <=4.5 ns per-transition figure is a deterministic single-core evidence-class target and is NOT claimed under contention — the real measured numbers under the storm are the deliverable.",
+    "mapping": "spec Prime+Probe -> delivered bounded interference storm; spec <=4.5 ns latency target -> measured idle/storm max+mean + ratio table (honest real numbers, target not asserted under contention)"
+  },
+  "court": {
+    "design": "per run: (a) idle baseline — 1M chained transitions, per-transition Instant timing, order-sensitive FNV checksum of the full output stream; (b) storm run — same identically-instrumented sequencer while 4 storm threads (each 8 MiB = 2x L2, LCG x = x*6364136223846793005 + 1442695040888963407, index = (x>>24) % n, mutating writes so lines are dirtied and rewritten) hammer all cache levels; (c) conservation assertions — 1M outputs, storm output stream bit-identical to idle reference (checksum + per-index equality), tick chain law (+1 mod 256) re-verified independently per transition, final state identical; (d) liveness — sequencer must report within a 600 s deadlock bound via mpsc recv_timeout.",
+    "chain": "PN0 = 0x0002_0006_0002_0082 (tid=2, pre=0x0002, post=0x0006 includes the pre bit so the chain is endlessly enabled; marking cycles 0x0086/0x0084); OCEL0 = 0x41_00_0046_0055_0102 with tick +1 mod 256 per transition; invariant mask 0",
+    "tests": {
+      "n07_conservation_and_latency_under_eviction_storm": "1M transitions under 4-thread 32 MiB-total storm: conservation bit-exact vs idle reference, per-index zero corruption, tick law holds, latency table printed",
+      "n07_zero_deadlock_three_full_runs": "3 full court passes, each within the 600 s bound, conservation asserted per run"
+    }
+  },
+  "latency_table": {
+    "host": "darwin 25.2.0, 16 cores, L2 = 4 MiB (hw.l2cachesize)",
+    "transitions_per_run": 1000000,
+    "storm": "4 threads x 8 MiB (2x L2) LCG-strided dirtying writes",
+    "runs": [
+      {
+        "run": 1,
+        "idle_max_ns": 11375.0,
+        "idle_mean_ns": 21.5,
+        "storm_max_ns": 16000.0,
+        "storm_mean_ns": 21.6,
+        "ratio_max": 1.41,
+        "ratio_mean": 1.00,
+        "conservation": "bit-exact"
+      },
+      {
+        "run": 2,
+        "idle_max_ns": 8000.0,
+        "storm_max_ns": 28458.0,
+        "ratio_mean": 1.00,
+        "conservation": "bit-exact"
+      },
+      {
+        "run": 3,
+        "idle_max_ns": 6250.0,
+        "storm_max_ns": 33167.0,
+        "ratio_mean": 1.00,
+        "conservation": "bit-exact"
+      }
+    ],
+    "finding": "Mean transition latency is invariant under the storm (ratio 1.00x in all runs; storm max latency 1.4-5.4x idle max, all far below any pathology bound). Structural reason, reported as measured: pnabi::validate_and_advance is a pure 64-bit word transition with zero memory operands — the sequencer's working set is register/L1-resident by construction, so cache eviction pressure cannot touch the transition law's data path. The only memory traffic (output-vector pushes) is streaming append, which LCG-strided eviction does not displace meaningfully. This invariance is itself the security property: there is no cache-resident secret-dependent state to prime or probe on the transition path.",
+    "spec_target_status": "The spec's <=4.5 ns deterministic figure is NOT asserted here (per-transition Instant::now() instrumentation alone has a ~20-60 ns floor on macOS, present identically in both legs). What is asserted: conservation (absolute), latency-invariance ratio < 50x pathology bound (enforced), and real measured numbers reported. The 4.5 ns evidence-class target maps to cycle-accurate hardware counters (perf/Instruments), documented as follow-up."
+  },
+  "findings": {
+    "deadlocks": 0,
+    "corrupted_transitions": 0,
+    "lost_transitions": 0,
+    "note": "One development failure: initial chain constant PN0 = 0x0002_000C_0002_0082 (copied from pnabi unit tests) self-starves (post 0x000C does not include the pre bit) — TokenStarvation on transition 1. Fixed in-court with post=0x0006 (endlessly-enabled chain); harness defect, not a pnabi defect. pnabi itself passed every transition in every leg."
+  },
+  "deviations": [
+    "Real Prime+Probe replaced by bounded cache-interference storm (disclosed in scoping_law.delivered)",
+    "<=4.5 ns spec latency figure not claimed under contention; measured idle/storm table delivered instead (per operator honest-scoping law)"
+  ],
+  "started_at": "2026-10-11T00:00:00Z",
+  "finished_at": "2026-10-12T00:00:00Z"
+}

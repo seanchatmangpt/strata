@@ -1,8 +1,12 @@
 # PN64 VECTORS
 
 Canonical cross-language golden-vector contract for the PN64/OCEL64 dual-word
-ABI. Source of truth:
-`strata_protocol/tests/xlang_pn_vector_court.rs`.
+ABI. The `## Golden Vector Table` below is the SINGLE hand-maintained copy:
+the Rust court (`strata_protocol/tests/xlang_pn_vector_court.rs`) PARSES this
+markdown table at test time (count pin: 15 vectors; XOR checksum pin) and
+runs every vector through the real `pn64`/`ocel64`/`pnabi` modules — no
+hand-copy of the table lives in the court. The Elixir doc test
+(`stratus/test/pn64_vector_doc_test.exs`) parses the same table.
 
 The Rust suite (`xlang_pn_vector_court`), the Elixir valve
 (`stratus/lib/stratus/valve/pn64.ex`), and the temprun wasm32 kernel
@@ -60,6 +64,7 @@ Hex, no `0x` prefixes. `expected` is `ok:<advanced pn word>` or
 | V12 | 0001000200010000 | 100100B200A10007 | FFFFFFFFFFFFFFFF | err:01 | check order |
 | V13 | 0001000200010001 | 100100B200A10001 | 0000000000000001 | ok:0001000200010002 | m' not m |
 | V14 | 0001000200010001 | 000100B200A10001 | 0000000000000000 | ok:0001000200010002 | tick wrap |
+| V15 | 0007000400030001 | 150100B200A10007 | 0000000000000000 | err:02 | partial pre |
 
 ## Canonical RONR Lifecycle
 
@@ -89,6 +94,9 @@ tid   verb      pre      post
   (conformance checked first).
 - V13: mask 0x0001 hits current marking 0x0001 but not m' 0x0002 -> OK.
 - V14: tick wrap 0xFF -> 0x00 satisfies the tick law -> OK.
+- V15: marking 0x0001 holds pre bit 0x0001 but lacks 0x0002 (pre = 0x0003)
+  -> TOKEN_STARVATION. The only partially-satisfied-pre vector; kills the
+  `enabled = (m & pre) != 0` mutant (M01/M5).
 
 ## Kernel parity (wasm)
 
@@ -125,12 +133,12 @@ Kernel spec lines exercised: invalid step -> input unchanged; disabled fire
 
 | runtime | court | result |
 |---------|-------|--------|
-| Rust | `strata_protocol/tests/xlang_pn_vector_court.rs` | 14/14 |
-| Elixir | `stratus/test/pn64_vector_doc_test.exs` | 14/14 |
-| wasm wast | `/tmp/l96_vectors.wast` (driver; spec in `docs/PN64_KERNEL_VECTORS.md`) | 14/14 |
+| Rust | `strata_protocol/tests/xlang_pn_vector_court.rs` | 15/15 |
+| Elixir | `stratus/test/pn64_vector_doc_test.exs` | 15/15 |
+| wasm wast | `/tmp/l96_vectors.wast` (driver; spec in `docs/PN64_KERNEL_VECTORS.md`) | 14/14 (V01-V14; V15 postdates the kernel run) |
 
 The Rust kernel-side court (`strata_protocol/tests/kernel_parity_court.rs`)
-covers the same 14 vectors against the kernel ABI; see it for the in-repo
+covers the golden vectors against the kernel ABI; see it for the in-repo
 version of the wasm run.
 
 ## See Also

@@ -1,0 +1,42 @@
+{
+  "lane": "N01",
+  "wave": "nato",
+  "status": "LANDED",
+  "owned_files": [
+    "strata_protocol/tests/nato/n01_mils_separation.rs"
+  ],
+  "disclosed_touches": [],
+  "verification": {
+    "command": "CARGO_TARGET_DIR=/tmp/strata_lanes/target_N01 cargo test -p strata-protocol --test n01_mils_separation --release",
+    "exit": 0,
+    "output_digest": "sha256:33ae8b482ef4e861620d06aae15c8804c312de6dab74f4f411c9c4613237dd86 (owned-file digest; run tail: 'test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.52s')",
+    "tests_passed": 4,
+    "tests_failed": 0
+  },
+  "scoping_law": {
+    "spec_mandate": "N01: MILS non-interference, spec figure full 2^64 SMT (Kani/Z3)",
+    "delivered": "honest bounded substitute per docs/nato/NATO_N01_N20.md: exhaustive 16-bit small-domain over ALL 65,536 markings x 16 sampled transition shapes x 3 activity regimes x 2 ticks x 8 sampled B payloads (~50.3M armed-B audits), plus a calibrated 10^7-sample dual-tenant LCG sweep over the full joint domain, plus enumeration/pinning of the permitted coupling surface. Kani/Z3 full 2^64 proof documented as follow-up (Kani unavailable in-repo per feasibility ledger)."
+  },
+  "court": {
+    "mils_partition": {
+      "region_A_unclassified": "pn.marking [15:0], ocel.activity [15:0], A's own transition-definition fields pre[31:16]/post[47:32]/tid[55:48], A's tick ocel.tick [63:56]; state_A = resulting marking bits [15:0] or typed refusal class (PnAbiError)",
+      "region_B_secret": "40 payload bits the advance law never reads: pn.flags [63:56], ocel.src [31:16], ocel.tgt [47:32], ocel.qual [55:48]"
+    },
+    "law": "for every A-state/A-input: state_A(B armed) == state_A(B zeroed) bit-exact, including refusal-class identity; any divergence from B presence alone = HARD FAIL",
+    "tests": {
+      "n01_exhaustive_small_domain_all_65536_markings": "ALL 2^16 markings x 16 (pre,post,tid) shapes x 3 activity regimes (conforming / broken / high-byte noise exercising the &0xFF law) x 2 ticks x 8 LCG-sampled armed-B payloads; census asserted = 6,291,456 cells, >=50M armed-B audits",
+      "n01_dual_tenant_lcg_10m_non_interference": "10^7 full-joint-domain LCG samples, identical assertion; calibrated: 50% admissible-shaped (conformance+enablement forced) so the fired branch is materially exercised; Ok/Err branch census asserted >1M each (measured: both branches thin-census guard passed)",
+      "n01_permitted_couplings_enumerated_and_pinned": "C1 conformance gate: refusal-only authority pinned (Malformed with zero marking movement, identical armed/zeroed); &0xFF law pinned against high-byte noise; gate proven load-bearing (tid tamper closes it). C2 tick law: pure predicate pinned (+1 accept, 0xFF wrap accept, replay/skip/backwards reject) and proven orthogonal to state_A (advance outcome identical under tick-law-violating tick)",
+      "n01_court_detects_injected_interference": "anti-vacuity by mutation: a leaky advance oracle ORing B's flags bit 0 into the next marking is flagged by the same comparison harness — the court can fail"
+    }
+  },
+  "findings": {
+    "interference_cells": 0,
+    "note": "Zero state_A divergences across ~60M total dual-tenant evaluations (small-domain + 10^7 sweep). Two initial court-harness failures during development were harness defects, not pnabi defects: (1) fully-random LCG samples are ~never conforming+enabled (fired census 0) — fixed by 50% admissible shaping with disclosed calibration; (2) the anti-vacuity cell originally hit MASK_A invariant refusal on both arms, masking the injected leak — fixed by evaluating the mutation under mask 0. pnabi passed every correctly-specified cell."
+  },
+  "deviations": [
+    "spec 2^64 SMT (Kani/Z3) out of scope per feasibility ledger; delivered bounded court + this disclosure; follow-up: Kani/Z3 harness over the same partition/law"
+  ],
+  "started_at": "2026-10-12T00:00:00Z",
+  "finished_at": "2026-10-12T23:59:00Z"
+}

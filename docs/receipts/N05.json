@@ -1,0 +1,57 @@
+{
+  "lane": "N05",
+  "wave": "W9",
+  "status": "LANDED",
+  "owned_files": [
+    "strata_protocol/tests/nato/n05_dudect_timing.rs"
+  ],
+  "disclosed_touches": [
+    "strata_protocol/Cargo.toml ([[test]] target registration; tests/nato/ is not auto-discovered by cargo — same pattern as every other NATO lane)"
+  ],
+  "verification": {
+    "command": "CARGO_TARGET_DIR=/tmp/strata_lanes/target_N05 cargo test -p strata-protocol --test n05_dudect_timing --release",
+    "output_digest": "sha256:7c6812eac062916ddaed144af7ecf9a8d493afc0c676aaf80996f97f7c5e54cc",
+    "tests_passed": 2,
+    "tests_failed": 0
+  },
+  "deviations": [
+    {
+      "kind": "RULING",
+      "note": "VERIFICATION RUN TAIL (this session, release): 'test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 94.42s'. Court results: validate_and_advance t=+0.3325 (attempt 1 pass); step_branchless t=+0.7502 (attempt 1 pass); positive control leaky_refusal detected on all 4 attempts (t = -81.98 / -54948.78 / -13028.69 / -44164.48) — the harness is not deaf."
+    },
+    {
+      "kind": "SCOPE_NOTE",
+      "note": "METHOD: dudect (Reparaz et al. USENIX 2017) — fixed-vs-fixed testcases (valid: tid-conforming enabled pair; refusal: same PN word, verb byte 0x99 != tid, Malformed gate), alternating A/B batches (valid-first on even, refusal-first on odd), per-batch MEDIAN of burst-timed samples, Welch two-sample t-test, acceptance |t| < 4.5; on |t| >= 4.5 the full measurement reruns idle (500 ms) up to 3 more times and reports every attempt's t."
+    },
+    {
+      "kind": "SCOPE_NOTE",
+      "note": "SCALING RECEIPT (HONEST SCOPING LAW): spec 10M transitions/class; delivered 51,200,000 per class per kernel per attempt (100 batches x 2000 samples x 1024-exec bursts) = 5.1x spec scale, 512x the 100k/class lane minimum. Runtime ~95 s release."
+    },
+    {
+      "kind": "SCOPE_NOTE",
+      "note": "CLOCK-RESOLUTION METHOD: 5 ms busy census of min positive Instant::now() delta = 41 ns on this host; every timed sample is a 1024-execution burst in ONE Instant interval (min raw burst 1958-2958 ns > 20x resolution, asserted at runtime); min batch span 8.7-12.9 ms > 100x resolution, asserted. A collapsed window fails loudly instead of grading timer artifacts."
+    },
+    {
+      "kind": "HONEST_MISS",
+      "note": "REAL finding (resolved in the merged court): the first on-disk N05 variant timed each kernel ONCE per Instant pair — batch medians measured 0.4 ns against a 41 ns clock resolution, i.e. the court graded timer artifacts and passed vacuously. The merged court times 1024-exec bursts with asserted soundness floors."
+    },
+    {
+      "kind": "HONEST_MISS",
+      "note": "REAL finding (fixed): without a serial data dependency (black_box on the accumulator inside the burst loop), LLVM folds the burst into closed form — 256 transitions 'completing' in 41 ns, the timer quantum itself. Caught by the raw-interval floor assert; fixed with black-boxed accumulator."
+    },
+    {
+      "kind": "SUPERSEDED",
+      "note": "LANE COLLISION: two N05 implementations plus two N05.json receipts landed concurrently (coordinator double-dispatch class, cf. the WAVES_3_9 COLLISION NOTE precedent). The on-disk merged test file and this receipt supersede both prior variants. The merge keeps the per-kernel courts, idle-3x-rerun-on-failure, calibrated-N admission gate, and leaky-twin positive control from the first landing, plus burst sampling, per-batch medians, and runtime clock-resolution soundness floors from the second."
+    },
+    {
+      "kind": "SCOPE_NOTE",
+      "note": "Welch t = NaN (zero variance across batch medians: both classes quantize to one timer-quantum level) is treated as pass via passes() — the strongest no-divergence signal this clock can produce; counting it as a failure only burned idle reruns in trial runs."
+    },
+    {
+      "kind": "SCOPE_NOTE",
+      "note": "Sibling NATO receipts use wave 'nato' (validator rejects them under ^W[0-9]+$ equally — pre-existing mismatch); this receipt uses W9 per WAVES_3_9.md NATO dispatch. Positive control takes ~60 s of the ~95 s runtime; heavier than a unit court — disclosed, not tightened."
+    }
+  ],
+  "started_at": "2026-10-12T00:00:00Z",
+  "finished_at": "2026-10-12T23:59:00Z"
+}

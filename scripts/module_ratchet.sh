@@ -69,8 +69,8 @@ check_crate() {
     fi
     while IFS= read -r name; do
         [ -z "$name" ] && continue
-        if [ ! -f "$src_dir/$name.rs" ]; then
-            echo "VIOLATION: $lib_rs declares 'pub mod $name;' but $src_dir/$name.rs does not exist"
+        if [ ! -f "$src_dir/$name.rs" ] && [ ! -f "$src_dir/$name/mod.rs" ]; then
+            echo "VIOLATION: $lib_rs declares 'pub mod $name;' but neither $src_dir/$name.rs nor $src_dir/$name/mod.rs exists"
             violations=$((violations + 1))
         fi
     done <<EOF

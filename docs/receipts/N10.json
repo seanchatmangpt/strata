@@ -1,0 +1,45 @@
+{
+  "lane": "N10",
+  "wave": "NATO",
+  "status": "LANDED",
+  "owned_files": [
+    "strata_protocol/tests/nato/n10_seu_double_bit.rs"
+  ],
+  "disclosed_touches": [
+    "strata_protocol/Cargo.toml ([[test]] stanza n10_seu_double_bit, mirroring the N09 pattern)"
+  ],
+  "verification": {
+    "command": "CARGO_TARGET_DIR=/tmp/strata_lanes/target_N10 cargo test -p strata-protocol --test n10_seu_double_bit --release",
+    "output_digest": "sha256:1c2be2d7be488e956b38f9ad77d29777650d7306efe359d901cb0c3d5e4fb65c (sha256 of the '=== N10 SEU double-bit court ===' histogram block, byte-identical across 3 runs; raw cargo stdout is compile-environment-noisy and not a stable digest)",
+    "tests_passed": 1,
+    "tests_failed": 0
+  },
+  "court": {
+    "spec_mandate": ">=500,000 calibrated simultaneous two-bit-flip injections during pnabi evaluation — exhaustive adjacent-bit pairs within each byte lane over a sampled word set + randomized non-adjacent pairs; adversarial bypass class (one pre-bit flip + one forbidden/masked-bit flip) must still be typed-refused; SDC == 0.000%",
+    "executed": "full spec scale — 500,000 faults: 168,000 exhaustive-adjacent (112 unique pairs x 1,500 reps, 2 words x 8 byte lanes x 7 adjacent pairs) + 40,000 bypass (16 pre-bit x mask-bit combos x 2,500 reps) + 292,000 random non-adjacent (release run < 1s)",
+    "class_histogram": {
+      "REFUSED": 216432,
+      "LAWFUL-DEAD": 283568,
+      "LAWFUL-DEAD_dead_equivalent": 186039,
+      "LAWFUL-DEAD_lawful_but_different": 97529,
+      "SDC": 0,
+      "HALT": 0,
+      "exhaustive_adjacent": {"total": 168000, "REFUSED": 51000, "LAWFUL-DEAD": 117000, "SDC": 0},
+      "bypass": {"total": 40000, "REFUSED": 38731, "admitted_lawful": 1269, "SDC": 0},
+      "random_nonadjacent": {"total": 292000, "REFUSED": 126701, "LAWFUL-DEAD": 165299, "SDC": 0},
+      "word_targets": {"pn": 270164, "ocel": 229836}
+    },
+    "sdc_rate": "0.000%",
+    "bypass_court": "Every pre[16..=31] x INVARIANT_MASK(bit 4) simultaneous pair constructed explicitly; masked bit forced to SET (the only bypass-capable direction), pre flip direction LCG-chosen. 38,731/40,000 typed-refused; 1,269 landed LAWFUL-DEAD (lawful image of the corrupted word — the flipped pre bits were dead w.r.t. enablement); 0 SDC. The forbidden-bit check survives the simultaneous pre-flip in every case.",
+    "determinism": "Knuth LCG (high-bit sampling, below() = (next() >> 32) % n), seed 0x4E413130_0000_0001 ('NA10'); histogram block byte-identical across 3 runs (sha256 1c2be2d7be488e956b38f9ad77d29777650d7306efe359d901cb0c3d5e4fb65c x3)",
+    "classification_law": "Identical to N09: REFUSED = typed PnAbiError; SDC = admitted word != lawful image of the corrupted input under the spec law (fault amplification), or non-marking field drift, or panic (catch_unwind; panic scored SDC-class admits-by-crash, never credited fail-closed); LAWFUL-DEAD = admitted word IS the lawful image (dead-equivalent vs lawful-but-different sub-classified). Matches repo doctrine in adversarial_pn_court.rs court 2. HALT structurally 0: validate_and_advance is a total fn returning Result; disclosed, not assumed."
+  },
+  "deviations": [
+    {
+      "kind": "DISCLOSURE",
+      "note": "Honest-scoping: spec >=500k target executed at exactly 500,000 with exhaustive coverage of the adjacent-pair small domain (112 pairs x reps) and full enumeration of the bypass combo space; random class carries statistical weight. The naive LCG '% n' low-bit defect N09 found and fixed was present in the lane's draft RNG; fixed to sample high LCG bits (>>32) mirroring N09 before the receipted runs (word targets pn=270164/ocel=229836 confirm both words selected)."
+    }
+  ],
+  "started_at": "2026-10-12T00:00:00Z",
+  "finished_at": "2026-10-12T00:00:00Z"
+}

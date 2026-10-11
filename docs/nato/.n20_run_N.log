@@ -1,0 +1,41 @@
+warning: profiles for the non root package will be ignored, specify profiles at the workspace root:
+package:   /Users/sac/strata/temprun/pn_kernel/Cargo.toml
+workspace: /Users/sac/strata/Cargo.toml
+warning: unused import: `self`
+  --> strata_protocol/src/trace_slice.rs:17:22
+   |
+17 | use crate::logsink::{self, LogEntry};
+   |                      ^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: `strata-protocol` (lib) generated 1 warning (run `cargo fix --lib -p strata-protocol` to apply 1 suggestion)
+warning: `strata-protocol` (lib) generated 1 warning (1 duplicate)
+warning: unused import: `strata_protocol::receipt`
+  --> strata_protocol/src/bin/bench_wire.rs:17:5
+   |
+17 | use strata_protocol::receipt;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `strata_protocol::receipt`
+  --> strata_protocol/src/bin/strata.rs:39:5
+   |
+39 | use strata_protocol::receipt;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: `strata-protocol` (bin "bench_wire") generated 1 warning (run `cargo fix --bin "bench_wire" -p strata-protocol` to apply 1 suggestion)
+warning: `strata-protocol` (bin "strata") generated 1 warning (run `cargo fix --bin "strata" -p strata-protocol` to apply 1 suggestion)
+    Finished `release` profile [optimized] target(s) in 0.04s
+     Running tests/nato/n18_sidechannel_entropy.rs (/tmp/strata_lanes/target_N20/release/deps/n18_sidechannel_entropy-1b4f66046bd6ea4a)
+
+running 3 tests
+test n18_exit_code_vocabulary ... ok
+test n18_census_fixed_string_audit_and_entropy ... ok
+test n18_runtime_refusal_vocabulary ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.40s
+

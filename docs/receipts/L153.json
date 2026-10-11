@@ -1,0 +1,24 @@
+{
+  "lane": "L153",
+  "wave": "W3",
+  "status": "LANDED",
+  "owned_files": [
+    "strata_protocol/benches/consensus_slo.rs"
+  ],
+  "disclosed_touches": [],
+  "verification": {
+    "command": "cargo bench --release -p strata_protocol --bench consensus_slo 5/0",
+    "output_digest": "sha256:bbadc9720aec825de2e2315c1cdc876a910f8209068229339b30699108388cfc",
+    "tests_passed": 5,
+    "tests_failed": 0
+  },
+  "deviations": [
+    {
+      "kind": "HONEST_MISS",
+      "note": "SPSC median 3.254 ns misses aspirational 2.5 ns spec target; measured reported not weakened; calibrated gates (med<=10, p99.9<=16) PASS and stand as release gates per COORDINATOR RULING"
+    }
+  ],
+  "fix_owner": "L153",
+  "started_at": "2026-10-11T12:00:00Z",
+  "finished_at": "2026-10-11T16:00:00Z"
+}

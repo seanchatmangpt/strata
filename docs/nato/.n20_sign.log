@@ -1,0 +1,16 @@
+warning: unused import: `self`
+  --> strata_protocol/src/trace_slice.rs:17:22
+   |
+17 | use crate::logsink::{self, LogEntry};
+   |                      ^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `strata_protocol::receipt`
+  --> strata_protocol/src/bin/strata.rs:39:5
+   |
+39 | use strata_protocol::receipt;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+

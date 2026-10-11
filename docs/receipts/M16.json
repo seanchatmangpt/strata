@@ -1,0 +1,32 @@
+{
+  "lane": "M16",
+  "wave": "mutation",
+  "status": "LANDED",
+  "owned_files": [
+    "strata_protocol/tests/mutation_admission_idmap_court.rs"
+  ],
+  "disclosed_touches": [],
+  "verification": {
+    "command": "CARGO_TARGET_DIR=/tmp/strata_lanes/target_M16 cargo test -p strata-protocol --test mutation_admission_idmap_court --release",
+    "output_digest": "sha256:f2a94f5014c459a702de75f1a43f5e371b5863478df6e4ef1aacfa52629815e9 (owned-file digest; run tail: 'test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s')",
+    "tests_passed": 6,
+    "tests_failed": 0
+  },
+  "mutants": {
+    "killed": 5,
+    "survivors": 0,
+    "detail": {
+      "m16_1_composition_skip_invariant_leg_lost": "mutant applies the naive fire law with no pnabi composition; killed by the with_invariant_mask court: real Quota::admit(PRE,POST,0x0082) with mask 0x0004 returns InvariantViolation (also with the masked place capped to 0, pinning invariant-before-capacity) while the mutant returns Ok(0x008C); mask=0 control confirms mutant/real agreement elsewhere",
+      "m16_2_caps_index_reversed": "place i checked as caps[15-i]; killed by the mixed-vector census: caps[0]=0 (front) and caps[15]=0 (rear) vectors refuse on the real surface but admit under the mutant; 640-vector census shows real == naive baseline everywhere and >=1 mutant divergence",
+      "m16_3_total_cap_default_on": "Quota::new defaults total_cap to 8 instead of u16::MAX; killed by the off-by-default court: uniform(1) admits a 15-token post 0xFFFE on the real surface while the mutant refuses (CapacityExceeded); opt-in boundary popcount<=cap still pinned on the real surface",
+      "m16_4_sentinel_widened_to_u32": "killed two ways: (a) injected pair court — the u16-colliding generated pair (real IdMap::build -> Err(Collision)) separates under s32, so the mutant build would accept what real refuses; (b) bound court — exact birthday product gives 50% crossing at n=302 for N=2^16 but p(302) < 1e-4 for N=2^32, so the documented ~302-name crossing ceases to exist",
+      "m16_5_risk_counts_pairs_not_buckets": "killed by the injected-triple court: three distinct names found in one 16-bit bucket from 120k generated names; real collision_risk = 1 (buckets), pair-counting mutant = 3; clean-corpus and duplicate-name controls agree at 0"
+    }
+  },
+  "deviations": [
+    "idmap::sentinel is private; the court replicates the documented truncation law (blake3 first 2 bytes big-endian) in-test via real blake3 — no mocks, same digest function",
+    "the M02 template file (mutation_pnabi_court.rs) is corrupted mid-file (placeholder identifiers, truncated arrays); M16 follows the pattern documented in its header comment instead"
+  ],
+  "started_at": "2026-10-11T00:00:00Z",
+  "finished_at": "2026-10-11T23:59:00Z"
+}

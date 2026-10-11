@@ -346,8 +346,8 @@ pub fn stored_bytes(objects: &[GitObject]) -> usize {
 // blob, so old and new objects coexist under git content addressing (the blob
 // payload is opaque bytes; `git fsck`-equivalent oid verification is
 // unchanged). The hot path (`emit_blob`/`parse_blob`), the wire (PDU), and
-// the arena are untouched — temprun never sees compression; the admission
-// invariant is unaffected.
+// the actuation arena are untouched — the arena never sees compression; the
+// admission invariant is unaffected.
 // ---------------------------------------------------------------------------
 
 /// Packed-payload format tag: `"SPV1"` + varint quad count + per-field

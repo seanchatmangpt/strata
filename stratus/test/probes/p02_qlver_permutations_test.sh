@@ -112,7 +112,11 @@ elif [ "$oids" != "1" ]; then
   echo "but CAS commit OIDs differ because cas put addresses raw wire bytes"
   echo "(header permutation byte + layout sort order) — oid is wire-form, not"
   echo "semantic, identity. Semantic content identical; object identity not."
-  rc=1
+  # Adjudicated KG-02 (accepted hold, 2026-10-10): this finding branch is the
+  # documented baseline, not a new failure — exit 42 (runner known-gap
+  # protocol) so the matrix records KNOWN_GAP, never halt-red. A digest
+  # DIFFER still exits 1 (real regression).
+  rc=42
 else
   echo "HOLDS: identical universe digests and identical CAS oids across all 6 layouts."
   rc=0

@@ -166,7 +166,10 @@ cat > "$WORK/p13.exs" <<'EOF'
 defmodule P13 do
   def q(s, p, o, t), do: <<s::64, p::64, o::64, t::64>>
   def frame(parent) do
-    payload = IO.iodata_to_binary([q(1, 1, 1, 0)])
+    # N=1 policy quad + M=1 lineage quad — the frame must carry its declared
+    # payload (segment_len = 32*(N+M)); a one-quad payload is structurally
+    # malformed (:malformed_frame) and never reaches the parent check.
+    payload = IO.iodata_to_binary([q(1, 1, 1, 0), q(1, 1, 1, 100)])
     <<"CLAP", 1::8, 0::8, 0::16, 1::64, 100::64>> <>
       parent <> <<1::32, 1::32>> <> payload
   end
@@ -235,7 +238,7 @@ if [ "$IDENTICAL" != "true" ]; then
   note "VERDICT: 1 — arena refusal receipts differ across categories (H=$H_RECEIPTS > 0): H(Error)=0 BROKEN at the wire"
   echo 1 > "$EV/verdict"; exit 1
 fi
-note "ADJUDICATION: wire surfaces are zero-entropy. Arena 32B refusal receipts are byte-identical across cycle, POWL-skip and affine-collision (H=0; receipt::seal carries only the status bit over a shared universe digest). The valve's :parent_discontinuity is a constant typed atom per class (H=0). CLI stderr differs per corruption class and embeds the file path — that is the developer diagnostic surface, OUT of the H(Error)=0 contract, consistent with p01's 79B finding."
+note "ADJUDICATION: wire surfaces are zero-entropy. Arena 32B refusal receipts are byte-identical across cycle, POWL-skip and affine-collision (H=0; receipt::seal carries only the 0x02 status code over a shared universe digest). The valve's :parent_discontinuity is a constant typed atom per class (H=0). CLI stderr differs per corruption class and embeds the file path — that is the developer diagnostic surface, OUT of the H(Error)=0 contract, consistent with p01's 79B finding."
 if [ "$CYCLE_GAP" -eq 1 ]; then
   note "VERDICT: 42 — KNOWN-GAP: the causal-cycle category is untriggerable (admits per fr3, pinned at fr3_causal_test.rs:83); the zero-entropy contract holds on every surface that does refuse"
   echo 42 > "$EV/verdict"; exit 42

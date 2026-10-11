@@ -1,6 +1,7 @@
 # Chicago Adversarial Falsification Court — orchestrator.
 #
-# Runs the 20 agent-capability probes (p01..p20) as real subprocesses via
+# Runs the 19 agent-capability probes (p01..p20; no p04 script exists in the
+# suite — the slot is vacant) as real subprocesses via
 # `bash`, times each, and reports PASSED/FAILED/KNOWN_GAP with a final
 # verdict. Exit code 42 from a probe means :known_gap — the requirement is
 # not implementable on the current substrate and the probe documents why in
@@ -25,26 +26,29 @@ defmodule ChicagoCourtRunner do
   @known_gap_exit 42
   @probe_dir Path.join(__DIR__, "probes")
 
+  # Probe ids/scripts reconciled 2026-10-10 against the actual suite on
+  # disk (stratus/test/probes/): the previous list named a stale probe
+  # generation (task_lifecycle, message_routing, ...) — 18 of 20 entries
+  # were "script missing", i.e. vacuous FAILED rows.
   @probes [
     {"AGENT-01-WIRE-ALIGNMENT", "p01_wire_alignment_test.sh"},
-    {"AGENT-02-TASK-LIFECYCLE", "p02_task_lifecycle_test.sh"},
-    {"AGENT-03-MESSAGE-ROUTING", "p03_message_routing_test.sh"},
-    {"AGENT-04-CAPABILITY-NEGOTIATION", "p04_capability_negotiation_test.sh"},
-    {"AGENT-05-ERROR-PROPAGATION", "p05_error_propagation_test.sh"},
-    {"AGENT-06-STREAMING", "p06_streaming_test.sh"},
-    {"AGENT-07-AUTH", "p07_auth_test.sh"},
-    {"AGENT-08-PERSISTENCE", "p08_persistence_test.sh"},
-    {"AGENT-09-CONCURRENCY", "p09_concurrency_test.sh"},
-    {"AGENT-10-TIMEOUT-SEMAPTICS", "p10_timeout_semantics_test.sh"},
-    {"AGENT-11-CANCELATION", "p11_cancelation_test.sh"},
-    {"AGENT-12-IDEMPOTENCY", "p12_idempotency_test.sh"},
-    {"AGENT-13-BACKPRESSURE", "p13_backpressure_test.sh"},
-    {"AGENT-14-OBSERVABILITY", "p14_observability_test.sh"},
-    {"AGENT-15-SCHEMA-EVOLUTION", "p15_schema_evolution_test.sh"},
-    {"AGENT-16-RECOVERY", "p16_recovery_test.sh"},
-    {"AGENT-17-ADVERSARIAL-INPUT", "p17_adversarial_input_test.sh"},
-    {"AGENT-18-RESOURCE-LIMITS", "p18_resource_limits_test.sh"},
-    {"AGENT-19-COMPOSED-WORKFLOWS", "p19_composed_workflows_test.sh"},
+    {"AGENT-02-QLVER-PERMUTATIONS", "p02_qlver_permutations_test.sh"},
+    {"AGENT-03-GALOIS-RING-LIMITS", "p03_galois_limits_test.sh"},
+    {"AGENT-05-POWL-PREREQUISITE-SKIP", "p05_powl_skip_test.sh"},
+    {"AGENT-06-AFFINE-LEASE-COLLISION", "p06_affine_collision_test.sh"},
+    {"AGENT-07-SELECT-PLANE-ISOLATION", "p07_select_isolation_test.sh"},
+    {"AGENT-08-CONSTRUCT-PROMPT-INJECTION", "p08_prompt_injection_test.sh"},
+    {"AGENT-09-WASM-CAPABILITY-AIRGAP", "p09_wasm_airgap_test.sh"},
+    {"AGENT-10-FUEL-EXHAUSTION-TRAP", "p10_fuel_exhaustion_test.sh"},
+    {"AGENT-11-HARDWARE-ZEROIZATION", "p11_zeroization_test.sh"},
+    {"AGENT-12-CONSTANT-TIME-ORACLE", "p12_constant_time_test.sh"},
+    {"AGENT-13-ZERO-ENTROPY-DIAGNOSTICS", "p13_zero_entropy_test.sh"},
+    {"AGENT-14-ZERO-HEAP-TERM-PASSING", "p14_zero_heap_test.sh"},
+    {"AGENT-15-RACE-COURT-CONCURRENCY", "p15_race_concurrency_test.sh"},
+    {"AGENT-16-GIT-INTEROP", "p16_git_interop_test.sh"},
+    {"AGENT-17-WORMHOLE-TIME-TRAVEL", "p17_wormhole_travel_test.sh"},
+    {"AGENT-18-ML-DSA-65-AUTHENTICITY", "p18_mldsa65_authenticity_test.sh"},
+    {"AGENT-19-STORAGE-DENSITY", "p19_storage_density_test.sh"},
     {"AGENT-20-SOAK-PROCESS-CAPABILITY", "p20_soak_capability_test.sh"}
   ]
 

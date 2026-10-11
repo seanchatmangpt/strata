@@ -11,11 +11,13 @@ pub mod conformance;
 pub mod coords;
 pub mod fuel;
 pub mod git;
+pub mod pn;
 pub mod receipt;
 
 use zeroize::Zeroize;
 
 pub use fuel::FuelLease;
+pub use pn::{fire, step};
 
 /// Wire status code carried in byte 0 of the opaque receipt: refuse iff
 /// byte 0 == 0x02 (`receipt::REFUSED_STATUS`); any other byte 0 is admit

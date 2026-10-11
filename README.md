@@ -16,6 +16,7 @@ SELECT/CONSTRUCT/DO separation).
 | `stratus/` Elixir valve | ALIVE | `mix test`: 58 tests, 0 failures; valve telemetry events + arena race court landed. |
 | Root integration + adversarial courts | ALIVE | 19 tests, 0 failures (`cargo test` root package). |
 | `packs/`, `ontology.ttl` | LANDED | 5 strata packs in ggen-marketplace; 26 triples. |
+| `strata_protocol/` PN64/OCEL64 dual-word ABI (pn64..logsink, branchless, ronr/dao_vocab, pnml, rehydrate/ocel_xml/parquet_out/provenance) | ALIVE | 43-lane fan-out 2026-10-10/11 (docs/pn64_LANES.md): protocol 365/0, root 19/0 (8 pre-existing ignores), stratus 135/0, wasm imports=∅; golden vectors Rust↔Elixir bit-identical (docs/PN64_VECTORS.md); bench median 1.5–2.4 ns / p99.9 ≤3.1 ns (docs/PN64_SLO_LOG.md); Gate 0 wasm kernel-only target still open (docs/GATE0.md) |
 | Ash/AshR2RML SELECT-only projection tier | UNIMPLEMENTED | No Ash/R2RML code exists in any crate or app (PRD FR-4). |
 
 ## Quickstart

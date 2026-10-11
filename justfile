@@ -88,6 +88,28 @@ release-check: _ensure_workspace
     cargo clippy --workspace --all-targets -- -D warnings
     @echo "release-check: all gates green"
 
+# PN64 quality gate: SLO benches, criterion bench, gate0 court, short soak,
+# wasm imports check. Full 10x10^6 soak is the release gate, not this recipe.
+gate-pn:
+    cargo test -p strata-protocol --bench pn_slo -- --test --nocapture
+    cargo test -p strata-protocol --bench pn_slo_criterion --release -- --test --nocapture --test-threads=1
+    cargo run -p temprun --release --bin gate0
+    cargo run -p temprun --release --bin soak_pn -- --runs 2 --cycles 100000
+    just check-wasm-imports
+
+# Fast PN64 gate: SLO bench + gate0 court only.
+gate-pn-fast:
+    cargo test -p strata-protocol --bench pn_slo -- --test --nocapture
+    cargo run -p temprun --release --bin gate0
+
+# Print the PN64 documentation index: file listing + first header per file.
+docs-pn:
+    #!/bin/sh
+    for f in $(ls -1 docs/PN64_* docs/pn64_* 2>/dev/null); do
+        echo "$f"
+        grep -m1 "^# " "$f" || echo "  (no H1 header)"
+    done
+
 # Print the tag command for the operator. Does NOT tag or push.
 release-tag:
     @echo "Run manually after release-check passes:"

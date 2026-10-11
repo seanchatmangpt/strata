@@ -90,7 +90,51 @@ tid   verb      pre      post
 - V13: mask 0x0001 hits current marking 0x0001 but not m' 0x0002 -> OK.
 - V14: tick wrap 0xFF -> 0x00 satisfies the tick law -> OK.
 
+## Kernel parity (wasm)
+
+Lane L131, wave 2. Measured 2026-10-11: the golden table was run against the
+L45 wasm32 kernel (`temprun/src/pn.rs`, built to
+`pn_kernel.wasm`, wasmtime 48.0.1) via a wast assert court — **14/14 PASS**.
+
+- V01-V09, V12-V14: strict pass, same expectations as the table above
+  (valid step -> advanced word; invalid step -> input `pn` unchanged).
+- V10/V11: pass under the documented no-tick-law expectation — the kernel
+  enforces conformance + enablement + invariant only; the tick law lives in
+  the `pnabi` layer, so the kernel-side expectation for these two is the
+  three-law outcome (both valid -> advanced word). See
+  `docs/PN64_KERNEL_VECTORS.md` for the full per-vector result table.
+
+Spot checks (same court): `pn_fire` enabled -> consumes pre
+(`0001000200010001` -> `0001000200010000`); `pn_fire` disabled -> 0 word;
+`pn_enabled` -> 1 enabled / 0 disabled. All PASS.
+
+Anti-vacuity: flipping V01's expected word to `0xDEADBEEFDEADBEEF` fails the
+court (kernel returns `0x0001000200010002`), so the asserts observe the
+kernel, not themselves.
+
+Driver (verbatim, scratch wast outside the repo):
+
+```text
+wasmtime wast /tmp/l96_vectors.wast   # exit 0 = all asserts pass
+```
+
+Kernel spec lines exercised: invalid step -> input unchanged; disabled fire
+-> 0 (`docs/PN64_KERNEL_VECTORS.md`, kernel contract section).
+
+### Three-runtime status (2026-10-11)
+
+| runtime | court | result |
+|---------|-------|--------|
+| Rust | `strata_protocol/tests/xlang_pn_vector_court.rs` | 14/14 |
+| Elixir | `stratus/test/pn64_vector_doc_test.exs` | 14/14 |
+| wasm wast | `/tmp/l96_vectors.wast` (driver; spec in `docs/PN64_KERNEL_VECTORS.md`) | 14/14 |
+
+The Rust kernel-side court (`strata_protocol/tests/kernel_parity_court.rs`)
+covers the same 14 vectors against the kernel ABI; see it for the in-repo
+version of the wasm run.
+
 ## See Also
 
 - `docs/PN64_ABI.md`
+- `docs/PN64_KERNEL_VECTORS.md`
 - `docs/pn64_LANES.md`

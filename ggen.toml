@@ -10,6 +10,7 @@ strata-temprun-pack = { path = "/Users/sac/ggen-marketplace/packs/strata-temprun
 strata-stratus-pack = { path = "/Users/sac/ggen-marketplace/packs/strata-stratus-pack" }
 strata-cas-pack = { path = "/Users/sac/ggen-marketplace/packs/strata-cas-pack" }
 strata-signer-pack = { path = "/Users/sac/ggen-marketplace/packs/strata-signer-pack" }
+strata-pn64-pack = { path = "/Users/sac/ggen-marketplace/packs/strata-pn64-pack" }
 
 [templates]
 dir = "templates"

@@ -130,6 +130,7 @@ mod tests {
             activity: 1,
             objects: vec![(1, 0)],
             tick: 0,
+            time_secs: 0,
         };
         let xml = event_xml(&ev);
         assert!(xml.contains("<event id=\"e_x&amp;y&lt;z\">"));

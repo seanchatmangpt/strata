@@ -114,3 +114,108 @@ printed, not reconciled here).
   soak binary separately reports a real P99.9 (36250 ns) against its own
   USL 50_000 ns, which is a different (per-cycle end-to-end) surface than the
   per-op NFR-01 ns targets.
+
+## Run 2 — 2026-10-11 (Lane L134, wave 2)
+
+Host: macOS (Darwin 25.2.0), Apple Silicon, release profile
+(`cargo test ... --bench ... --release`), `--test-threads=1`. Two benches:
+`audit_slo_criterion` and `pnwire_slo`. All verdicts are the harnesses' own
+assert-gated PASS lines, re-read from the run output.
+
+### Command 1 (verbatim)
+
+```
+cargo test -p strata-protocol --bench audit_slo_criterion --release -- --test --nocapture --test-threads=1 2>&1 | tail -14
+```
+
+Tail output (verbatim):
+
+```
+    Running benches/audit_slo_criterion.rs (target/release/deps/audit_slo_criterion-ce47c3b52ee94559)
+
+running 4 tests
+test audit_logsink_read_entry ... | logsink::read_entry | median 7.0 ns | p99.9 7.2 ns | min 6.8 ns | max 8.8 ns | median <= 100 ns AND p99.9 = n/a | PASS |
+ok
+test audit_ocel_xml_event_xml ... | ocel_xml::event_xml | median 533.9 ns | p99.9 796.9 ns | min 510.4 ns | max 833.4 ns | median <= 1000 ns AND p99.9 <= 2500 ns | PASS |
+ok
+test audit_provenance_to_turtle ... | provenance::to_turtle | median 1151.1 ns | p99.9 1822.9 ns | min 1101.6 ns | max 1940.1 ns | median <= 2000 ns AND p99.9 <= inf ns | PASS |
+ok
+test audit_rehydrate_per_event ... | rehydrate::rehydrate | median 72.3 ns | p99.9 138.7 ns | min 49.5 ns | max 289.7 ns | median <= 200 ns AND p99.9 <= 500 ns | PASS |
+ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 14.91s
+```
+
+### Audit bench results vs gates
+
+| Benchmark | Median (measured) | P99.9 (measured) | Gate | Verdict |
+|---|---|---|---|---|
+| logsink::read_entry | 7.0 ns | 7.2 ns | median <= 100 ns (p99.9 n/a) | PASS |
+| ocel_xml::event_xml | 533.9 ns | 796.9 ns | median <= 1000 ns AND p99.9 <= 2500 ns | PASS |
+| provenance::to_turtle | 1151.1 ns | 1822.9 ns | median <= 2000 ns (p99.9 unbounded) | PASS |
+| rehydrate::rehydrate | 72.3 ns | 138.7 ns | median <= 200 ns AND p99.9 <= 500 ns | PASS |
+
+4 passed, 0 failed. Note: `provenance::to_turtle` has no p99.9 gate in the
+harness (`<= inf`); its 1822.9 ns p99.9 is recorded as measured, uncertified.
+
+### Command 2 (verbatim)
+
+```
+cargo test -p strata-protocol --bench pnwire_slo --release -- --test --nocapture --test-threads=1 2>&1 | tail -16
+```
+
+Tail output (verbatim):
+
+```
+    Running benches/pnwire_slo.rs (target/release/deps/pnwire_slo-5cfcb7cce841662c)
+
+running 5 tests
+test harness_floor_probe ... | harness floor probe (trivial byte load) | median 0.37 ns/frame | min 0.33 | max 0.49 | median <= 1 ns | PASS |
+ok
+test wire_ingress_filter_composite_within_slo ... | ingress filter composite (parse + conform/enable bits) | median 3.21 ns/frame | min 3.13 | max 3.99 | median <= 4 ns | PASS |
+ok
+test wire_parse_within_slo ... | pnwire::parse | median 3.17 ns/frame | min 3.13 | max 3.99 | median <= 4 ns | PASS |
+ok
+test wire_roundtrip_within_slo ... | pnwire::parse(write) roundtrip | median 3.54 ns/frame | min 3.50 | max 3.83 | median <= 5 ns | PASS |
+ok
+test wire_write_within_slo ... | pnwire::write | median 3.21 ns/frame | min 3.13 | max 3.78 | median <= 4 ns | PASS |
+ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 5.69s
+```
+
+### Wire bench results vs gates
+
+| Benchmark | Median (measured) | Gate | Verdict |
+|---|---|---|---|
+| pnwire::parse | 3.17 ns/frame | median <= 4 ns | PASS |
+| pnwire::write | 3.21 ns/frame | median <= 4 ns | PASS |
+| pnwire::parse(write) roundtrip | 3.54 ns/frame | median <= 5 ns | PASS |
+| ingress filter composite (parse + conform/enable bits) | 3.21 ns/frame | median <= 4 ns | PASS |
+| harness floor probe (trivial byte load) | 0.37 ns/frame | median <= 1 ns | PASS |
+
+5 passed, 0 failed. The harness-floor probe (0.37 ns) is the libtest loop's own
+overhead on a trivial byte load: ~12% of the parse/write medians, so the
+3.17-3.54 ns figures are net-of-floor credible as sub-4 ns measurements rather
+than harness noise.
+
+### Mpps analogue note
+
+3.21 ns/frame ~= 311 Mpps (10^9 / 3.21 ns) as a userspace per-core frame-rate
+analogue. This is a USERSPACE measurement only. No eBPF/XDP path was measured
+in this run; any XDP dataplane Mpps claim remains NOT-MEASURED (the XDP
+integration lives in docs/PN64_XDP_INTEGRATION.md and has no harness here).
+
+### Deviations
+
+- First audit-bench invocation used `tail -8` per the lane brief and clipped
+  two of the four result lines; re-ran with `tail -14` and the second run is
+  the recorded one. Both runs passed 4/4 (first run: logsink 7.0/7.2,
+  ocel_xml 533.9/796.9, provenance 1153.7/1278.7, rehydrate 72.3/141.9).
+- First pnwire invocation used `tail -8` (clipped to 4 of 5 tests); re-ran at
+  `tail -12` (still missed the floor probe) then `tail -16`, which is recorded.
+  All invocations passed 5/5.
+- The three pnwire runs show small median spread (parse 3.17 constant; roundtrip
+  max 4.43 -> 3.83 -> 3.83 ns), normal run-to-run variance; recorded run is the
+  last.
+- No failures in either bench; honest-gate rule not triggered this run.

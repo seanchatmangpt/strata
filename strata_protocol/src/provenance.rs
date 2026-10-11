@@ -152,18 +152,21 @@ mod tests {
                 activity: 7,
                 objects: vec![(1, 3)],
                 tick: 9,
+                time_secs: 0,
             },
             crate::rehydrate::OcelEvent {
                 id: "e_1".into(),
                 activity: 7,
                 objects: vec![(1, 3), (2, 252)],
                 tick: 10,
+                time_secs: 0,
             },
             crate::rehydrate::OcelEvent {
                 id: "e_2".into(),
                 activity: 7,
                 objects: vec![(1, 3)],
                 tick: 11,
+                time_secs: 0,
             },
         ];
         let turtle = to_turtle(&events, &st, "http://example.org/").unwrap();
@@ -191,6 +194,7 @@ mod tests {
             activity: 9,
             objects: vec![(1, 3)],
             tick: 0,
+            time_secs: 0,
         };
         assert_eq!(
             to_turtle(&[ev], &st, "http://example.org/"),

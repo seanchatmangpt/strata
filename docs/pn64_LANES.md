@@ -136,3 +136,99 @@ another lane past ~10 min, apply a minimal unblock fix and disclose it in your r
 3. Coordinator commits per lane group; CHANGELOG (L29) last.
 
 **Stop condition**: backlog empty + all RUNNING lanes LANDED + tail complete → loop stops.
+
+## Wave 2 (2026-10-11): 20 lanes on open items + next depth
+
+| Lane | Owns | Scope |
+|---|---|---|
+| L45 | `temprun/pn_kernel/` (new crate) | kernel-only wasm: `pn_step` export, no memory, no_std |
+| L46 | `temprun/src/bin/gate0.rs`, `docs/GATE0.md` | gate0 → kernel artifact; flip gates on real result |
+| L47 | `strata_protocol/tests/ronr_extension_court.rs` | extension verbs 0x07–0x0C lifecycle (mutation survivors) |
+| L48 | `CHANGELOG.md` | v26.10.11 PN64 entry (tail-gate now satisfied) |
+| L49 | `strata_protocol/tests/ocel_schema_court.rs` | Gate 2: rehydrate JSON/XML vs OCEL 2.0 schema shape |
+| L50 | `ggen.toml`, `ggen.lock` | register strata-pn64-pack; sync re-lock |
+| L51 | `stratus/lib/stratus/valve/pn_telemetry.ex` + test | telemetry events on valve pn transitions |
+| L52 | `strata_protocol/src/dao_transitions.rs` | pre/post masks for DAO verbs (dispatch-style table) |
+| L53 | `strata_protocol/tests/cross_dao_bridge_court.rs` | two nets, shared topology projection, invariant agreement |
+| L54 | `strata_protocol/src/bin/strata.rs`, `strata_cli_test.rs` | `pn rehydrate --xml` / `--tsv` output flags |
+| L55 | `strata_protocol/tests/pn_fuzz_court.rs` | deterministic structured fuzz: 100k inputs, no panic, law-agreement |
+| L56 | `ggen-marketplace/packs/strata-pn64-pack/queries/` | SPARQL transition queries + doc lowering notes |
+| L57 | `strata_protocol/examples/pn_walkthrough.rs` | runnable example: meeting lifecycle → trace → rehydrate |
+| L58 | `justfile` | `just gate-pn` target: bench gates + gate0 + soak_pn |
+| L59 | `stratus/test/pn64_vector_doc_test.exs` | Elixir court parses docs/PN64_VECTORS.md, runs every vector |
+| L60 | `strata_protocol/tests/pn_trace_attest_court.rs` | ML-DSA receipt + CAS attestation over a 16-byte trace |
+| L61 | `temprun/tests/pn_fuel_test.rs` | fuel metering over pn::step through the fuel lease |
+| L62 | `docs/PN64_QUICKSTART.md` + README See-Also | quickstart: build→step→replay→rehydrate |
+| L63 | `ontology-queries/pn_transitions.rq` | SPARQL over ontology.ttl transition individuals |
+| L64 | `strata_protocol/tests/net_consistency_court.rs` | dispatch-net vs ronr-net full behavioral equivalence sweep |
+
+### Wave 2 ledger
+| Lane | State | Note |
+|---|---|---|
+| L47 | LANDED | — | extension court 8/0; mutation survivors 0x07–0x0C CLOSED; finding: adjourn terminal-ness is table convention, not ABI mechanism (0x1000 enablement-inert) |
+| L52 | LANDED | — | dao_transitions.rs 11/0 (lib 86/0); 13 verbs, place map documented; consumed L55's lib.rs marker |
+| L55 | LANDED | — | pn_fuzz_court 10/0 ×100k stratified; full branchless↔pnabi agreement on forbidden-bit law |
+| L65 | LANDED | — | pn_kernel in workspace members; multi-root breakage fixed (root cargo -p green); 224 B preserved via root profile codegen-units/strip |
+| L49 | LANDED | — | ocel_schema_court 4/0 (JSON/XML shape, determinism, mapping completeness); emitter key is ocel:oid (court pins emitted key) |
+| L45 | LANDED* | — | G1' closure: pn_kernel.g0.wasm 197 B, memory/global-free via opcode-guarded strip_memory.py (rust-lld structurally forces memory — evidence recorded); 500 wasmtime + 1M host cases agree; L46 re-running gate0 |
+| L75 | LANDED | — | pnwire.rs probe 6/0; zero-copy 16B frame parse, fail-closed; lib.rs registration pending |
+| L76 | LANDED | — | docs/PN64_XDP_INTEGRATION.md: shared-law split (filter: conformance+enablement only), frame path, honest status table |
+| L63 | LANDED | — | ontology-queries/pn_transitions.rq rdflib-validated; rows == ronr table; const-emission form runs |
+| L46 | LANDED | — | GATE 0: PASS (official run). g0.wasm 197 B: G1' memory ABSENT, G2' exports, G3' 0 branch bytes, G4' 197≤512; legacy cdylib gates informational FAIL |
+| L88 | LANDED | — | pn table verb, strata_cli 42/0; first row 1\t129\t130 byte-exact vs ontology/.rq; dispatch 12 rows post-L73 |
+| L109 | LANDED | — | gate log: gate-pn-fast PASS, gate-pn PASS (Gate 0 PASS, soak med 3.174ns, imports ∅) |
+| L111 | LANDED | — | kernel bench updated for g0 era: 197 B, ~1.6 ns/step reproduced, both eras tabled |
+| L106 | LANDED | — | strip guard self-test 13/0; FINDINGS: idempotence is typed-refusal not no-op; scan_body misreads call/br immediates (latent) |
+| L80 | LANDED | — | scripts/gate_pn.sh 5-stage PASS 16s; notes soak CT-gate flaked once (pre-existing) |
+| L113 | LANDED | — | pnwire_golden_court 5/0; V01 bytes == BEAM pin — cross-language wire pair closed; all-14 roundtrip |
+| L101 | LANDED | — | precedence_property_court 6/0; 2048-cell census + closed-form 275 admissible cells; law pinned independent of impl |
+| L100 | LANDED | — | CHANGELOG wave-2 entry (125 lines); counts ledger-sourced, no inflation; kernel-layout line correctly omitted pending L98 |
+| L104 | LANDED | — | docs/PN64_RECEIPTS.md, 70 lane rows (27+43), totals ledger-sourced with non-dedup caveat |
+| L102 | LANDED | — | pn_dao_walkthrough 1/0; finding: escrow chain restarts marking — verify_trace correctly refuses the seam, split per-chain |
+| L97 | LANDED | — | ontology dedupe: slot15 removed, Committed sole owner of bit 15, 347 triples, zero dup bitOffsets/opcodes |
+| L81 | LANDED | — | rehydrate RehydrateOptions + RFC3339 (1700000000→2023-11-14T22:13:20Z), 9/0 lib; unblock touches ocel_xml/provenance literals disclosed |
+| L92 | LANDED | — | DFMEA refreshed: 7 rows updated, 5 new (F6-F10), all detectors real on disk; only F10 (XDP host) open |
+| L99 | LANDED | — | docs/PN64_ARCHITECTURE.md five planes, 38 citations verified 0 missing; GATE0.md now records kernel-gate PASS |
+| L94 | LANDED | — | dao telemetry court 4/0, full mix 177/0; composition documented (Dao.lookup + PnTelemetry law) |
+| L93 | LANDED | — | ontology.ttl +126 triples (349 total); rdflib SPARQL returns 32 transitions, masks match Rust; FLAG: pn:Committed/slot15 duplicate bitOffset (L97 fixing), dao_vocab namespace collision left pending decision |
+| L91 | LANDED | — | check-order census 4/0; 8-row lattice pinned (Malformed→Starvation→Invariant); branchless agrees all 48 cells |
+| L89 | LANDED | — | arena flow court 6/0; FINDING: arena validates CLAP quad law only — PN law authority is the valve tier, not the arena |
+| L56 | LANDED | — | pack queries: places/dao_verbs/deadlock_candidates execute via rdflib (2 predicted terminal hits); SPARQL 1.1 modulo/BIND gotchas documented |
+| L73 | LANDED | — | dispatch now const-projected from ronr::RONR (12/12, drift class eliminated); courts 17/17; net_consistency trap filter adjusted (division pre=0) |
+| L86 | LANDED | — | PnFrame 9/0, full mix 173/0; LE wire agreement vs Rust pinned byte-exact; xorshift pin cross-checked vs Python ref |
+| L74 | LANDED | — | qualifier law court 5/0 (exhaustive 256 domain, injectivity, 7-bit pigeonhole guard) |
+| L72 | LANDED | — | precedence court 40/0 via probe; lawful stack is Amend→Adopt→PQ→Vote (literal brief stack impossible on real masks) |
+| L77 | LANDED | — | audit SLO: rehydrate 72.3ns, xml 515.7ns, read_entry 7ns, turtle 1132.8ns — all PASS; scratch-copy build during multi-root breakage |
+| L61 | LANDED | — | pn_fuel court 3/0 (K=1/op, exhaustion deterministic); gate via direct rustc during multi-root breakage (now fixed) |
+| L50 | LANDED* | — | RE-LOCK ABORTED: clap_frame.rs is a hand-maintained superset — my force ruling destroyed 44 lines, caught by L50's semantic diff, reverted via git checkout; force withdrawn; standing rule: sync lawful only when projection is a superset; ggen.toml keeps pn64 line; pack-authoring debt logged as future work order |
+| L78 | LANDED | — | dao.ex mirror 10/0; zero divergences vs Rust; flags L89's in-flight arena test failures (L89's file) |
+| L85 | LANDED | — | trace_slice.rs probe 22/0; safe iterator, zero unsafe, 10k differential vs logsink on all 8 masks; unregistered |
+| L82 | LANDED | — | docs/PN64_CROSS_LANG.md; citations verified; honest gaps: in-wasm vector runner, Rust-side 50k checksum |
+| L90 | LANDED | — | docs/PN64_RONR_MAP.md; ontology↔Rust canonical masks 0 mismatch; FINDINGS: dao_vocab 0x01-0x0C overlaps RONR opcode bytes on the shared dispatch surface (namespace discriminator question); dead-end places listed; dispatch is 12/12 on disk (L73 landed) |
+| L79 | LANDED | — | PNML 1M-input fuzz 7/0 via probe (5 strata, non-vacuity holds); noted cargo multi-root error — pre-dates L65 fix, verify at integration |
+| L84 | LANDED | — | idmap.rs probe 6/6; blake3-u16 collision sentinel, birthday bound n=302 asserted |
+| L83 | LANDED | — | ronr_full.rs probe 10/0; 25 verbs (13 new, 0x0D-0x19), one new place 0x8000 N_COMMITTED, ranks documented; unregistered |
+| L70 | LANDED | — | precedence.rs probe 12/0 (probe crate full lib 97/0); law pinned; flag: gate delegates mask 0 so InvariantViolation unreachable via gate — coordinator signature decision |
+| L53 | LANDED | — | cross-DAO bridge court 4/0; mask=0xFE00 BFS-derived; desync fail-closed pinned; hazard note: token-SET corruption needs tick gate |
+| L71 | LANDED | — | logsink_slo: write 1.2 GB/s, read 4 GB/s, verify_trace 1 ns/entry — all PASS with big headroom |
+| L64 | LANDED | — | net_consistency_court 6/0; reachable set pinned at 10 markings; live-net finding reshaped the terminal policy; dispatch↔ronr 120-case sweep 100% |
+| L68 | LANDED | — | Elixir fuzz 6/0 ×50k, xor checksum 0x42024891165D8B9, zero divergences |
+| L69 | LANDED | — | PN64_ABI.md refreshed: kernel section (224 B), CLI verbs with real V01 invocations, 18-court inventory all verified on disk |
+| L67 | LANDED | — | rule_lowering_court 3/0; ontology rules reproduce shipped ronr/dispatch tables with ZERO mismatch; negation-as-failure = forbidden-bit |
+| L66 | LANDED | — | docs/PN64_KERNEL_BENCH.md: wasm pn_step ~1.6 ns/step (wasmtime, 5e8 calls), native median 2.441 ns; memory-section fact flagged for G1 |
+| L62 | LANDED | — | docs/PN64_QUICKSTART.md, ladder run for real incl. CLI hex examples; README has no See Also section (skipped) |
+| L58 | LANDED | — | justfile gate-pn/gate-pn-fast; real run: G2'/G3'/G4' PASS, G1' FAIL (kernel memory section) — L45 resumed for memory-free kernel |
+| L57 | LANDED | — | walkthrough example 1/0; full transcript: 6 steps → adopted 0x01C1, JSON+Turtle out; flagged multi-workspace-root breakage from pn_kernel (L65 fixing) |
+| L60 | LANDED | — | trace attestation court 3/0; ML-DSA-65 over BLAKE3 of 16B trace, bit-flip fails closed, deterministic receipts |
+| L45 | LANDED | — | pn_kernel 224 B wasm, exports pn_step/pn_fire/pn_enabled, 10^6-case differential OK; standalone crate, workspace membership = L65 |
+| L51 | LANDED | — | pn telemetry 4/0, full mix 142/0 |
+| L54 | LANDED | — | CLI --xml/--tsv 36/0; caught own flag-presence bug mid-flight |
+| L48 | LANDED | CHANGELOG 26.10.11 entry, 29 lines, numbers grounded |
+| L50 | LANDED* | ggen.toml registered; sync blocked by pack [FM-PACK-005] (.tmpl missing) — L17 resumed to fix pack, L50 to re-lock after |
+| L59 | LANDED | vector-doc drift court 3/0; 14 vectors, xor checksum 0x8307007F003F003F pinned |
+
+**BACKLOG DRAINED (2026-10-11 ~02:00)**: wave-2 work is exhausted; the 10 in-flight lanes
+(L105, L110, L117, L119, L127, L131, L133, L135, L141, L142) are the final parallel work.
+When the last lands, coordinator runs the serialized TAIL: full verify ladder → README/CHANGELOG
+reconciliation → wave-2 commits. Occupancy intentionally decays below 20 rather than inventing
+make-work lanes (bounded-work rule).

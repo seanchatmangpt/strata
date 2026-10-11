@@ -106,15 +106,86 @@ Paired with `logsink.rs` append-only entries; `verify_trace(entries, mask)`
 replays a trace against the invariant mask and returns `Err(index)` on the
 first violating entry. Journal fields and masks are declared in `logsink::mask`.
 
+## Kernel
+
+The transition law ships as a standalone no_std wasm kernel crate
+`temprun/pn_kernel/` (src `temprun/pn_kernel/src/lib.rs`), built to
+`temprun/pn_kernel/target/wasm32-unknown-unknown/release/pn_kernel.wasm`,
+measured **224 bytes** on disk. Exports (C ABI, `#[no_mangle] pub extern "C"`):
+
+| Export       | Signature                              |
+|--------------|----------------------------------------|
+| `pn_step`    | `(pn: u64, ocel: u64, mask: u64) -> u64` |
+| `pn_fire`    | `(pn: u64) -> u64`                      |
+| `pn_enabled` | `(pn: u64) -> u32`                      |
+
+Gate 0 budget is <= 512 bytes stripped, zero linear memory, branch-free
+kernel body. Gate criteria and the current verdict (incl. the earlier
+18,353-byte whole-cdylib FAIL) live in `docs/GATE0.md`.
+
+## CLI Verbs
+
+`strata pn step|replay|rehydrate` (`strata_protocol/src/bin/strata.rs`).
+Real invocations against `docs/PN64_VECTORS.md` vector V01
+(`--pn 0001000200010001 --ocel 100100B200A10001`):
+
+```sh
+$ strata pn step --pn 0001000200010001 \
+    --ocel 100100B200A10001 --invariant 0000000000000000
+0001000200010002                       # matches V01 expected marking
+
+$ strata pn replay --file v01.pnlog    # 16 B/entry binary log
+step 0          PASS
+trace-ok         1 steps
+
+$ strata pn rehydrate --file v01.pnlog
+{"ocel:events":{"e_0":{"ocel:activity":1, ...,"ocel:tick":16}}}
+```
+
 ## Verification
 
-Laws are covered by inline `#[cfg(test)]` courts in each module (`pn64.rs`
-exhaustive 8x8x8 marking/mask sweep and edge round-trips; `ocel64.rs`
-round-trip edge values; `pnabi.rs` conformance-leak, token-starvation,
-invariant-violation and tick-wrap courts; `ronr.rs` exact-mask, lookup-miss,
-precedence-ordering courts). No dedicated integration files under
-`strata_protocol/tests/` cover the dual-word ABI yet; the OCEL 2.0 quad
+Inline `#[cfg(test)]` courts remain in each module (`pn64.rs` 8x8x8 sweep;
+`ocel64.rs` edge round-trips; `pnabi.rs` conformance-leak, starvation,
+invariant, tick-wrap; `ronr.rs` exact-mask/miss/precedence). The dual-word
+ABI is additionally covered by integration courts under
+`strata_protocol/tests/`, including: `pn64_court.rs`, `ronr_court.rs`,
+`ronr_extension_court.rs`, `ronr_mutation_court.rs`,
+`dispatch_ronr_court.rs`, `tick_wrap_court.rs`, `rehydrate_court.rs`,
+`adversarial_pn_court.rs`, `pn_fuzz_court.rs`,
+`pn_trace_attest_court.rs`, `xlang_pn_vector_court.rs`,
+`branchless_xproduct_court.rs`, `pnml_langsec_court.rs`,
+`cli_pn_court.rs`, `ocel_schema_court.rs`, `cross_dao_bridge_court.rs`,
+`net_consistency_court.rs`, `rule_lowering_court.rs`. The OCEL 2.0 quad
 mapping court is `strata_protocol/tests/ocel_conformance_test.rs` (FR-3).
+
+### Wave-2 Court Inventory
+
+Counts below are real `cargo test -p strata-protocol --test <name>` results
+(run 2026-10-11, this tree).
+
+- Fuzz tier: `pn_fuzz_court` (10 passed), `pnml_fuzz_court` (7 passed,
+  ~24 s 1M-iteration run).
+- Equivalence tier: `net_consistency_court` (6 passed),
+  `dispatch_ronr_court` (5 passed; dispatch table vs RONR law identity),
+  `qualifier_law_court` (5 passed), `rule_lowering_court` (3 passed).
+- Governance tier: `precedence_court` (40 passed),
+  `precedence_property_court` (6 passed), `ronr_extension_court`
+  (7/8 passed; `table_and_postpone_indefinitely_from_seconded_debatable`
+  FAILING in this tree — known, owned by the RONR-extension lane).
+- Wire tier: `pnwire_golden_court` (5 passed).
+- Attestation: `pn_trace_attest_court` (3 passed), `rehydrate_court`
+  (2 passed).
+- Gate 2 shape: `ocel_schema_court` (4 passed).
+
+No `ronr_full_court` or `kernel_parity_court` file exists in this tree.
+
+### Gates
+
+- Gate 0 — wasm kernel size/zero-memory budget: PASS, cross-ref
+  `docs/GATE0.md` (197 B measured vs <= 512 B budget).
+- Gate 1 — BEAM zero-heap courts: `stratus/test/pn64_zero_heap_test.exs`.
+- Gate 2 — OCEL 2.0 shape conformance: `ocel_schema_court` (4 passed);
+  XSD validation still open.
 
 ## See Also
 

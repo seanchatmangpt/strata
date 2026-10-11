@@ -16,6 +16,10 @@
 //!                                 dual-word transition: prints advanced PN word
 //!   pn replay --file <path>       verify a 16B/entry binary log trace
 //!   pn rehydrate --file <path>    print OCEL 2.0 JSON for a binary log
+//!   pn table [ronr|dispatch|dao]  print the active transition table as TSV
+//!                                 (header opcode/pre/post, rows ordered by
+//!                                 opcode; same shape as the pn_transitions.rq
+//!                                 ontology projection for graph↔code diffing)
 
 // The path-included signer module carries items (Seal, generate, ...) this
 // binary never calls; that is inclusion of the whole lane, not dead code.
@@ -122,12 +126,47 @@ fn cmd_pn(args: &[String]) -> ExitCode {
     match args.first().map(String::as_str) {
         Some("step") if args.len() >= 5 => pn_step(&args[1..]),
         Some("replay") if args.len() == 3 && args[1] == "--file" => pn_replay(&args[2]),
-        Some("rehydrate") if args.len() == 3 && args[1] == "--file" => pn_rehydrate(&args[2]),
+        Some("rehydrate") => pn_rehydrate(&args[1..]),
+        Some("table") => pn_table(&args[1..]),
         _ => fail(
             EX_USAGE,
-            "usage: strata pn step --pn <hex> --ocel <hex> [--invariant <hex>] | strata pn replay --file <path> | strata pn rehydrate --file <path>",
+            "usage: strata pn step --pn <hex> --ocel <hex> [--invariant <hex>] | strata pn replay --file <path> | strata pn rehydrate --file <path> [--xml|--tsv] | strata pn table [ronr|dispatch|dao]",
         ),
     }
+}
+
+const PN_TABLE_USAGE: &str = "usage: strata pn table [ronr|dispatch|dao] (default ronr; TSV header opcode\\tpre\\tpost, rows ordered by opcode; same row shape as ontology-queries/pn_transitions.rq for graph-code diffing)";
+
+/// `pn table [ronr|dispatch|dao]` — print the active transition table as TSV
+/// for ontology-code diffing: the same `opcode<pre>post` row shape the
+/// `pn_transitions.rq` projection emits from `ontology.ttl`. Default is
+/// `ronr`; `dispatch` projects the dense jump table (unassigned opcode slots
+/// omitted); `dao` prints all 13 DAO verbs. Unknown table names fail closed.
+fn pn_table(args: &[String]) -> ExitCode {
+    if args.len() > 1 {
+        return fail(EX_USAGE, PN_TABLE_USAGE);
+    }
+    let name = args.first().map(String::as_str).unwrap_or("ronr");
+    let rows: Vec<(u8, u16, u16)> = match name {
+        "ronr" => strata_protocol::ronr::RONR.iter().map(|t| (t.opcode, t.pre, t.post)).collect(),
+        "dispatch" => (0u16..=255)
+            .filter_map(|op| {
+                strata_protocol::dispatch::lookup(op as u8).map(|(pre, post)| (op as u8, pre, post))
+            })
+            .collect(),
+        "dao" => strata_protocol::dao_transitions::DAO
+            .iter()
+            .map(|t| (t.verb, t.pre, t.post))
+            .collect(),
+        other => return fail(EX_USAGE, &format!("unknown table {other:?}: {PN_TABLE_USAGE}")),
+    };
+    let mut rows = rows;
+    rows.sort_unstable_by_key(|&(op, _, _)| op);
+    println!("opcode\tpre\tpost");
+    for (op, pre, post) in rows {
+        println!("{op}\t{pre}\t{post}");
+    }
+    ExitCode::SUCCESS
 }
 
 fn flag_value<'a>(args: &'a [String], name: &str) -> Result<Option<&'a str>, String> {
@@ -223,7 +262,43 @@ fn pn_replay(path: &str) -> ExitCode {
     }
 }
 
-fn pn_rehydrate(path: &str) -> ExitCode {
+/// `pn rehydrate --file <path> [--xml|--tsv]` — default JSON; `--xml` and
+/// `--tsv` are mutually exclusive; any other flag fails closed (EX_USAGE).
+fn pn_rehydrate(args: &[String]) -> ExitCode {
+    let path = match flag_value(args, "--file") {
+        Ok(Some(p)) => p,
+        _ => {
+            return fail(
+                EX_USAGE,
+                "usage: strata pn rehydrate --file <path> [--xml|--tsv]",
+            )
+        }
+    };
+    let has_flag = |name: &str| args.iter().any(|a| a == name);
+    let xml_flag = has_flag("--xml");
+    let tsv_flag = has_flag("--tsv");
+    if xml_flag && tsv_flag {
+        return fail(EX_USAGE, "usage: --xml and --tsv are mutually exclusive");
+    }
+    // Fail-closed on unknown flags: every argument must be a recognized flag
+    // or the value of a recognized one.
+    let mut known_value = false;
+    for a in args {
+        if known_value {
+            known_value = false;
+            continue;
+        }
+        match a.as_str() {
+            "--file" => known_value = true,
+            "--xml" | "--tsv" => {}
+            other => {
+                return fail(
+                    EX_USAGE,
+                    &format!("unknown flag {other:?}: usage: strata pn rehydrate --file <path> [--xml|--tsv]"),
+                )
+            }
+        }
+    }
     let bytes = match read_file(path) {
         Ok(b) => b,
         Err(e) => return fail(EX_USAGE, &e),
@@ -242,9 +317,15 @@ fn pn_rehydrate(path: &str) -> ExitCode {
         Err(e) => return fail(EX_VERIFY_FAIL, &format!("{path}: refused: {e}")),
     };
     let words: Vec<u64> = entries.iter().map(|e| e.ocel).collect();
-    println!("{}", strata_protocol::rehydrate::to_ocel_json(
-        &strata_protocol::rehydrate::rehydrate_log(&words),
-    ));
+    let events = strata_protocol::rehydrate::rehydrate_log(&words);
+    if xml_flag {
+        println!("{}", strata_protocol::ocel_xml::to_ocel_xml(&events));
+    } else if tsv_flag {
+        let cols = strata_protocol::parquet_out::from_events(&events);
+        println!("{}", strata_protocol::parquet_out::to_tsv(&cols).trim_end());
+    } else {
+        println!("{}", strata_protocol::rehydrate::to_ocel_json(&events));
+    }
     ExitCode::SUCCESS
 }
 

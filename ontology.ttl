@@ -176,7 +176,9 @@ pn:value a rdf:Property ; rdfs:label "value" ;
     rdfs:range xsd:integer ;
     rdfs:comment "Named-constant byte value of a DAO verb or noun." .
 
-# Place slots 0..15 (pn:slot0 = bit 0 ... pn:slot15 = bit 15)
+# Place slots 0..14 (pn:slot0 = bit 0 ... pn:slot14 = bit 14). Bit 15 is
+# named pn:Committed (semantic name; Rust side ronr_full.rs N_COMMITTED) --
+# the duplicate pn:slot15 individual was removed by lane L97.
 pn:slot0 a pn:Place ; pn:bitOffset 0 .
 pn:slot1 a pn:Place ; pn:bitOffset 1 .
 pn:slot2 a pn:Place ; pn:bitOffset 2 .
@@ -192,7 +194,6 @@ pn:slot11 a pn:Place ; pn:bitOffset 11 .
 pn:slot12 a pn:Place ; pn:bitOffset 12 .
 pn:slot13 a pn:Place ; pn:bitOffset 13 .
 pn:slot14 a pn:Place ; pn:bitOffset 14 .
-pn:slot15 a pn:Place ; pn:bitOffset 15 .
 
 # RONR canonical six transitions (0x01..0x06)
 pn:MoveMainMotion a pn:Transition ;
@@ -213,8 +214,29 @@ pn:CallPreviousQuestion a pn:Transition ;
 pn:VoteAdoptMainMotion a pn:Transition ;
     pn:opcode 6 ; pn:preMask 36 ; pn:postMask 257 .
 
+# RONR extension transitions (0x07..0x0C), mirroring src/ronr.rs TRANSITIONS
+pn:LayOnTable a pn:Transition ;            # 0x07 pre=N_SECONDED|N_DEBATABLE post=N_TABLED
+    pn:opcode 7 ; pn:preMask 12 ; pn:postMask 512 .
+
+pn:PostponeIndefinitely a pn:Transition ;  # 0x08 pre=N_SECONDED|N_DEBATABLE post=N_POSTPONED_INDEF
+    pn:opcode 8 ; pn:preMask 12 ; pn:postMask 1024 .
+
+pn:Recess a pn:Transition ;                # 0x09 pre=N_DEBATABLE post=N_RECESS_PENDING
+    pn:opcode 9 ; pn:preMask 8 ; pn:postMask 2048 .
+
+pn:Adjourn a pn:Transition ;               # 0x0A pre=N_DEBATABLE post=N_ADJOURNED
+    pn:opcode 10 ; pn:preMask 8 ; pn:postMask 4096 .
+
+pn:PointOfOrder a pn:Transition ;          # 0x0B pre=N_DEBATABLE post=N_POINT_OF_ORDER_RAISED
+    pn:opcode 11 ; pn:preMask 8 ; pn:postMask 8192 .
+
+pn:DivisionOfAssembly a pn:Transition ;    # 0x0C pre=0 post=N_DIVISION_DEMANDED
+    pn:opcode 12 ; pn:preMask 0 ; pn:postMask 16384 .
+
 # DAO verbs (Propose 0x01 .. AcquireLease 0x94)
 pn:Propose a pn:DaoVerb ; pn:value 1 .
+# NOTE: value 2 here collides with RONR transition opcode 2 (pn:SecondMotion).
+# DELIBERATE-PENDING-DECISION (coordinator-logged namespace issue; do not fix).
 pn:Second a pn:DaoVerb ; pn:value 2 .
 pn:Amend a pn:DaoVerb ; pn:value 3 .
 pn:ExecuteTransaction a pn:DaoVerb ; pn:value 11 .
@@ -229,3 +251,90 @@ pn:TreasuryVault a pn:DaoNoun ; pn:value 96 .
 pn:EscrowContract a pn:DaoNoun ; pn:value 98 .
 pn:ExecutionLease a pn:DaoNoun ; pn:value 145 .
 pn:ReceiptRoot a pn:DaoNoun ; pn:value 146 .
+
+# ---------------------------------------------------------------------------
+# Wave 2 (lane L93) — new RONR verbs, N_COMMITTED place, DAO transitions/nouns
+# ---------------------------------------------------------------------------
+
+# New place: N_COMMITTED 0x8000 (ronr_full.rs) = bit 15.
+# Sole owner of bitOffset 15 (pn:slot15 duplicate removed by lane L97).
+pn:Committed a pn:Place ; pn:bitOffset 15 .
+
+# RONR full verbs (ronr_full.rs opcodes 0x0D..0x19). Masks are ORs of the
+# ronr.rs noun bits: MAIN_MOTION=1, STATED=2, SECONDED=4, DEBATABLE=8,
+# AMENDMENT_PENDING=16, PREV_QUESTION_MOVED=32, PREV_QUESTION_ORDERED=64,
+# FLOOR=128, ADOPTED=256, TABLED=512, POSTPONED_INDEF=1024, RECESS_PENDING=2048,
+# ADJOURNED=4096, POINT_OF_ORDER_RAISED=8192, DIVISION_DEMANDED=16384,
+# COMMITTED=32768.
+pn:ReferToCommittee a pn:Transition ;     # 0x0D pre=N_SECONDED|N_DEBATABLE post=N_COMMITTED
+    pn:opcode 13 ; pn:preMask 12 ; pn:postMask 32768 .
+pn:PostponeToCertainTime a pn:Transition ; # 0x0E pre=N_SECONDED|N_DEBATABLE post=N_STATED|N_SECONDED
+    pn:opcode 14 ; pn:preMask 12 ; pn:postMask 6 .
+pn:LimitExtendDebate a pn:Transition ;     # 0x0F pre=N_SECONDED|N_DEBATABLE post=N_DEBATABLE
+    pn:opcode 15 ; pn:preMask 12 ; pn:postMask 8 .
+pn:ObjectToConsideration a pn:Transition ; # 0x10 pre=N_STATED post=N_POSTPONED_INDEF
+    pn:opcode 16 ; pn:preMask 2 ; pn:postMask 1024 .
+pn:DivisionOfTheQuestion a pn:Transition ; # 0x11 pre=N_STATED post=N_AMENDMENT_PENDING
+    pn:opcode 17 ; pn:preMask 2 ; pn:postMask 16 .
+pn:AppealChairDecision a pn:Transition ;   # 0x12 pre=N_POINT_OF_ORDER_RAISED post=N_SECONDED|N_DEBATABLE
+    pn:opcode 18 ; pn:preMask 8192 ; pn:postMask 12 .
+pn:PointOfInformation a pn:Transition ;    # 0x13 pre=N_DEBATABLE post=N_FLOOR
+    pn:opcode 19 ; pn:preMask 8 ; pn:postMask 128 .
+pn:ParliamentaryInquiry a pn:Transition ;  # 0x14 pre=N_DEBATABLE post=N_FLOOR
+    pn:opcode 20 ; pn:preMask 8 ; pn:postMask 128 .
+pn:WithdrawMotion a pn:Transition ;        # 0x15 pre=N_SECONDED|N_DEBATABLE post=N_FLOOR
+    pn:opcode 21 ; pn:preMask 12 ; pn:postMask 128 .
+pn:TakeFromTable a pn:Transition ;         # 0x16 pre=N_TABLED post=N_SECONDED|N_DEBATABLE
+    pn:opcode 22 ; pn:preMask 512 ; pn:postMask 12 .
+pn:RescindRepeal a pn:Transition ;         # 0x17 pre=N_ADOPTED post=N_POSTPONED_INDEF
+    pn:opcode 23 ; pn:preMask 256 ; pn:postMask 1024 .
+pn:Reconsider a pn:Transition ;            # 0x18 pre=N_ADOPTED post=N_SECONDED|N_DEBATABLE
+    pn:opcode 24 ; pn:preMask 256 ; pn:postMask 12 .
+pn:ConsiderationByParagraph a pn:Transition ; # 0x19 pre=N_DEBATABLE post=N_AMENDMENT_PENDING
+    pn:opcode 25 ; pn:preMask 8 ; pn:postMask 16 .
+
+# DAO transitions (dao_transitions.rs DAO table, 13 verbs; opcode = dao_vocab
+# verb value). Masks are ORs of the dao_transitions.rs P_* bits:
+# COLLATERAL_STAKED=1, STREAM_OPEN=2, ESCROW_LOCKED=4, DELEGATED=8,
+# LEASE_HELD=16, MEMBER_ACTIVE=32, TREASURY_SOLVENT=256, ESCROW_RELEASED=1024,
+# DELEGATION_PENDING=2048, COLLATERAL_WITHDRAWN=4096, STREAM_HALTED=8192,
+# MEMBER_EXPELLED=16384.
+pn:DaoDepositCollateral a pn:Transition ;  # 0x70 pre=0 post=COLLATERAL_STAKED|TREASURY_SOLVENT
+    pn:opcode 112 ; pn:preMask 0 ; pn:postMask 257 .
+pn:DaoWithdrawCollateral a pn:Transition ; # 0x71 pre=COLLATERAL_STAKED post=COLLATERAL_WITHDRAWN
+    pn:opcode 113 ; pn:preMask 1 ; pn:postMask 4096 .
+pn:DaoStream a pn:Transition ;             # 0x72 pre=COLLATERAL_STAKED|TREASURY_SOLVENT post=STREAM_OPEN|COLLATERAL_STAKED|TREASURY_SOLVENT
+    pn:opcode 114 ; pn:preMask 257 ; pn:postMask 259 .
+pn:DaoHaltStream a pn:Transition ;         # 0x73 pre=STREAM_OPEN post=STREAM_HALTED
+    pn:opcode 115 ; pn:preMask 2 ; pn:postMask 8192 .
+pn:DaoRagequit a pn:Transition ;           # 0x74 pre=MEMBER_ACTIVE|COLLATERAL_STAKED post=COLLATERAL_WITHDRAWN
+    pn:opcode 116 ; pn:preMask 33 ; pn:postMask 4096 .
+pn:DaoLockEscrow a pn:Transition ;         # 0x77 pre=MEMBER_ACTIVE post=MEMBER_ACTIVE|ESCROW_LOCKED
+    pn:opcode 119 ; pn:preMask 32 ; pn:postMask 36 .
+pn:DaoReleaseEscrow a pn:Transition ;      # 0x78 pre=ESCROW_LOCKED post=MEMBER_ACTIVE
+    pn:opcode 120 ; pn:preMask 4 ; pn:postMask 32 .
+pn:DaoDelegate a pn:Transition ;           # 0x90 pre=MEMBER_ACTIVE post=MEMBER_ACTIVE|DELEGATED
+    pn:opcode 144 ; pn:preMask 32 ; pn:postMask 40 .
+pn:DaoUndelegate a pn:Transition ;         # 0x91 pre=DELEGATED post=MEMBER_ACTIVE
+    pn:opcode 145 ; pn:preMask 8 ; pn:postMask 32 .
+pn:DaoAcquireLease a pn:Transition ;       # 0x94 pre=MEMBER_ACTIVE post=MEMBER_ACTIVE|LEASE_HELD
+    pn:opcode 148 ; pn:preMask 32 ; pn:postMask 48 .
+pn:DaoExpireLease a pn:Transition ;        # 0x95 pre=LEASE_HELD post=MEMBER_ACTIVE
+    pn:opcode 149 ; pn:preMask 16 ; pn:postMask 32 .
+pn:DaoAdmitMember a pn:Transition ;        # 0x96 pre=0 post=MEMBER_ACTIVE
+    pn:opcode 150 ; pn:preMask 0 ; pn:postMask 32 .
+pn:DaoExpelMember a pn:Transition ;        # 0x97 pre=MEMBER_ACTIVE post=MEMBER_EXPELLED
+    pn:opcode 151 ; pn:preMask 32 ; pn:postMask 16384 .
+
+# DAO nouns added in wave 2 (dao_vocab.rs constants missing from wave 1;
+# completes the documented 16-noun set).
+pn:TimelockQueue a pn:DaoNoun ; pn:value 4 .        # NOUN_TIMELOCK_QUEUE 0x04
+pn:BallotSheet a pn:DaoNoun ; pn:value 5 .          # NOUN_BALLOT_SHEET 0x05
+pn:GeneralAssembly a pn:DaoNoun ; pn:value 48 .     # NOUN_GENERAL_ASSEMBLY 0x30
+pn:ThresholdMultisig a pn:DaoNoun ; pn:value 50 .   # NOUN_THRESHOLD_MULTISIG 0x32
+pn:MemberAccount a pn:DaoNoun ; pn:value 52 .       # NOUN_MEMBER_ACCOUNT 0x34
+pn:CollateralPool a pn:DaoNoun ; pn:value 97 .      # NOUN_COLLATERAL_POOL 0x61
+pn:PaymentStream a pn:DaoNoun ; pn:value 99 .       # NOUN_PAYMENT_STREAM 0x63
+pn:StakingVault a pn:DaoNoun ; pn:value 101 .       # NOUN_STAKING_VAULT 0x65
+pn:StateDelta a pn:DaoNoun ; pn:value 144 .         # NOUN_STATE_DELTA 0x90
+pn:PetriNetMarking a pn:DaoNoun ; pn:value 147 .    # NOUN_PETRI_NET_MARKING 0x93

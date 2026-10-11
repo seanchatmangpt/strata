@@ -23,3 +23,6 @@ stratus/_build-lane*/
 
 # macOS
 .DS_Store
+
+# Workflow phase artifacts (session scratch, regenerated per run)
+artifacts/

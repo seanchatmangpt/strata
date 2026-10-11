@@ -114,29 +114,40 @@ PY
 build_frame
 
 # ---- arena runs (real wasm artifact via wasmtime) -------------------------
-declare -A STATUS
+# KG-42 wire law: receipt byte 0 IS the status code — refuse iff 0x02, any
+# other byte 0 = admit (the register is the untouched universe digest).
+# NOTE: plain per-case variables, NOT `declare -A` — the probe must stay
+# runnable under macOS bash 3.2, where associative arrays abort the script
+# (a vacuous exit-0 pass was witnessed 2026-10-10).
 for c in A B1 D1 D2; do
   wasmtime run --dir "$WORK"::/ "$WASM" "frame$c.bin" "out$c.bin" >/dev/null 2>&1
   [ -f "$WORK/out$c.bin" ] || fail "arena produced no receipt for frame$c"
-  STATUS[$c]=$(python3 -c "print(open('$WORK/out$c.bin','rb').read(1)[0] & 1)")
   L=$(wc -c < "$WORK/out$c.bin" | tr -d ' ')
   [ "$L" = "32" ] || note_fail "frame$c: receipt length $L != 32 (constant-time shape broken)"
 done
-echo "p08: refuse bits — A(inj-as-lineage)=${STATUS[A]} B1(inj-as-policy)=${STATUS[B1]} D1(unbranded)=${STATUS[D1]} D2(skip)=${STATUS[D2]}"
 
-# A: injection quads inert/refused (1 = refuse bit set). Pin: REFUSED.
-[ "${STATUS[A]}" = "1" ] \
+classify() { # <out.bin> -> "refuse|admit <byte0-hex>"
+  python3 -c "b=open('$1','rb').read(1)[0]; print(('refuse' if b == 2 else 'admit'), hex(b))"
+}
+line_A=$(classify "$WORK/outA.bin");   STATUS_A=${line_A%% *};   BYTE_A=${line_A##* }
+line_B1=$(classify "$WORK/outB1.bin"); STATUS_B1=${line_B1%% *}; BYTE_B1=${line_B1##* }
+line_D1=$(classify "$WORK/outD1.bin"); STATUS_D1=${line_D1%% *}; BYTE_D1=${line_D1##* }
+line_D2=$(classify "$WORK/outD2.bin"); STATUS_D2=${line_D2%% *}; BYTE_D2=${line_D2##* }
+echo "p08: verdicts — A(inj-as-lineage)=$STATUS_A(byte0=$BYTE_A) B1(inj-as-policy)=$STATUS_B1(byte0=$BYTE_B1) D1(unbranded)=$STATUS_D1(byte0=$BYTE_D1) D2(skip)=$STATUS_D2(byte0=$BYTE_D2)"
+
+# A: injection quads inert/refused (0x02 status code). Pin: REFUSED.
+[ "$STATUS_A" = "refuse" ] \
   && echo "p08: PASS A: injection bytes as candidate lineage refused — inert opaque quads, never policy" \
-  || note_fail "A: injection lineage ADMITTED by arena (refuse bit ${STATUS[A]})"
+  || note_fail "A: injection lineage ADMITTED by arena (byte0=$BYTE_A)"
 
 # B: payload != policy behavioral pin — identical payload, differing policies
 # -> differing verdicts (A refused vs B1 admitted).
-[ "${STATUS[B1]}" = "0" ] \
+[ "$STATUS_B1" = "admit" ] \
   && echo "p08: PASS B: same payload bytes as caller-authored policy admit — verdict follows policy, not payload" \
-  || note_fail "B: behavioral pin inconclusive (B1 refuse bit ${STATUS[B1]}; payload-vs-policy divergence not demonstrated)"
+  || note_fail "B: behavioral pin inconclusive (B1 byte0=$BYTE_B1; payload-vs-policy divergence not demonstrated)"
 
 # D1: unbranded plan (no policy milestone at all) must refuse.
-[ "${STATUS[D1]}" = "1" ] \
+[ "$STATUS_D1" = "refuse" ] \
   && echo "p08: PASS D1: lineage milestone absent from policy refused (FR-3)" \
   || note_fail "D1: unbranded milestone (no policy match) ADMITTED"
 
@@ -216,17 +227,17 @@ fi
 
 # ---- adjudication ---------------------------------------------------------
 KNOWN_GAP=""
-[ "${STATUS[D2]}" = "0" ] && KNOWN_GAP="D2-skip-admitted"
+[ "$STATUS_D2" = "admit" ] && KNOWN_GAP="D2-skip-admitted"
 if [ "$fails" = "0" ] && [ -z "$KNOWN_GAP" ]; then
   echo "p08: PASSED — containment holds (structural + behavioral), all refused paths CAS-clean"
   exit 0
 elif [ "$fails" = "0" ] && [ -n "$KNOWN_GAP" ]; then
   echo "p08: KNOWN_GAP — injection containment holds (A/B/C/V/CAS) but FR-3 prerequisite-skip"
-  echo "  lineage [1,4] vs policy [1,2,3,4] was ADMITTED by the arena (refuse bit ${STATUS[D2]})."
-  echo "  Root cause pinned by p05: run() sieve uses conformance::merge_join (superset"
-  echo "  match); merge_join_total exists in conformance.rs but no caller ships it."
-  echo "  This is a conformance-strictness gap, NOT an injection channel: the skipped"
-  echo "  plan was authored by the caller in the policy vocabulary."
+  echo "  lineage [1,4] vs policy [1,2,3,4] was ADMITTED by the arena (byte0=$BYTE_D2)."
+  echo "  Regression guard (adjudicated 2026-10-10): the branchless merge_join"
+  echo "  poisons its mismatch accumulator on every skipped policy row, so the"
+  echo "  skip frame REFUSES at HEAD (witnessed via p05's identical frame). If"
+  echo "  this branch ever fires, FR-3 strictness has been broken."
   exit 42
 else
   echo "p08: FAILED — $fails containment assertion(s) violated (see FAIL lines above)"

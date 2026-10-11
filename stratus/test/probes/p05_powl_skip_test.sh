@@ -52,9 +52,11 @@ PY
 # ---- 1. raw receipt status from the real arena artifact ------------------
 wasmtime run --dir "$WORK"::/ "$WASM" frame.bin out.bin >/dev/null 2>&1
 [ -f "$WORK/out.bin" ] || fail "arena produced no receipt"
-STATUS_BIT=$(python3 -c "print(open('$WORK/out.bin','rb').read(1)[0] & 1)")
+# KG-42 wire law: receipt byte 0 IS the status code — refuse iff 0x02.
 STATUS_BYTE=$(python3 -c "print(hex(open('$WORK/out.bin','rb').read(1)[0]))")
-echo "p05: raw arena receipt byte0=$STATUS_BYTE (refuse bit=$STATUS_BIT)"
+REFUSE_RAW=false
+[ "$STATUS_BYTE" = "0x2" ] && REFUSE_RAW=true
+echo "p05: raw arena receipt byte0=$STATUS_BYTE (refuse iff 0x02, KG-42 wire law)"
 
 # ---- 2. valve-side assertions via the prod release binary ----------------
 REG_BEFORE=""
@@ -108,32 +110,23 @@ esac
 
 if [ "$REFUSED" = true ] && [ "$REG_BEFORE" = "$REG_AFTER" ] && [ "$CAS_COUNT" = "0" ]; then
   # Spec held: check pinned status code against spec 0x02.
-  if [ "$STATUS_BIT" = "1" ]; then
-    if [ "$STATUS_BYTE" = "0x2" ] || [ "$STATUS_BYTE" = "0x02" ]; then
-      echo "p05: PASSED — refused, status 0x02 as spec'd, register frozen, CAS empty"
-      exit 0
-    else
-      echo "p05: DIVERGENCE — refused with status bit 1 (byte0=$STATUS_BYTE) but spec says 0x02"
-      exit 42
-    fi
+  if [ "$REFUSE_RAW" = true ]; then
+    echo "p05: PASSED — refused, status 0x02 as spec'd (KG-42 closed), register frozen, CAS empty"
+    exit 0
   else
-    echo "p05: DIVERGENCE — valve refused but raw arena status bit is 0 (byte0=$STATUS_BYTE)"
+    echo "p05: DIVERGENCE — valve refused but raw arena byte0=$STATUS_BYTE is not the 0x02 status code"
     exit 42
   fi
 fi
 
 if [ "$REFUSED" != true ]; then
-  echo "p05: KNOWN_GAP — POWL prerequisite-skip ADMITTED on the real surface."
+  echo "p05: KNOWN_GAP — POWL prerequisite-skip ADMITTED on the real surface (regression)."
   echo "  Evidence: ingest=$INGEST_RESULT; parent_receipt advanced: $REG_BEFORE -> $REG_AFTER;"
-  echo "  raw arena refuse bit=$STATUS_BIT (byte0=$STATUS_BYTE); CAS objects=$CAS_COUNT."
-  echo "  Root cause (pinned): temprun/src/lib.rs run() sieve calls plain"
-  echo "  conformance::merge_join, which admits any lineage quad present in the"
-  echo "  policy superset — skipping milestone 2/3 matches. conformance.rs itself"
-  echo "  documents this gap and ships merge_join_total (policy must be fully"
-  echo "  consumed), but no caller uses it; the WASI wrapper and valve surface"
-  echo "  therefore cannot refuse a prerequisite skip today."
-  echo "  Also: refusal status on the wire is bit 0 of byte 0 (0x01), not the"
-  echo "  spec'd byte code 0x02 — second divergence, untestable until refusal fires."
+  echo "  raw arena byte0=$STATUS_BYTE; CAS objects=$CAS_COUNT."
+  echo "  Adjudicated 2026-10-10: the branchless merge_join poisons its mismatch"
+  echo  " accumulator on every skipped policy row, so the skip frame REFUSES at"
+  echo "  HEAD (witnessed). This branch is a regression guard: if the valve ever"
+  echo "  admits the skip again, the FR-3 strictness law has been broken."
   exit 42
 fi
 

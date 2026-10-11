@@ -14,5 +14,12 @@ stratus/deps/
 # Elixir crash dumps
 erl_crash.dump
 
-# Lane build roots (fanout lease cleanup)
-stratus/_build-lane-fb/
+# Lane build roots (fanout lease cleanup) — any lane, not just -fb
+stratus/_build-lane*/
+
+# CLI/ggen runtime state — receipts, OCEL telemetry; regenerated every run, never repo content
+.clap-noun-verb/
+.ggen-v2/
+
+# macOS
+.DS_Store

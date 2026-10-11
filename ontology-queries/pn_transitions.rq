@@ -1,0 +1,43 @@
+# pn_transitions.rq — PN64 RONR transition table, projected from ontology.ttl
+#
+# Source of truth: /Users/sac/strata/ontology.ttl (pn:Transition individuals,
+# wave-1 lane L16: pn:opcode/pn:preMask/pn:postMask as xsd:integer literals).
+#
+# Consumption: ggen loads ontology.ttl as its [ontology] graph; a pack template
+# binds this .rq file (or an inline copy of the query below), executes it with
+# rdflib at projection time, and renders each result row into the generated
+# Rust dispatch/ronr table. The graph is edited; the table is a projection —
+# never hand-edit generated output.
+
+PREFIX pn: <https://strata.chatman.ai/ontology/pn64#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+SELECT ?opcode ?preMask ?postMask ?name
+WHERE {
+  ?t a pn:Transition ;
+     pn:opcode   ?opcode ;
+     pn:preMask  ?preMask ;
+     pn:postMask ?postMask .
+  BIND(STRAFTER(STR(?t), "#") AS ?name)
+}
+ORDER BY ?opcode
+
+# ---------------------------------------------------------------------------
+# Rust const-literal emission form (template consumes this instead of the
+# SELECT above when generating `pub const` table rows). Each row CONCATs into:
+#
+#   pub const <NAME>: Transition = Transition { opcode: <O>, pre_mask: <P>, post_mask: <Q> };
+#
+# PREFIX pn: <https://strata.chatman.ai/ontology/pn64#>
+# SELECT ?line
+# WHERE {
+#   ?t a pn:Transition ;
+#      pn:opcode   ?opcode ;
+#      pn:preMask  ?preMask ;
+#      pn:postMask ?postMask .
+#   BIND(STRAFTER(STR(?t), "#") AS ?name)
+#   BIND(CONCAT("pub const ", ?name, ": Transition = Transition { opcode: ",
+#               STR(?opcode), ", pre_mask: ", STR(?preMask),
+#               ", post_mask: ", STR(?postMask), " };") AS ?line)
+# }
+# ORDER BY ?opcode

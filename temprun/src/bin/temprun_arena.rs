@@ -19,8 +19,9 @@
 //!   tree_entries = [], parent = header parent digest, message = "clap"
 //!
 //! Exit codes: 2 = usage/host I/O failure, 3 = malformed frame, 0 = run
-//! completed (admit/refuse is carried by the receipt status bit only —
-//! constant-time refusal discipline is preserved on the wire).
+//! completed (admit/refuse is carried by the receipt status code in byte 0:
+//! 0x02 refuse, digest byte admit — constant-time refusal discipline is
+//! preserved on the wire).
 
 use std::process::exit;
 

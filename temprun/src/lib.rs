@@ -17,8 +17,9 @@ use zeroize::Zeroize;
 
 pub use fuel::FuelLease;
 
-/// Status encoded in bit 0 of the opaque receipt's first word layout:
-/// 0 = admit (conformance passed), 1 = refuse (any sieve tripped).
+/// Wire status code carried in byte 0 of the opaque receipt: refuse iff
+/// byte 0 == 0x02 (`receipt::REFUSED_STATUS`); any other byte 0 is admit
+/// (the receipt is then the untouched universe digest).
 pub const RECEIPT_LEN: usize = 32;
 
 /// Arena input: everything the run needs, no host calls.
@@ -45,7 +46,7 @@ pub struct ArenaInput {
 
 pub struct ArenaOutput {
     /// Opaque 32B receipt. Refusals are constant-time: identical length,
-    /// identical shape, no error entropy beyond one status bit.
+    /// identical shape, no error entropy beyond the fixed status byte.
     pub receipt: [u8; RECEIPT_LEN],
     /// BLAKE3 universe digest over assembled git object stream.
     pub universe_digest: [u8; 32],
@@ -159,9 +160,11 @@ mod tests {
         // Same fuel exhaustion -> identical receipts (no error entropy).
         assert_eq!(a.receipt, b.receipt);
         assert!(!a.admitted && !b.admitted);
-        // A refusal vs an admit on the same digest differ (status bit only).
+        // A refusal vs an admit on the same digest differ in byte 0 only
+        // (0x02 status code vs the digest's own byte).
         let c = run(&mut base_input(), FuelLease::new(10));
         assert_ne!(a.receipt, c.receipt);
+        assert_eq!(c.receipt, c.universe_digest, "admit register is the digest");
     }
 
     #[test]

@@ -137,7 +137,8 @@ fn fuel_precedence_pinned() {
     assert!(!fuel1.admitted);
     assert_eq!(fuel1.receipt, fuel2.receipt, "all refusals share one shape");
 
-    // Refusal never changes the digest: only the status bit differs.
+    // Refusal never changes the digest: only byte 0 differs (0x02 status
+    // code replaces the digest byte).
     assert_eq!(fuel2.universe_digest, fuel3.universe_digest);
 }
 

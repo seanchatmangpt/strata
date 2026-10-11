@@ -114,12 +114,9 @@ fn admitted_run_receipt_fields_deterministic_and_parent_advances() {
     // Deterministic admit receipt: byte-identical across two runs.
     assert_eq!(oa.receipt, ob.receipt);
     assert_eq!(oa.receipt.len(), 32);
-    // Receipt bit 0 (admit) is 0; receipt binds the universe digest.
-    assert_eq!(oa.receipt[0] & 1, 0);
-    // Receipt = universe digest with admit bit 0 cleared.
-    let mut expect = oa.universe_digest;
-    expect[0] &= !1;
-    assert_eq!(oa.receipt, expect);
+    // Admit register IS the universe digest, byte 0 untouched (KG-42 wire
+    // law: refuse iff byte 0 is the 0x02 status code).
+    assert_eq!(oa.receipt, oa.universe_digest);
     // Fuel consumed exactly 3 (one per sieve: clock, coords, conformance).
     // Fuel consumed exactly 3 (one per sieve: clock, coords, conformance):
     // a 10-lease charged 3 must have 7 remaining — matches run's draw.
@@ -187,7 +184,7 @@ fn assert_refusal_twice(mut a: ArenaInput, mut b: ArenaInput, label: &str) {
     assert!(!rb.admitted, "{} must refuse on replay", label);
     assert_eq!(ra.receipt.len(), 32, "{} receipt is 32B", label);
     assert_eq!(ra.receipt, rb.receipt, "{} refusal byte-identical across runs (zero entropy)", label);
-    // Refusal receipt differs from admit on the same frame (status bit path).
+    // Refusal receipt differs from admit on the same frame (status code in byte 0).
     let ok = run(&mut arena_input([0u8; 32]), FuelLease::new(10));
     assert_ne!(ra.receipt, ok.receipt, "{} refusal must not equal admit receipt", label);
 }

@@ -130,9 +130,10 @@ fn clock_refused_and_fuel_starved_receipts_identical_shape() {
 }
 
 #[test]
-fn clock_admit_vs_refuse_differ_only_in_status_bit() {
-    // Same digest, opposite verdicts: the receipts differ ONLY by bit 0 of
-    // byte 0 (mirrors the conformance court's no-entropy finding).
+fn clock_admit_vs_refuse_differ_only_in_status_byte() {
+    // Same digest, opposite verdicts: the refusal pins byte 0 to the 0x02
+    // status code and shares bytes 1..31 with the admit register (mirrors
+    // the conformance court's no-entropy finding).
     let mut bad = base_input();
     bad.clock = vec![0, 9]; // inversion on node 0
     let refused = run(&mut bad, FuelLease::new(10));
@@ -141,9 +142,16 @@ fn clock_admit_vs_refuse_differ_only_in_status_bit() {
     assert!(!refused.admitted);
     assert!(admitted.admitted);
     assert_ne!(refused.receipt, admitted.receipt);
-    let mut stripped = refused.receipt;
-    stripped[0] &= !1;
-    assert_eq!(stripped, admitted.receipt, "refusal != admit by status bit only");
+    assert_eq!(
+        refused.receipt[0],
+        temprun::receipt::REFUSED_STATUS,
+        "refusal byte 0 is the 0x02 status code"
+    );
+    assert_eq!(
+        refused.receipt[1..],
+        admitted.receipt[1..],
+        "refusal != admit outside the status byte"
+    );
 }
 
 // --- 7. Determinism 10x ---
@@ -165,6 +173,6 @@ fn deterministic_over_ten_runs() {
         bad.clock = vec![0, 0];
         let r = run(&mut bad, FuelLease::new(10));
         assert!(!r.admitted);
-        assert_eq!(r.receipt[0] & 1, 1, "refusal status bit set");
+        assert_eq!(r.receipt[0], temprun::receipt::REFUSED_STATUS, "refusal status code");
     }
 }

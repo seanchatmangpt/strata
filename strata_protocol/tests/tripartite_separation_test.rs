@@ -19,8 +19,9 @@
 //!   A2. The sieve is pure: same verdict forever, inputs unmodified, no
 //!       fuel consumed, no CAS object derivable from a refusal.
 //!   A3. Only the admitted run's output verifies as CAS-committable; the
-//!       refusal receipt differs from the admit receipt by the status bit
-//!       alone (no new object identity) and fails the admit-bit gate.
+//!       refusal receipt differs from the admit receipt in byte 0 alone
+//!       (0x02 status code, no new object identity) and fails the admit
+//!       gate (refuse iff byte 0 == 0x02).
 
 use strata_protocol::cas::{emit_blob, verify_object, GitObject};
 use strata_protocol::quad::Quad;
@@ -162,27 +163,28 @@ fn construct_refusal_creates_no_cas_object() {
 
     // The refusal receipt is not a valid CAS object: emitting it as a blob
     // and verifying yields an object whose identity is trivially that of the
-    // refusal bytes — but the admit-bit gate below is the real refusal: the
-    // stratus register contract refuses any register with bit 0 set, so a
-    // refusal can never advance state or parent a commit.
+    // refusal bytes — but the status-code gate below is the real refusal: the
+    // stratus register contract refuses any register whose byte 0 is the
+    // 0x02 status code, so a refusal can never advance state or parent a
+    // commit.
     let refusal_blob: GitObject = emit_blob(&[]);
     assert!(verify_object(refusal_blob.oid, &refusal_blob.data).is_ok());
     assert_eq!(refused.receipt.len(), 32, "constant shape");
-    assert_eq!(refused.receipt[0] & 1, 1, "refusal status bit set");
+    assert_eq!(refused.receipt[0], temprun::receipt::REFUSED_STATUS, "refusal status code");
 
-    // Symmetry check: same tree_entries, conforming run — only the status
-    // bit separates the two receipts. The refusal created no new object
-    // identity in CAS space; it differs from the admit receipt by one bit.
+    // Symmetry check: same tree_entries, conforming run — only byte 0
+    // separates the two receipts. The refusal created no new object
+    // identity in CAS space; the admit register is the untouched digest.
     let mut admit_input = arena_input(true);
     let admitted = run(&mut admit_input, FuelLease::new(10));
     assert!(admitted.admitted);
-    assert_eq!(admitted.receipt[0] & 1, 0, "admit status bit clear");
+    assert_eq!(admitted.receipt, admitted.universe_digest, "admit register is the full digest");
     let mut xor = [0u8; 32];
     for (x, (a, b)) in xor.iter_mut().zip(admitted.receipt.iter().zip(&refused.receipt)) {
         *x = a ^ b;
     }
-    assert!(xor.iter().skip(1).all(|&b| b == 0), "differ by status bit only");
-    assert_eq!(admitted.receipt[0] & !1, refused.receipt[0] & !1);
+    assert!(xor.iter().skip(1).all(|&b| b == 0), "differ in byte 0 only");
+    assert_eq!(refused.receipt[0], temprun::receipt::REFUSED_STATUS);
 
     // A refusal cannot parent a commit: its register value fails the admit
     // gate, so no commit object is emitted on the CONSTRUCT path. Only the
@@ -190,8 +192,8 @@ fn construct_refusal_creates_no_cas_object() {
     assert_ne!(refused.universe_digest, [0u8; 32]); // work happened (constant time)...
     // ...but nothing was durably committed: no GitObject was constructed
     // from the refusal output anywhere in this module, and the refusal
-    // receipt cannot serve as a parent digest (bit 0 = refuse).
-    assert_eq!(refused.receipt[0] & 1, 1);
+    // receipt cannot serve as a parent digest (byte 0 = 0x02 refuse).
+    assert_eq!(refused.receipt[0], temprun::receipt::REFUSED_STATUS);
 }
 
 // -- A3: DO plane — only admitted run transitions state + receipts ----------
@@ -267,5 +269,5 @@ fn do_fuel_lease_is_the_actuation_capability_and_it_expires() {
     let mut input = arena_input(true);
     let out = run(&mut input, FuelLease::new(0));
     assert!(!out.admitted, "no capability, no actuation — even with a valid proof");
-    assert_eq!(out.receipt[0] & 1, 1);
+    assert_eq!(out.receipt[0], temprun::receipt::REFUSED_STATUS);
 }

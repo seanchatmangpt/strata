@@ -306,13 +306,13 @@ fn negative_golden_refusal_is_constant_shape() {
     assert!(!out.admitted);
     assert_eq!(out.receipt, want_receipt);
     assert_eq!(out.universe_digest, want_digest);
-    // Refusal differs from its own admit twin only in bit 0 of byte 0 —
-    // no error-class entropy leaked into the receipt.
+    // Refusal shares bytes 1..31 with its admit twin and pins byte 0 to the
+    // 0x02 status code — no error-class entropy leaked into the receipt.
     let (mut clean, fuel) = profile("10_malformed_refusal");
     clean.clock = vec![1, 2];
     clean.observed = vec![1, 1];
     let twin = run(&mut clean, FuelLease::new(fuel));
     assert!(twin.admitted);
     assert_eq!(out.receipt[1..], twin.receipt[1..]);
-    assert_eq!(out.receipt[0] & !1, twin.receipt[0] & !1);
+    assert_eq!(out.receipt[0], temprun::receipt::REFUSED_STATUS);
 }

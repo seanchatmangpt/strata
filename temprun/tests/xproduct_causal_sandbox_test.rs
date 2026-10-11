@@ -55,7 +55,8 @@ fn conforming_input() -> ArenaInput {
 /// The three causal refusal classes, expressed as input mutations of a
 /// conforming frame. Each refuses end-to-end under acyclicity::check and/or
 /// the frame clock sieve; all share the same tree/parent/message so all
-/// produce the same universe digest (receipts differ only by status bit).
+/// produce the same universe digest (receipts differ only in byte 0:
+/// the 0x02 refusal status code vs the digest byte).
 #[derive(Clone, Copy, Debug)]
 enum CausalClass {
     /// Frame vector clock regresses behind observed high-water marks.
@@ -149,7 +150,7 @@ fn causal_refusal_refuses_at_every_fuel_level_with_identical_receipt() {
             assert_eq!(r, &receipts[0], "class {:?} receipt varies with fuel", cls);
         }
         // The refusal receipt differs from the conforming admit receipt
-        // (status bit only — digest is shared).
+        // (status code in byte 0 only — digest tail is shared).
         let mut admit_inp = conforming_input();
         let admit = run(&mut admit_inp, FuelLease::new(3));
         assert!(admit.admitted);

@@ -283,7 +283,7 @@ fn fuel_exhaustion_sandbox_refusals_are_charged() {
         let out = out.unwrap();
         assert!(!out.admitted, "fuel={} must be sandbox-refused", lease);
         assert_eq!(out.receipt.len(), RECEIPT_LEN);
-        assert!(out.receipt[0] & 1 == 1, "fuel={} refusal status bit", lease);
+        assert_eq!(out.receipt[0], temprun::receipt::REFUSED_STATUS, "fuel={} refusal status code", lease);
         // Charged down to exactly 0 per the 3-sieve economy: the lease is
         // drawn fully (or pinned at 0) by sieve exhaustion.
         let mut probe = FuelLease::new(lease);
@@ -310,7 +310,7 @@ fn fuel_exhaustion_sandbox_refusals_are_charged() {
     let out = run(&mut collide, FuelLease::new(10_000));
     assert!(!out.admitted, "coordinate collision must refuse");
     assert_eq!(out.receipt.len(), RECEIPT_LEN);
-    assert!(out.receipt[0] & 1 == 1);
+    assert_eq!(out.receipt[0], temprun::receipt::REFUSED_STATUS);
     assert_scrubbed(&collide, "coordinate refusal");
 
     let mut collide2 = arena_input();
@@ -349,16 +349,19 @@ fn wire_refused_and_sandbox_refused_indistinguishable_to_persistence() {
     dir.assert_empty("neither refusal family may write persistence artifacts");
 
     // The only refused-family output surface is the opaque 32B receipt with
-    // the refusal status bit; it binds the universe digest (deterministic,
-    // no error-class entropy) and exposes no commit-hash consumption path.
+    // the 0x02 refusal status code in byte 0; it binds the universe digest
+    // (deterministic, no error-class entropy) and exposes no commit-hash
+    // consumption path.
     assert_eq!(sandbox_refused.receipt.len(), RECEIPT_LEN);
-    // commit_hash = receipt with bit 0 cleared = universe_digest with bit 0
-    // cleared (receipt = digest | status_bit; the digest's own LSB may be 1).
+    assert_eq!(sandbox_refused.receipt[0], temprun::receipt::REFUSED_STATUS);
+    // commit_hash masks the WHOLE status byte: bytes 1..31 are digest bytes
+    // 1..31 in both classes; byte 0 is status material, never commit
+    // material.
     let stripped = temprun::receipt::commit_hash(&sandbox_refused.receipt);
-    let mut digest_stripped = sandbox_refused.universe_digest;
-    digest_stripped[0] &= !1;
-    assert_eq!(stripped, digest_stripped,
-        "extractor strips the status bit: refused receipt binds only the universe digest");
+    let mut digest_masked = sandbox_refused.universe_digest;
+    digest_masked[0] = 0;
+    assert_eq!(stripped, digest_masked,
+        "extractor masks the status byte: refused receipt binds only the digest tail");
     let mut again = arena_input();
     again.candidate_mask = 0b0110;
     let replay = run(&mut again, FuelLease::new(10_000));

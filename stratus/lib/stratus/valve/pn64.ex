@@ -113,7 +113,13 @@ defmodule Stratus.Valve.Pn64 do
   def tick(ocel), do: band(bsr(ocel, 56), @mask8)
 
   @doc "Pack an OCEL64 event word; inverse of the accessors."
-  @spec pack_ocel(activity :: 0..65535, src :: 0..65535, tgt :: 0..65535, qual :: 0..255, tick :: 0..255) ::
+  @spec pack_ocel(
+          activity :: 0..65535,
+          src :: 0..65535,
+          tgt :: 0..65535,
+          qual :: 0..255,
+          tick :: 0..255
+        ) ::
           non_neg_integer()
   def pack_ocel(activity, src, tgt, qual, tick) do
     band(activity, @mask16) ||| band(src, @mask16) <<< 16 |||
@@ -140,13 +146,22 @@ defmodule Stratus.Valve.Pn64 do
   Check order law: malformed is checked before starvation and invariant, so a
   dual-violating input reports `:malformed`.
   """
-  @spec validate_and_advance(pn :: non_neg_integer(), ocel :: non_neg_integer(), invariant_mask ::
-                              non_neg_integer()) ::
-          {:ok, non_neg_integer()} | {:error, :malformed | :token_starvation | :invariant_violation}
+  @spec validate_and_advance(
+          pn :: non_neg_integer(),
+          ocel :: non_neg_integer(),
+          invariant_mask ::
+            non_neg_integer()
+        ) ::
+          {:ok, non_neg_integer()}
+          | {:error, :malformed | :token_starvation | :invariant_violation}
   def validate_and_advance(pn, ocel, invariant_mask) do
     cond do
-      band(activity(ocel), @mask8) != tid(pn) -> {:error, :malformed}
-      not enabled?(pn) -> {:error, :token_starvation}
+      band(activity(ocel), @mask8) != tid(pn) ->
+        {:error, :malformed}
+
+      not enabled?(pn) ->
+        {:error, :token_starvation}
+
       band(bxor(marking(pn), pre(pn)) ||| post(pn), invariant_mask) != 0 ->
         {:error, :invariant_violation}
 
@@ -159,7 +174,8 @@ defmodule Stratus.Valve.Pn64 do
   Monotonic tick guard (replay defense):
   `tick(next) == (tick(prev) + 1) &&& 0xFF`.
   """
-  @spec expected_tick_ok?(prev_ocel :: non_neg_integer(), next_ocel :: non_neg_integer()) :: boolean()
+  @spec expected_tick_ok?(prev_ocel :: non_neg_integer(), next_ocel :: non_neg_integer()) ::
+          boolean()
   def expected_tick_ok?(prev_ocel, next_ocel) do
     tick(next_ocel) == band(tick(prev_ocel) + 1, @mask8)
   end

@@ -1,0 +1,27 @@
+[package]
+name = "pn_kernel"
+version = "26.10.10"
+edition = "2021"
+publish = false
+
+[lib]
+crate-type = ["cdylib"]
+
+[profile.release]
+opt-level = "z"
+lto = true
+panic = "abort"
+codegen-units = 1
+strip = true
+
+# Workspace member: root Cargo.toml members includes "temprun/pn_kernel"
+# (coordinator/L65). No nested [workspace] table — multi-root breaks cargo -p.
+#
+# Gate 0 artifact build:
+#   cargo build --target wasm32-unknown-unknown --release
+#   python3 strip_memory.py \
+#     target/wasm32-unknown-unknown/release/pn_kernel.wasm \
+#     target/wasm32-unknown-unknown/release/pn_kernel.g0.wasm
+# (rust-lld unconditionally emits a shadow-stack Memory section + stack-pointer
+#  Global on wasm32 targets even for pure-register code; the strip pass removes
+#  them after asserting the code is memory/global-opcode-free.)

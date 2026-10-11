@@ -44,6 +44,16 @@ defmodule Stratus.Valve.DefaultArena do
                                  from the public frame header, never the wire)
     {:error, :malformed_frame} — wrapper exit 3
     {:error, :arena_failure}   — wrapper missing / exit 2 / bad register
+
+  ## Opt-in PN64 law (`actuate/2`, lane L133)
+
+  `actuate(frame, pn_law: true)` runs the PN64 dual-word law
+  (`Stratus.Valve.Pn64.validate_and_advance/3`, invariant mask 0) over the
+  payload BEFORE the quad law. It applies only to 16-byte payloads: any
+  other payload passes through to the quad law unchanged. Any valve refusal
+  is typed `{:error, :pn_refused}` (distinct from `:refused` /
+  `:malformed_frame`); on admit the validated words are expanded into the
+  wrapper's two-quad layout so the wrapper is untouched.
   """
 
   @behaviour Stratus.Valve.Arena
@@ -51,11 +61,63 @@ defmodule Stratus.Valve.DefaultArena do
   @wasm_relative "target/wasm32-wasip1/release/temprun_arena.wasm"
 
   @impl true
-  def actuate(frame) when is_binary(frame) do
+  def actuate(frame, opts \\ []) when is_binary(frame) and is_list(opts) do
     with :ok <- header_check(frame),
-         {:ok, receipt} <- run_wasmtime(frame) do
+         {:ok, wire_frame} <- maybe_pn_law(frame, opts),
+         {:ok, receipt} <- run_wasmtime(wire_frame) do
       classify_receipt(receipt, frame)
     end
+  end
+
+  # Opt-in PN64 law gate (lane L133): `pn_law: true` runs the PN64 dual-word
+  # law (Stratus.Valve.Pn64) over the payload BEFORE the wrapper's CLAP quad
+  # law. It applies ONLY to 16-byte payloads — any other payload size passes
+  # through to the quad law unchanged. Refusals are typed `{:error, :pn_refused}`,
+  # distinct from `:refused` / `:malformed_frame`. Invariant mask is 0.
+  #
+  # On valve admit the validated 16-byte dual word is expanded into the
+  # wrapper's two-quad wire layout (the same pn/ocel words as history quad
+  # head and candidate quad head, tick words zeroed) because the wrapper's
+  # quad law requires exactly two 4-word quads; the WASM wrapper is untouched.
+  # Returns {:ok, wire_frame} on the passthrough and expand paths,
+  # {:error, :pn_refused} on any valve refusal.
+  defp maybe_pn_law(frame, opts) do
+    if opts[:pn_law] do
+      case payload_size(frame) do
+        16 ->
+          with {:ok, pn, ocel} <- Stratus.PnFrame.decode(pn_payload(frame)),
+               {:ok, _next} <- Stratus.Valve.Pn64.validate_and_advance(pn, ocel, 0) do
+            {:ok, expand_to_quads(frame, pn, ocel)}
+          else
+            {:error, :bad_frame} -> {:error, :pn_refused}
+            {:error, _reason} -> {:error, :pn_refused}
+          end
+
+        _other ->
+          # pn_law applies only to 16-byte payloads; passthrough.
+          {:ok, frame}
+      end
+    else
+      {:ok, frame}
+    end
+  end
+
+  # history quad (pn, ocel, pn, t0) then candidate quad (pn, ocel, pn, t0):
+  # the candidate's first 3 words match the history quad, so the wrapper's
+  # quad-conformance law admits.
+  defp expand_to_quads(frame, pn, ocel) do
+    header = binary_part(frame, 0, clap_header_size())
+    header <> <<pn::64, ocel::64, pn::64, 0::64>> <> <<pn::64, ocel::64, pn::64, 0::64>>
+  end
+
+  defp payload_size(frame), do: byte_size(frame) - clap_header_size()
+
+  defp clap_header_size, do: 4 + 1 + 1 + 2 + 8 + 8 + 32 + 4 + 4
+
+  defp pn_payload(frame) do
+    header_size = clap_header_size()
+    <<_header::binary-size(header_size), payload::binary>> = frame
+    payload
   end
 
   # Wire law (KG-42): receipt byte 0 IS the status code — refuse iff it is

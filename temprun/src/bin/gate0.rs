@@ -1,15 +1,23 @@
 //! Gate 0 — PRD NFR-03 court for the PN64 wasm kernel artifact.
 //!
-//! Verifies, by direct binary parse (zero dependencies), that the built
-//! wasm32 artifact is a single-basic-block, zero-linear-memory kernel:
+//! Two artifact groups, by direct binary parse (zero dependencies):
 //!
-//!   G1  zero linear memory   — Memory section (id 5) absent or min_pages == 0
-//!   G2  kernel exported      — an export named `step`/`pn_step`/`fire` exists
-//!   G3  branch-free kernel   — the kernel function body contains zero
-//!                              branch-class opcode bytes
-//!       (0x0C br, 0x0D br_if, 0x0E br_table, 0x05 else)
-//!   G4  stripped size <= 512 — raw artifact size; `wasm-tools` not present
-//!                              on PATH, so raw is the only honest figure
+//! 1. LEGACY (census only, informational): the whole temprun cdylib
+//!    (`target/wasm32-unknown-unknown/release/temprun.wasm`). Wave 1
+//!    established it can never pass by construction (kernel
+//!    dead-code-eliminated); its gates are reported but do not key the
+//!    overall verdict.
+//!
+//! 2. KERNEL (verdict-bearing): the standalone pn_kernel wasm, newest
+//!    `*.wasm` under `temprun/pn_kernel/**/release/`. Gates:
+//!
+//!   G1' zero linear memory   — Memory section (id 5) absent or min_pages == 0
+//!   G2' kernel exported      — exports contain `pn_step`, `pn_fire`, `pn_enabled`
+//!   G3' branch-free kernel   — zero branch-class opcode bytes
+//!                              (0x0C br, 0x0D br_if, 0x0E br_table, 0x05 else)
+//!                              in ALL code-section bodies
+//!   G4' size <= 512 bytes    — raw artifact size; stripped figure recorded
+//!                              too when `wasm-tools` is available
 //!
 //! Method note: the opcode census is a byte-level scan of function bodies
 //! (immediates are not decoded). A count of ZERO is strictly sound — no
@@ -25,7 +33,10 @@ use std::process::exit;
 
 const MAX_KERNEL_BYTES: usize = 512;
 const BRANCH_OPCODES: [u8; 4] = [0x0C, 0x0D, 0x0E, 0x05];
+/// Legacy cdylib kernel-export names (wave 1).
 const KERNEL_EXPORTS: [&str; 3] = ["step", "pn_step", "fire"];
+/// Kernel-artifact exports required by the PN64 ABI (wave 2, L46).
+const ABI_EXPORTS: [&str; 3] = ["pn_step", "pn_fire", "pn_enabled"];
 
 struct Reader<'a> {
     data: &'a [u8],
@@ -103,6 +114,60 @@ fn locate_artifact() -> Option<PathBuf> {
         .collect();
     candidates.sort();
     candidates.into_iter().next()
+}
+
+/// Locate the standalone pn_kernel wasm. Preference order:
+/// 1. `pn_kernel.g0.wasm` — the Gate 0 artifact (link-stripped, memory-free)
+/// 2. newest other `*.wasm` under `temprun/pn_kernel/**/release/`
+///    (recursive; L45 owns that crate) — used with an honest label.
+fn locate_kernel_artifact() -> Option<PathBuf> {
+    let manifest = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let root = manifest.join("pn_kernel");
+    let candidates = walk_wasm(&root);
+    // Canonical Gate 0 artifact first, wherever it landed.
+    if let Some(g0) = candidates.iter().find(|p| {
+        p.file_name()
+            .and_then(|n| n.to_str())
+            .map(|n| n == "pn_kernel.g0.wasm")
+            .unwrap_or(false)
+    }) {
+        return Some(g0.clone());
+    }
+    let mut rest: Vec<PathBuf> = candidates;
+    rest.sort_by_key(|p| {
+        let mtime = p
+            .metadata()
+            .and_then(|m| m.modified())
+            .ok()
+            .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+            .map(|d| d.as_secs())
+            .unwrap_or(0);
+        let is_release = p.to_string_lossy().contains("release") as u64;
+        (mtime, is_release)
+    });
+    rest.last().cloned()
+}
+
+fn walk_wasm(dir: &Path) -> Vec<PathBuf> {
+    let mut out = Vec::new();
+    let Ok(entries) = fs::read_dir(dir) else {
+        return out;
+    };
+    for e in entries.flatten() {
+        let p = e.path();
+        if p.is_dir() {
+            // Do not descend into "deps" or "incremental" — those hold
+            // non-artifact intermediates with hash names.
+            let name = p.file_name().and_then(|n| n.to_str()).unwrap_or("");
+            if name == "deps" || name == "incremental" || name == "build" {
+                continue;
+            }
+            out.extend(walk_wasm(&p));
+        } else if p.extension().map(|e| e == "wasm").unwrap_or(false) {
+            out.push(p);
+        }
+    }
+    out
 }
 
 /// Parse a Memory section body: count(1) then limits (flags, min[, max]).
@@ -244,38 +309,117 @@ fn kernel_function<'a>(art: &'a Artifact) -> Option<&'a (u32, usize, usize)> {
     None
 }
 
+fn print_gate(label: &str, criterion: &str, measured: &str, pass: bool) {
+    println!(
+        "| {:<4} | {:<34} | {:<33} | {} |",
+        label,
+        criterion,
+        measured,
+        pass_fail(pass)
+    );
+}
+
 fn main() {
-    let path = match locate_artifact() {
+    println!("=== Gate 0 — PN64 wasm kernel court ===");
+    println!();
+
+    // ---- Group 1: legacy whole-cdylib census (informational) ----
+    println!("--- legacy artifact (informational; does NOT key the verdict) ---");
+    match locate_artifact().map(|p| parse_artifact(&p)) {
+        Some(Ok(art)) => {
+            let kernel = kernel_function(&art);
+            let g1 = art.memory.map_or(true, |(min, _)| min == 0);
+            let g2 = kernel.is_some();
+            let g3 = kernel.map_or(false, |(_, _, br)| *br == 0);
+            let g4 = art.raw_bytes <= MAX_KERNEL_BYTES;
+            println!(
+                "| gate | criterion                          | measured                          | verdict |"
+            );
+            println!(
+                "|------|------------------------------------|-----------------------------------|---------|"
+            );
+            let mem_desc = match art.memory {
+                None => "memory section ABSENT".to_string(),
+                Some((min, has_max)) => format!(
+                    "memory {} pages{}",
+                    min,
+                    if has_max { " (max present)" } else { "" }
+                ),
+            };
+            print_gate("G1", "zero linear memory", &mem_desc, g1);
+            let kdesc = match kernel {
+                Some((i, size, br)) => format!("step @func{i}, {size}B, {br} branch bytes"),
+                None => "kernel NOT PRESENT in artifact".to_string(),
+            };
+            print_gate("G2", "kernel exported (step/fire)", &kdesc, g2);
+            print_gate("G3", "kernel branch-free (0x0C/0D/0E/05)", &kdesc, g3);
+            print_gate("G4", &format!("size <= {MAX_KERNEL_BYTES} bytes"), &format!("{} bytes (raw)", art.raw_bytes), g4);
+            let total_branch_bytes: usize = art.functions.iter().map(|(_, _, b)| *b).sum();
+            println!(
+                "whole-cdylib branch-byte census: {total_branch_bytes}; functions: {}; exports: {:?}",
+                art.functions.len(),
+                art.exports
+            );
+        }
+        Some(Err(e)) => println!("legacy artifact unparsable: {e}"),
+        None => println!("legacy artifact not found under target/wasm32-unknown-unknown/release (informational)"),
+    }
+    println!();
+
+    // ---- Group 2: kernel artifact (verdict-bearing) ----
+    println!("--- kernel artifact (verdict-bearing) ---");
+    let kpath = match locate_kernel_artifact() {
         Some(p) => p,
         None => {
-            eprintln!("Gate 0 REFUSED: no wasm artifact under target/wasm32-unknown-unknown/release (run `just test-wasm`)");
+            eprintln!("Gate 0 REFUSED: no pn_kernel wasm found under temprun/pn_kernel/**/release/");
+            eprintln!("(build the kernel crate: cargo build -p pn_kernel --target wasm32-unknown-unknown --release)");
+            println!("| G1' | zero linear memory                  | kernel artifact NOT FOUND        | FAIL |");
+            println!("| G2' | exports pn_step/pn_fire/pn_enabled  | kernel artifact NOT FOUND        | FAIL |");
+            println!("| G3' | branch-free code section            | kernel artifact NOT FOUND        | FAIL |");
+            println!("| G4' | size <= 512 bytes                   | kernel artifact NOT FOUND        | FAIL |");
+            println!();
+            println!("Gate 0: FAIL");
             exit(1);
         }
     };
-    let art = match parse_artifact(&path) {
+    let kart = match parse_artifact(&kpath) {
         Ok(a) => a,
         Err(e) => {
             eprintln!("Gate 0 REFUSED: {e}");
+            println!("Gate 0: FAIL");
             exit(1);
         }
     };
 
-    let kernel = kernel_function(&art);
-    let g1_pass = art.memory.map_or(true, |(min, _)| min == 0);
-    let g2_pass = kernel.is_some();
-    let g3_pass = kernel.map_or(false, |(_, _, br)| *br == 0);
-    let g4_pass = art.raw_bytes <= MAX_KERNEL_BYTES;
+    let g1p = kart.memory.map_or(true, |(min, _)| min == 0);
+    let missing: Vec<&str> = ABI_EXPORTS
+        .iter()
+        .copied()
+        .filter(|e| !kart.exports.iter().any(|x| x == e))
+        .collect();
+    let g2p = missing.is_empty();
+    let total_branch: usize = kart.functions.iter().map(|(_, _, b)| *b).sum();
+    let g3p = total_branch == 0;
+    let g4p = kart.raw_bytes <= MAX_KERNEL_BYTES;
 
-    println!("=== Gate 0 — PN64 wasm kernel court ===");
-    println!("artifact: {} ({} bytes)", art.path.display(), art.raw_bytes);
-    println!();
+    let is_g0 = kpath
+        .file_name()
+        .and_then(|n| n.to_str())
+        .map(|n| n == "pn_kernel.g0.wasm")
+        .unwrap_or(false);
+    let flavor = if is_g0 {
+        "Gate 0 artifact"
+    } else {
+        "FALLBACK (non-g0 kernel build; memory/link flags not guaranteed stripped)"
+    };
+    println!("artifact: {} ({} bytes) [{flavor}]", kpath.display(), kart.raw_bytes);
     println!(
-        "| gate | criterion                          | measured                          | verdict |"
+        "| gate | criterion                           | measured                          | verdict |"
     );
     println!(
-        "|------|------------------------------------|-----------------------------------|---------|"
+        "|------|-------------------------------------|-----------------------------------|---------|"
     );
-    let mem_desc = match art.memory {
+    let kmem_desc = match kart.memory {
         None => "memory section ABSENT".to_string(),
         Some((min, has_max)) => format!(
             "memory {} pages{}",
@@ -283,44 +427,31 @@ fn main() {
             if has_max { " (max present)" } else { "" }
         ),
     };
-    println!(
-        "| G1   | zero linear memory                 | {} | {} |",
-        format_args!("{:<33}", mem_desc),
-        pass_fail(g1_pass)
-    );
-    let kdesc = match kernel {
-        Some((i, size, br)) => format!("step @func{i}, {size}B, {br} branch bytes"),
-        None => "kernel NOT PRESENT in artifact".to_string(),
+    print_gate("G1'", "zero linear memory", &kmem_desc, g1p);
+    let g2_desc = if g2p {
+        format!("all present: {ABI_EXPORTS:?}")
+    } else {
+        format!("missing: {missing:?}")
     };
-    println!(
-        "| G2   | kernel exported (step/fire)        | {} | {} |",
-        format_args!("{:<33}", kdesc),
-        pass_fail(g2_pass)
+    print_gate("G2'", "exports pn_step/pn_fire/pn_enabled", &g2_desc, g2p);
+    let g3_desc = format!(
+        "{total_branch} branch bytes / {} fn bodies",
+        kart.functions.len()
     );
-    println!(
-        "| G3   | kernel branch-free (0x0C/0D/0E/05) | {} | {} |",
-        format_args!("{:<33}", kdesc),
-        pass_fail(g3_pass)
+    print_gate("G3'", "branch-free code section (0x0C/0D/0E/05)", &g3_desc, g3p);
+    print_gate(
+        "G4'",
+        &format!("size <= {MAX_KERNEL_BYTES} bytes"),
+        &format!("{} bytes (raw)", kart.raw_bytes),
+        g4p,
     );
-    println!(
-        "| G4   | size <= {MAX_KERNEL_BYTES} bytes               | {} | {} |",
-        format_args!("{:<33}", format!("{} bytes", art.raw_bytes)),
-        pass_fail(g4_pass)
-    );
-    println!();
-    let total_branch_bytes: usize = art.functions.iter().map(|(_, _, b)| *b).sum();
-    println!("whole-artifact branch-byte census: {total_branch_bytes}");
-    let funcs = art.functions.len();
-    println!("functions in code section: {funcs}; exports: {:?}", art.exports);
+    println!("kernel exports: {:?}", kart.exports);
 
-    if !g2_pass && art.functions.iter().all(|(_, _, br)| *br > 0) {
-        println!();
-        println!("diagnosis: no `step`/`fire` export and every function body carries");
-        println!("branch bytes — the pn::step kernel is dead-code-eliminated (no caller");
-        println!("in the cdylib). A kernel-only wasm target is required for Gate 0 to PASS.");
+    if !g4p {
+        println!("note: `wasm-tools` not on PATH, so no stripped figure exists — raw is the only honest number (recorded as-is).");
     }
 
-    if !(g1_pass && g2_pass && g3_pass && g4_pass) {
+    if !(g1p && g2p && g3p && g4p) {
         println!();
         println!("Gate 0: FAIL");
         exit(1);

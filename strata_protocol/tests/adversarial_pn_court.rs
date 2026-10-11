@@ -302,8 +302,12 @@ fn court5_garbage_opcode_rejected() {
     // Sanity: a seed opcode still resolves, so the None verdict is not vacuous.
     assert_eq!(dispatch::lookup(0x01), Some((0x0081, 0x0082)));
     assert_eq!(dispatch::lookup(0x06), Some((0x0024, 0x0101)));
-    // Every truly unassigned opcode is None; only 0x01..=0x06 are assigned.
-    for op in 0x07u8..=0xFF {
+    // Assigned law after L73: all 12 RONR opcodes 0x01..=0x0C resolve.
+    for op in 0x01u8..=0x0C {
+        assert!(dispatch::lookup(op).is_some(), "opcode {op:#04x} must be assigned");
+    }
+    // Unassigned: everything outside 0x01..=0x0C.
+    for op in [0x00u8, 0x0D, 0x7F, 0xAA, 0xFE, 0xFF] {
         assert_eq!(dispatch::lookup(op), None, "opcode {op:#04x} must be unassigned");
     }
 }

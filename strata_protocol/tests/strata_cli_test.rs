@@ -499,11 +499,143 @@ fn pn_rehydrate_prints_ocel_json_with_activity_id() {
     assert!(out.contains("\"ocel:oid\":\"o_4\""), "stdout: {out}");
 }
 
+/// Valid 3-entry trace: the 2-step chain extended by one more firing
+/// (marking 0b0100 -> 0b0001, tid 3, tick 30). Used for the --xml/--tsv
+/// rehydrate output-format tests.
+fn valid_three_step_trace_bytes() -> Vec<u8> {
+    let p2 = pn64::pack(0b0100, 0b0100, 0b0001, 3, 0);
+    let o = |tid: u16, tick: u8| ocel64::pack(tid, tid + 2, tid + 3, 0, tick);
+    let mut b = valid_two_step_trace_bytes();
+    b.extend(log_entry_bytes(p2, o(3, 30)));
+    b
+}
+
+#[test]
+fn pn_rehydrate_xml_flag_emits_ocel_events_root_and_e_0() {
+    let t = TempDir::new("pn-rehydrate-xml");
+    let f = t.write("trace.bin", &valid_three_step_trace_bytes());
+    let (code, out, err) = run(&["pn", "rehydrate", "--file", f.to_str().unwrap(), "--xml"]);
+    assert_eq!(code, 0, "stderr: {err}");
+    assert_eq!(out.matches("<ocel:events>").count(), 1, "stdout: {out}");
+    assert_eq!(out.matches("</ocel:events>").count(), 1, "stdout: {out}");
+    assert!(out.contains("<event id=\"e_0\">"), "stdout: {out}");
+    assert!(out.contains("<event id=\"e_2\">"), "stdout: {out}");
+    assert_eq!(out.matches("<event id=").count(), 3, "one event element per trace entry");
+}
+
+#[test]
+fn pn_rehydrate_tsv_flag_emits_header_and_long_format_rows() {
+    let t = TempDir::new("pn-rehydrate-tsv");
+    let f = t.write("trace.bin", &valid_three_step_trace_bytes());
+    let (code, out, err) = run(&["pn", "rehydrate", "--file", f.to_str().unwrap(), "--tsv"]);
+    assert_eq!(code, 0, "stderr: {err}");
+    let lines: Vec<&str> = out.lines().collect();
+    assert_eq!(
+        lines[0], "event_id\tactivity\tobject_id\tqualifier\ttick",
+        "TSV header expected, stdout: {out}"
+    );
+    // Long format: one row per object-relationship; 3 events x 2 objects.
+    assert_eq!(lines.len() - 1, 6, "6 data rows, stdout: {out}");
+    for row in &lines[1..] {
+        assert_eq!(row.split('\t').count(), 5, "5 columns per row: {row}");
+    }
+    assert_eq!(lines[1], "e_0\t1\to_3\t0\t10", "first long-format row: {out}");
+}
+
+#[test]
+fn pn_rehydrate_xml_and_tsv_are_mutually_exclusive() {
+    let t = TempDir::new("pn-rehydrate-both");
+    let f = t.write("trace.bin", &valid_three_step_trace_bytes());
+    let (code, out, err) = run(&[
+        "pn", "rehydrate", "--file", f.to_str().unwrap(), "--xml", "--tsv",
+    ]);
+    assert_eq!(code, 2, "usage-class refusal expected");
+    assert!(out.is_empty());
+    assert!(err.contains("mutually exclusive"), "stderr: {err}");
+}
+
+#[test]
+fn pn_rehydrate_unknown_flag_fails_closed_usage_error() {
+    let t = TempDir::new("pn-rehydrate-badflag");
+    let f = t.write("trace.bin", &valid_three_step_trace_bytes());
+    let (code, out, err) = run(&[
+        "pn", "rehydrate", "--file", f.to_str().unwrap(), "--csv",
+    ]);
+    assert_eq!(code, 2, "unknown flag must be a usage refusal");
+    assert!(out.is_empty(), "no stdout on refusal");
+    assert!(err.contains("unknown flag"), "stderr: {err}");
+    assert!(err.contains("usage:"), "stderr: {err}");
+}
+
 #[test]
 fn pn_rehydrate_missing_file_is_usage_error() {
     let (code, _, err) = run(&["pn", "rehydrate", "--file", "/nonexistent/strata-missing.bin"]);
     assert_eq!(code, 2);
     assert!(err.contains("cannot read"), "stderr: {err}");
+}
+
+// ---- pn table ----------------------------------------------------------------
+
+#[test]
+fn pn_table_ronr_default_prints_header_and_12_rows_opcode_ordered() {
+    let (code, out, err) = run(&["pn", "table"]);
+    assert_eq!(code, 0, "stderr: {err}");
+    let lines: Vec<&str> = out.lines().collect();
+    assert_eq!(lines[0], "opcode\tpre\tpost", "TSV header expected, stdout: {out}");
+    assert_eq!(lines.len() - 1, 12, "12 data rows, stdout: {out}");
+    // Byte-exact against ontology.ttl decimal encodings (0x01/0x0081/0x0082)
+    // and the pn_transitions.rq projection output.
+    assert_eq!(lines[1], "1\t129\t130", "first data row: {out}");
+    // Ordered by opcode: last row is opcode 0x0C.
+    assert_eq!(lines[12], "12\t0\t16384", "last data row (0x0C, N_DIVISION_DEMANDED): {out}");
+}
+
+#[test]
+fn pn_table_ronr_explicit_arg_matches_default() {
+    let (_, out_def, _) = run(&["pn", "table"]);
+    let (code, out, err) = run(&["pn", "table", "ronr"]);
+    assert_eq!(code, 0, "stderr: {err}");
+    assert_eq!(out, out_def, "explicit ronr must equal the default");
+}
+
+#[test]
+fn pn_table_dispatch_omits_unassigned_slots_prints_12_rows() {
+    let (code, out, err) = run(&["pn", "table", "dispatch"]);
+    assert_eq!(code, 0, "stderr: {err}");
+    let lines: Vec<&str> = out.lines().collect();
+    assert_eq!(lines[0], "opcode\tpre\tpost", "TSV header expected, stdout: {out}");
+    // The dense table projects all 12 ronr opcodes; 244 unassigned slots omitted.
+    assert_eq!(lines.len() - 1, 12, "12 data rows, stdout: {out}");
+    assert_eq!(lines[1], "1\t129\t130", "first data row mirrors ronr exactly: {out}");
+}
+
+#[test]
+fn pn_table_dao_prints_all_13_verbs() {
+    let (code, out, err) = run(&["pn", "table", "dao"]);
+    assert_eq!(code, 0, "stderr: {err}");
+    let lines: Vec<&str> = out.lines().collect();
+    assert_eq!(lines[0], "opcode\tpre\tpost", "TSV header expected, stdout: {out}");
+    assert_eq!(lines.len() - 1, 13, "13 data rows, stdout: {out}");
+    // 0x70 DepositCollateral: pre 0, post COLLATERAL_STAKED|TREASURY_SOLVENT.
+    assert_eq!(lines[1], "112\t0\t257", "first dao row: {out}");
+    // 0x97 ExpelMember: pre MEMBER_ACTIVE, post MEMBER_EXPELLED.
+    assert_eq!(lines[13], "151\t32\t16384", "last dao row: {out}");
+}
+
+#[test]
+fn pn_table_unknown_name_fails_closed_exit_two() {
+    let (code, out, err) = run(&["pn", "table", "bogus"]);
+    assert_eq!(code, 2, "usage-class refusal expected");
+    assert!(out.is_empty(), "no stdout on refusal");
+    assert!(err.contains("unknown table"), "stderr: {err}");
+    assert!(err.contains("usage:"), "stderr: {err}");
+}
+
+#[test]
+fn pn_table_extra_arg_fails_closed_exit_two() {
+    let (code, _, err) = run(&["pn", "table", "ronr", "extra"]);
+    assert_eq!(code, 2);
+    assert!(err.contains("usage:"), "stderr: {err}");
 }
 
 // ---- global fail-closed surface -------------------------------------------

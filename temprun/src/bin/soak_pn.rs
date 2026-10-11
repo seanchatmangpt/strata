@@ -34,8 +34,26 @@
 //! Constant-time refusal gate (mirrors soak.rs --mixed, robust-vs-robust):
 //! an all-invalid-path population (each invalid slot drops a DIFFERENT pre
 //! bit, per LCG, to exercise every refusal exit of the fold) must sit within
-//! 2x of the all-valid population on BOTH median and P99.9 — the branchless
-//! kernel must show zero valid/invalid timing entropy.
+//! `ct_bound` (default 2.0, `--ct-bound`) of the all-valid population on BOTH
+//! median and P99.9 — the branchless kernel must show zero valid/invalid
+//! timing entropy.
+//!
+//! KNOWN FLAKE (single observation, docs/pn64_LANES.md L80): at low sample
+//! counts (--runs 2 --cycles 100000 -> 97 batches/population) the gate failed
+//! once, then passed on rerun with unchanged parameters. Diagnosis (2026-10-11,
+//! 5 reruns of the exact failing parameters, all PASS): the MEDIAN limb is
+//! stable — invalid_med/valid_med = 3.174/2.482 = 1.28, far inside 2.0 — but
+//! the P99.9 limb is boundary-riding: with 97 samples the P99.9 is the ~max
+//! batch, and observed i_p999/v_p999 ratios reached 1.87 (4.720/2.523) in a
+//! PASSING run. A single scheduler-preempted valid batch inflating i_p999, or
+//! a fast valid batch deflating v_p999, can push the ratio past 2.0 — SPECIAL-
+//! cause noise, not valid/invalid timing entropy in the kernel. Per the
+//! diagnostic, NO statistical outlier allowance was added (not evidence-based
+//! at N=1 flake in 6+3 observations); the flake is disclosed here instead.
+//! At the default load (10 runs x 10^6 cycles, 977 batches/population) the
+//! P99.9 is a real tail statistic and the gate is stable. Rerun before
+//! concluding a real constant-time violation; a REPRODUCIBLE failure at any
+//! load is a kernel bug, not scheduler noise.
 //!
 //! Exit nonzero iff any run fails capability or the constant-time gate fails.
 
@@ -54,15 +72,16 @@ const WARMUP_BATCHES: u64 = 2; // warmup batches per run (like soak's warmup cyc
 const BATCH: u64 = 1024;
 
 /// The six canonical RONR transitions (opcodes 0x01-0x06), re-declared inline
-/// as 32-bit (pre, post) place masks — identical values to
-/// strata_protocol::ronr::RONR[0..6]; temprun does not import across crates.
-const RONR_SIX: [(u8, u32, u32); 6] = [
-    (0x01, 0x0081, 0x0090), // main motion:  FLOOR|MAIN_MOTION -> FLOOR|STATED
-    (0x02, 0x0010, 0x0030), // second:       STATED -> SECONDED|DEBATABLE
-    (0x03, 0x0020, 0x0802), // amend:        DEBATABLE -> AMENDMENT_PENDING
-    (0x04, 0x0800, 0x0020), // adopt amend:  AMENDMENT_PENDING -> DEBATABLE
-    (0x05, 0x0020, 0x0060), // prev question: DEBATABLE -> PREV_Q_MOVED|ORDERED
-    (0x06, 0x0030, 0x0101), // adopt:        SECONDED|PREV_Q_MOVED -> MAIN_MOTION|ADOPTED
+/// as 16-bit (pre, post) place masks — the exact masks asserted by
+/// strata_protocol::ronr::canonical_six_exact_masks (docs/PN64_ABI.md);
+/// temprun does not import across crates.
+const RONR_SIX: [(u8, u16, u16); 6] = [
+    (0x01, 0x0081, 0x0082), // main motion:  MAIN_MOTION|FLOOR -> MAIN_MOTION|STATED
+    (0x02, 0x0002, 0x000C), // second:       STATED -> SECONDED|DEBATABLE
+    (0x03, 0x0008, 0x0010), // amend:        DEBATABLE -> AMENDMENT_PENDING
+    (0x04, 0x0010, 0x0008), // adopt amendment: AMENDMENT_PENDING -> DEBATABLE
+    (0x05, 0x0008, 0x0060), // prev question: DEBATABLE -> PREV_Q_MOVED|PREV_Q_ORDERED
+    (0x06, 0x0024, 0x0101), // adopt:        SECONDED|PREV_Q_MOVED -> MAIN_MOTION|ADOPTED
 ];
 
 /// Deterministic 64-bit LCG (Numerical Recipes constants, as soak.rs).
@@ -102,31 +121,32 @@ fn run_batch(rng: &mut Lcg, mode: Mode) -> (u64, u64, u64) {
     let mut invalid_count = 0u64;
     let t0 = Instant::now();
     for i in 0..BATCH {
-        let (_opcode, pre, post) = RONR_SIX[(rng.next_u64() % 6) as usize];
-        // PN word packing (temprun::pn): low 32 = marking, high 32 = pre.
-        // 16-bit RONR masks live in the low half of each 32-bit field.
-        let pre32 = pre as u64;
+        let (tid, pre, post) = RONR_SIX[(rng.next_u64() % 6) as usize];
+        // Canonical PN64 packing (docs/PN64_ABI.md): marking [15:0],
+        // pre [31:16], post [47:32], tid [55:48]; flags byte 0.
         let is_invalid = mode == Mode::InvalidOnly || (mode == Mode::Mixed && i & 1 == 1);
-        // invariant mask: in mixed mode, mark one high place (bit 20) with a
-        // token on LCG-chosen valid slots so the invariant limb of the fold
-        // is exercised there (empty otherwise — never blocks valid steps).
+        // invariant mask: in mixed mode, mark one RONR-unused place (bit 12)
+        // with a token on LCG-chosen valid slots so the invariant limb of the
+        // fold is exercised there (empty otherwise — never blocks valid steps).
         let inv_has_token = mode == Mode::Mixed && !is_invalid && rng.next_u64() & 1 == 0;
-        let invariant_mask: u64 = 1u64 << 20;
+        let invariant_mask: u64 = 1u64 << 12;
         let marking: u64 = if is_invalid {
             // drop one pre place (LCG-chosen bit among the set pre bits)
             let drop_idx = (rng.next_u64() % 16) as u32;
-            let drop_bit = 1u32 << drop_idx;
+            let drop_bit = 1u16 << drop_idx;
             let dropped = if pre & drop_bit != 0 { pre & !drop_bit } else { pre & !0x0001 };
-            (dropped as u64) & 0xFFFF_FFFF
+            dropped as u64
         } else if inv_has_token {
             // enabled (marking == pre) AND holds the invariant place -> the
             // invariant limb (not the enablement limb) refuses this step.
-            pre32 | invariant_mask
+            (pre as u64) | invariant_mask
         } else {
-            pre32 & 0xFFFF_FFFF // marking == pre -> enabled, invariant clear
+            pre as u64 // marking == pre -> enabled, invariant clear
         };
-        let pn_word = (pre32 << 32) | marking;
-        let ocel = (post as u64) | (rng.next_u64() << 32); // high half: opaque event id
+        let pn_word = ((tid as u64) << 48) | ((post as u64) << 32) | ((pre as u64) << 16) | marking;
+        // OCEL64: activity [15:0] must name the transition id (conformance
+        // law); the higher fields are opaque event identity.
+        let ocel = (tid as u64) | (rng.next_u64() & !0xFFFF);
 
         let next = pn::step(pn_word, ocel, invariant_mask);
         if is_invalid || inv_has_token {
@@ -135,7 +155,7 @@ fn run_batch(rng: &mut Lcg, mode: Mode) -> (u64, u64, u64) {
             invalid_count += 1;
         } else {
             // generator invariant: valid path must commit (marking becomes post)
-            debug_assert_eq!(next & 0xFFFF_FFFF, post as u64, "valid step must commit post");
+            debug_assert_eq!(next & 0xFFFF, post as u64, "valid step must commit post");
             valid_count += 1;
         }
     }
@@ -145,6 +165,7 @@ fn run_batch(rng: &mut Lcg, mode: Mode) -> (u64, u64, u64) {
 fn main() {
     let mut cycles: u64 = 1_000_000;
     let mut runs: u64 = RUNS;
+    let mut ct_bound: f64 = 2.0;
     let mut json = false;
     let mut args = std::env::args().skip(1);
     while let Some(a) = args.next() {
@@ -167,9 +188,18 @@ fn main() {
                     }
                 };
             }
+            "--ct-bound" => {
+                ct_bound = match args.next().and_then(|v| v.parse().ok()) {
+                    Some(b) if b > 1.0 => b,
+                    _ => {
+                        eprintln!("soak_pn: --ct-bound requires a number > 1.0");
+                        std::process::exit(2);
+                    }
+                };
+            }
             "--json" => json = true,
             other => {
-                eprintln!("soak_pn: unknown arg {other}; usage: soak_pn [--runs N] [--cycles N] [--json]");
+                eprintln!("soak_pn: unknown arg {other}; usage: soak_pn [--runs N] [--cycles N] [--ct-bound B] [--json]");
                 std::process::exit(2);
             }
         }
@@ -224,14 +254,14 @@ fn main() {
         let pass = cp >= CP_FLOOR && cpk >= CPK_FLOOR;
 
         // Robust-vs-robust constant-time gate (soak.rs --mixed form): invalid
-        // median & P99.9 each within 2x of the valid median & P99.9.
+        // median & P99.9 each within ct_bound of the valid median & P99.9.
         valid_only.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap());
         invalid_only.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap());
         let v_med = percentile(&valid_only, 0.5);
         let v_p999 = percentile(&valid_only, 0.999);
         let i_med = percentile(&invalid_only, 0.5);
         let i_p999 = percentile(&invalid_only, 0.999);
-        let ct_pass = i_med <= 2.0 * v_med && i_p999 <= 2.0 * v_p999;
+        let ct_pass = i_med <= ct_bound * v_med && i_p999 <= ct_bound * v_p999;
         let run_pass = pass && ct_pass;
         all_pass &= run_pass;
         ct_pass_all &= ct_pass;
@@ -280,7 +310,8 @@ fn main() {
             if all_pass { "PASS" } else { "FAIL" }
         );
         println!(
-            "  constant-time (valid vs invalid, robust 2x gate): {}",
+            "  constant-time (valid vs invalid, robust {:.1}x gate): {}",
+            ct_bound,
             if ct_pass_all { "PASS" } else { "FAIL" }
         );
     }

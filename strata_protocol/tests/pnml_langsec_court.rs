@@ -1,15 +1,8 @@
-//! LangSec Type-3 parser court for the unregistered PNML module.
+//! LangSec Type-3 parser court for the PNML module.
 //!
-//! Lane L27. `src/pnml.rs` is NOT registered in lib.rs, so this court is run
-//! via a standalone rustc probe (no cargo, no lib linkage):
-//!
-//! ```text
-//! cd /Users/sac/strata/strata_protocol
-//! rustc --edition 2021 --test tests/pnml_langsec_court.rs -o /tmp/pnml_langsec_court && /tmp/pnml_langsec_court
-//! ```
-//!
-//! The probe compiles `src/pnml.rs` and `src/invariants.rs` directly via
-//! `#[path]` modules (zero mocks: the real scanner, the real BFS).
+//! Wave 2 (L137). `src/pnml.rs` is now registered in lib.rs (`pub mod pnml`),
+//! so this court compiles under cargo as a normal integration test and links
+//! the real crate (zero mocks: the real scanner, the real BFS).
 //!
 //! Courts:
 //! 1. Grammar-closure census — every prefix truncation and a sampled byte-flip
@@ -21,14 +14,8 @@
 //! 4. Integration court — a real `parse()` output feeds
 //!    `invariants::reachable_bitset`; exact reachable set asserted.
 
-// Real modules under court, compiled in-place (Chicago: no doubles).
-#[path = "../src/pnml.rs"]
-mod pnml;
-#[path = "../src/invariants.rs"]
-mod invariants;
-
-use invariants::reachable_bitset;
-use pnml::{initial_marking, parse, PnmlError};
+use strata_protocol::invariants::reachable_bitset;
+use strata_protocol::pnml::{initial_marking, parse, PnmlError};
 
 /// The canonical valid 3-place / 2-transition PNML document.
 fn net3() -> String {
@@ -216,7 +203,7 @@ fn integration_parse_to_reachability() {
     // t0 fires once (p0 -> p1); t1 needs {p1,p2}, p2 never gains a token.
     let mut reached = Vec::new();
     for m in 0..=u16::MAX {
-        if invariants::is_reachable(&set, m) {
+        if strata_protocol::invariants::is_reachable(&set, m) {
             reached.push(m);
         }
     }

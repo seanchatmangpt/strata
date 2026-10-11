@@ -1,18 +1,19 @@
-//! Drift court L34: `dispatch::TABLE` vs `ronr::RONR`.
+//! Drift court L34 (L73 extension): `dispatch::TABLE` vs `ronr::RONR`.
 //!
-//! Two independently-built tables over one calculus (16-bit place-mask
+//! Two independently-addressable tables over one calculus (16-bit place-mask
 //! transitions). N implementations of one calculus → O(N²) drift is the
-//! failure class. This court pins them together:
+//! failure class. This court pins FULL identity:
 //!
-//! 1. Every opcode where `ronr::lookup` is `Some` must be `Some` in
-//!    `dispatch::lookup` with IDENTICAL `(pre, post)`.
-//! 2. Converse: every `dispatch` entry must exist in `ronr::RONR` (dispatch
-//!    is the seeded subset).
-//! 3. Masked-fire equivalence: for each shared opcode, `pnabi::
+//! 1. Exact 12-opcode identity over the full 256-opcode sweep: `ronr ⊆
+//!    dispatch` AND `dispatch ⊆ ronr` with identical `(pre, post)` — the
+//!    assigned sets are equal, so the asymmetry property is inverted (the
+//!    former seeded-subset state is retired; any change on either side flips
+//!    this court).
+//! 2. Masked-fire equivalence: for each of the 12 shared opcodes, `pnabi::
 //!    validate_and_advance` driven with dispatch's masks and ronr's masks on
 //!    the same `(marking, activity)` inputs produces identical outcomes,
-//!    across all 2^popcount(pre) sub-markings of each shared transition's
-//!    `pre` mask.
+//!    across all 2^popcount(pre) sub-markings of each transition's `pre`
+//!    mask, plus an exhaustive 65536-marking sweep per opcode.
 //!
 //! Zero mocks: real modules, real ABI, real outcomes.
 
@@ -44,15 +45,14 @@ fn sub_masks(mask: u16) -> Vec<u16> {
 }
 
 // ---------------------------------------------------------------------------
-// (1) ronr ⊆ dispatch with identical masks
+// (1) FULL 12-opcode identity, swept over all 256 opcodes
 // ---------------------------------------------------------------------------
 
 #[test]
-fn ronr_entries_present_in_dispatch_with_identical_masks() {
-    // Court law over the shared/canonical region (0x01..=0x06): every ronr
-    // opcode there must be Some in dispatch with IDENTICAL (pre, post).
+fn full_opcode_identity_ronr_subset_of_dispatch() {
+    // ronr ⊆ dispatch with identical masks, over ALL 256 opcodes.
     let mut checked = 0usize;
-    for t in ronr::RONR.iter().filter(|t| t.opcode <= 0x06) {
+    for t in ronr::RONR.iter() {
         let got = dispatch::lookup(t.opcode);
         assert!(
             got.is_some(),
@@ -70,71 +70,51 @@ fn ronr_entries_present_in_dispatch_with_identical_masks() {
         );
         checked += 1;
     }
-    assert_eq!(checked, 6, "canonical six walked");
+    assert_eq!(checked, 12, "full RONR space walked");
 }
 
 #[test]
-fn ronr_extensions_are_dispatch_absent_pinned_property() {
-    // PINNED ASYMMETRY (finding, not silently absorbed): ronr extends to
-    // opcodes 0x07..=0x0C (lay on table, postpone indefinitely, recess,
-    // adjourn, point of order, division); dispatch seeds only 0x01..=0x06.
-    // This test pins the CURRENT state so any change on either side flips it:
-    // if dispatch later adopts the extensions, this passes only when masks
-    // are identical; if ronr retracts them, it fails on `ronr::lookup`.
-    for opcode in 0x07u8..=0x0C {
-        let r = ronr::lookup(opcode).expect("ronr extension present");
+fn full_opcode_identity_dispatch_subset_of_ronr() {
+    // dispatch ⊆ ronr with identical masks, over ALL 256 opcodes; the
+    // assigned sets must be EQUAL (12 opcodes each, 0x01..=0x0C).
+    let mut checked = 0usize;
+    for opcode in 0u8..=255 {
         match dispatch::lookup(opcode) {
-            None => {} // current seeded-subset state
-            Some((d_pre, d_post)) => assert!(
-                (d_pre, d_post) == (r.pre, r.post),
-                "DRIFT: extension opcode {opcode:#04x} adopted by dispatch with \
-                 divergent masks: dispatch=({d_pre:#06x}, {d_post:#06x}) \
-                 ronr=({:#06x}, {:#06x})",
-                r.pre,
-                r.post
+            Some((d_pre, d_post)) => {
+                let r = ronr::lookup(opcode).unwrap_or_else(|| {
+                    panic!("DRIFT: dispatch opcode {opcode:#04x} has no ronr entry");
+                });
+                assert!(
+                    (d_pre, d_post) == (r.pre, r.post),
+                    "DRIFT: dispatch opcode {opcode:#04x} masks diverge from ronr"
+                );
+                checked += 1;
+            }
+            None => assert!(
+                ronr::lookup(opcode).is_none(),
+                "DRIFT: ronr opcode {opcode:#04x} absent from dispatch table"
             ),
         }
     }
+    assert_eq!(checked, 12, "dispatch seeds exactly the 12 RONR opcodes");
+    let dispatch_ops: Vec<u8> = (0u8..=255).filter(|&op| dispatch::lookup(op).is_some()).collect();
+    assert_eq!(dispatch_ops, (0x01u8..=0x0C).collect::<Vec<u8>>());
+    assert_eq!(dispatch_ops.len(), ronr::RONR.len());
+    assert_eq!(ronr::VERB_COUNT, 12);
 }
 
 // ---------------------------------------------------------------------------
-// (2) dispatch ⊆ ronr (dispatch is the seeded subset)
+// (2) masked-fire equivalence across the sub-marking lattice
 // ---------------------------------------------------------------------------
-
-#[test]
-fn dispatch_entries_all_exist_in_ronr() {
-    let mut checked = 0usize;
-    for opcode in 0u8..=255 {
-        if let Some((d_pre, d_post)) = dispatch::lookup(opcode) {
-            let r = ronr::lookup(opcode).unwrap_or_else(|| {
-                panic!("DRIFT: dispatch opcode {opcode:#04x} has no ronr entry");
-            });
-            assert!(
-                (d_pre, d_post) == (r.pre, r.post),
-                "DRIFT: dispatch opcode {opcode:#04x} masks diverge from ronr"
-            );
-            checked += 1;
-        }
-    }
-    // The seeded subset is exactly the canonical six.
-    assert_eq!(checked, 6, "dispatch seeds exactly 6 opcodes");
-}
-
-// ---------------------------------------------------------------------------
-// (3) masked-fire equivalence across the sub-marking lattice
-// ---------------------------------------------------------------------------
-
-/// Shared transition count under court.
-const SHARED: usize = 6;
 
 #[test]
 fn masked_fire_equivalence_over_full_pre_lattice() {
     let mut fired = 0usize;
     let mut compared = 0usize;
-    for t in ronr::RONR.iter().take(SHARED) {
-        // dispatch and ronr agree on masks for opcodes 0x01..=0x06 (court 1/2
-        // already pin this), but drive BOTH tables independently so a drift
-        // introduced later cannot silently pass through one source.
+    for t in ronr::RONR.iter() {
+        // dispatch and ronr agree on masks for all 12 opcodes (court 1 pins
+        // this), but drive BOTH tables independently so a drift introduced
+        // later cannot silently pass through one source.
         let (d_pre, d_post) = dispatch::lookup(t.opcode).expect("shared opcode in dispatch");
         let rt = ronr::lookup(t.opcode).expect("shared opcode in ronr");
         for sub in sub_masks(t.pre) {
@@ -165,11 +145,10 @@ fn masked_fire_equivalence_over_full_pre_lattice() {
             }
         }
     }
-    // Lattice size receipt: sum of 2^popcount(pre) over the six transitions,
+    // Lattice size receipt: sum of 2^popcount(pre) over the 12 transitions,
     // x2 for the extra-bit axis.
     let lattice: usize = ronr::RONR
         .iter()
-        .take(SHARED)
         .map(|t| 1usize << t.pre.count_ones())
         .sum();
     assert_eq!(compared, lattice * 2, "full lattice enumerated");
@@ -177,11 +156,11 @@ fn masked_fire_equivalence_over_full_pre_lattice() {
 }
 
 #[test]
-fn masked_fire_equivalence_full_uint16_marking_sweep_shared_pre() {
-    // Exhaustive 65536-marking sweep on the canonical six: dispatch-driven vs
+fn masked_fire_equivalence_full_uint16_marking_sweep_all_opcodes() {
+    // Exhaustive 65536-marking sweep on all 12 opcodes: dispatch-driven vs
     // ronr-driven words must be outcome-identical for every possible current
     // marking, not just sub-markings of `pre`.
-    for t in ronr::RONR.iter().take(SHARED) {
+    for t in ronr::RONR.iter() {
         let (d_pre, d_post) = dispatch::lookup(t.opcode).expect("shared");
         let rt = ronr::lookup(t.opcode).expect("shared");
         for marking in 0u16..=u16::MAX {
@@ -217,7 +196,7 @@ fn sub_mask_lattice_sizes_are_exact() {
     assert_eq!(sub_masks(0x0024).len(), 4);
     assert_eq!(sub_masks(0xFFFF).len(), 1 << 16);
     // All results are subsets of the mask.
-    for m in [0x0081u16, 0x0002, 0x0008, 0x0010, 0x0024] {
+    for m in [0x0081u16, 0x0002, 0x0008, 0x0010, 0x0024, 0x000A, 0x0000] {
         assert!(sub_masks(m).iter().all(|s| s & !m == 0));
     }
 }

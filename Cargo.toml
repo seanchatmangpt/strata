@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["strata_protocol", "temprun"]
+members = ["strata_protocol", "temprun", "temprun/pn_kernel"]
 
 [package]
 name = "strata"
@@ -24,3 +24,7 @@ path = "tests/integration_frame_flow.rs"
 opt-level = "z"
 lto = true
 panic = "abort"
+# Mirrors temprun/pn_kernel's standalone profile (ignored for workspace
+# members); keeps the wasm kernel artifact at its 224-byte ABI size.
+codegen-units = 1
+strip = true

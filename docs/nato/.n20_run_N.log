@@ -3,100 +3,13 @@ warning: profiles for the non root package will be ignored, specify profiles at 
 package:   /Users/sac/strata/temprun/pn_kernel/Cargo.toml
 workspace: /Users/sac/strata/Cargo.toml
    Compiling pn_kernel v26.10.10 (/Users/sac/strata/temprun/pn_kernel)
-    Finished `release` profile [optimized] target(s) in 0.43s
+    Finished `release` profile [optimized] target(s) in 0.45s
 OK stripped memory+global sections -> /tmp/strata_n19_a/pn_kernel.g0.wasm (197 bytes)
 warning: profiles for the non root package will be ignored, specify profiles at the workspace root:
 package:   /Users/sac/strata/temprun/pn_kernel/Cargo.toml
 workspace: /Users/sac/strata/Cargo.toml
-   Compiling libc v0.2.190
    Compiling typenum v1.20.1
-   Compiling cfg-if v1.0.5
-   Compiling proc-macro2 v1.0.107
-   Compiling unicode-ident v1.0.26
-   Compiling quote v1.0.47
-   Compiling cmov v0.5.4
-   Compiling version_check v0.9.5
-   Compiling getrandom v0.4.3
-   Compiling rand_core v0.10.1
-   Compiling autocfg v1.5.1
-   Compiling const-oid v0.10.2
-   Compiling find-msvc-tools v0.1.14
-   Compiling shlex v2.0.1
-   Compiling crc32fast v1.5.2
-   Compiling simd-adler32 v0.3.10
-   Compiling adler2 v2.0.1
-   Compiling cc v1.7.0
-   Compiling sponge-cursor v0.1.0
-   Compiling miniz_oxide v0.9.1
-   Compiling constant_time_eq v0.4.2
-   Compiling ctutils v0.4.3
-   Compiling arrayvec v0.7.8
-   Compiling generic-array v0.14.7
-   Compiling num-traits v0.2.19
-   Compiling hybrid-array v0.4.15
-   Compiling blake3 v1.8.7
-   Compiling flate2 v1.1.10
-   Compiling syn v2.0.119
-   Compiling cpufeatures v0.3.1
-   Compiling cpufeatures v0.2.17
-   Compiling keccak v0.2.2
-   Compiling block-buffer v0.10.4
-   Compiling crypto-common v0.1.7
-   Compiling crypto-common v0.2.2
-   Compiling digest v0.10.7
-   Compiling sha1 v0.10.7
-   Compiling module-lattice v0.2.3
-   Compiling digest v0.11.3
-   Compiling signature v3.0.0
-   Compiling shake v0.1.0
-   Compiling zeroize_derive v1.5.0
-   Compiling zeroize v1.9.1
-   Compiling der v0.8.2
-   Compiling spki v0.8.1
-   Compiling pkcs8 v0.11.0
-   Compiling ml-dsa v0.1.1
-   Compiling strata-protocol v26.10.10 (/Users/sac/strata/strata_protocol)
-warning: unused import: `self`
-  --> strata_protocol/src/trace_slice.rs:17:22
-   |
-17 | use crate::logsink::{self, LogEntry};
-   |                      ^^^^
-   |
-   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
-
-warning: `strata-protocol` (lib) generated 1 warning (run `cargo fix --lib -p strata-protocol` to apply 1 suggestion)
-warning: unused import: `strata_protocol::receipt`
-  --> strata_protocol/src/bin/bench_wire.rs:17:5
-   |
-17 | use strata_protocol::receipt;
-   |     ^^^^^^^^^^^^^^^^^^^^^^^^
-   |
-   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
-
-warning: unused import: `strata_protocol::receipt`
-  --> strata_protocol/src/bin/strata.rs:39:5
-   |
-39 | use strata_protocol::receipt;
-   |     ^^^^^^^^^^^^^^^^^^^^^^^^
-   |
-   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
-
-warning: `strata-protocol` (bin "bench_wire") generated 1 warning (run `cargo fix --bin "bench_wire" -p strata-protocol` to apply 1 suggestion)
-warning: `strata-protocol` (bin "strata") generated 1 warning (run `cargo fix --bin "strata" -p strata-protocol` to apply 1 suggestion)
-    Finished `release` profile [optimized] target(s) in 10.78s
-OK: pn_kernel.g0.wasm: imports = ∅
-== N19 identity run B (/tmp/strata_n19_b) ==
-warning: profiles for the non root package will be ignored, specify profiles at the workspace root:
-package:   /Users/sac/strata/temprun/pn_kernel/Cargo.toml
-workspace: /Users/sac/strata/Cargo.toml
-   Compiling pn_kernel v26.10.10 (/Users/sac/strata/temprun/pn_kernel)
-    Finished `release` profile [optimized] target(s) in 0.19s
-OK stripped memory+global sections -> /tmp/strata_n19_b/pn_kernel.g0.wasm (197 bytes)
-warning: profiles for the non root package will be ignored, specify profiles at the workspace root:
-package:   /Users/sac/strata/temprun/pn_kernel/Cargo.toml
-workspace: /Users/sac/strata/Cargo.toml
    Compiling libc v0.2.190
-   Compiling typenum v1.20.1
    Compiling cfg-if v1.0.5
    Compiling proc-macro2 v1.0.107
    Compiling quote v1.0.47
@@ -106,86 +19,34 @@ workspace: /Users/sac/strata/Cargo.toml
    Compiling version_check v0.9.5
    Compiling rand_core v0.10.1
    Compiling autocfg v1.5.1
+   Compiling shlex v2.0.1
    Compiling const-oid v0.10.2
    Compiling find-msvc-tools v0.1.14
-   Compiling shlex v2.0.1
    Compiling crc32fast v1.5.2
-   Compiling sponge-cursor v0.1.0
    Compiling simd-adler32 v0.3.10
+   Compiling sponge-cursor v0.1.0
    Compiling adler2 v2.0.1
-   Compiling cc v1.7.0
-   Compiling ctutils v0.4.3
    Compiling arrayvec v0.7.8
    Compiling constant_time_eq v0.4.2
-   Compiling generic-array v0.14.7
+   Compiling cc v1.7.0
+   Compiling ctutils v0.4.3
    Compiling miniz_oxide v0.9.1
+   Compiling generic-array v0.14.7
    Compiling num-traits v0.2.19
    Compiling hybrid-array v0.4.15
    Compiling blake3 v1.8.7
-   Compiling syn v2.0.119
-   Compiling flate2 v1.1.10
-   Compiling cpufeatures v0.3.1
-   Compiling cpufeatures v0.2.17
-   Compiling keccak v0.2.2
-   Compiling crypto-common v0.2.2
    Compiling crypto-common v0.1.7
    Compiling block-buffer v0.10.4
    Compiling digest v0.10.7
-   Compiling sha1 v0.10.7
+   Compiling flate2 v1.1.10
+   Compiling syn v2.0.119
    Compiling module-lattice v0.2.3
+   Compiling cpufeatures v0.3.1
+   Compiling cpufeatures v0.2.17
+   Compiling sha1 v0.10.7
+   Compiling keccak v0.2.2
+   Compiling crypto-common v0.2.2
    Compiling digest v0.11.3
-   Compiling signature v3.0.0
    Compiling shake v0.1.0
+   Compiling signature v3.0.0
    Compiling zeroize_derive v1.5.0
-   Compiling zeroize v1.9.1
-   Compiling der v0.8.2
-   Compiling spki v0.8.1
-   Compiling pkcs8 v0.11.0
-   Compiling ml-dsa v0.1.1
-   Compiling strata-protocol v26.10.10 (/Users/sac/strata/strata_protocol)
-warning: unused import: `self`
-  --> strata_protocol/src/trace_slice.rs:17:22
-   |
-17 | use crate::logsink::{self, LogEntry};
-   |                      ^^^^
-   |
-   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
-
-warning: `strata-protocol` (lib) generated 1 warning (run `cargo fix --lib -p strata-protocol` to apply 1 suggestion)
-warning: unused import: `strata_protocol::receipt`
-  --> strata_protocol/src/bin/bench_wire.rs:17:5
-   |
-17 | use strata_protocol::receipt;
-   |     ^^^^^^^^^^^^^^^^^^^^^^^^
-   |
-   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
-
-warning: unused import: `strata_protocol::receipt`
-  --> strata_protocol/src/bin/strata.rs:39:5
-   |
-39 | use strata_protocol::receipt;
-   |     ^^^^^^^^^^^^^^^^^^^^^^^^
-   |
-   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
-
-warning: `strata-protocol` (bin "bench_wire") generated 1 warning (run `cargo fix --bin "bench_wire" -p strata-protocol` to apply 1 suggestion)
-warning: `strata-protocol` (bin "strata") generated 1 warning (run `cargo fix --bin "strata" -p strata-protocol` to apply 1 suggestion)
-    Finished `release` profile [optimized] target(s) in 13.84s
-OK: pn_kernel.g0.wasm: imports = ∅
-== N19 court: IDENTITY HOLDS ==
-{
-  "lane": "N19",
-  "status": "ALIVE",
-  "scope": "same-host two-run determinism (macOS); 3-environment identity NOT-RUN (needs Linux hosts, CI-lane follow-up)",
-  "host": "Darwin arm64 26.2",
-  "git_sha": "600ef511356d84f1f17b44473b11309a30f4d437",
-  "toolchain": "nightly-2026-06-22",
-  "rustc": "rustc 1.98.0-nightly (91fe22da8 2026-06-21)",
-  "lockfile": {"path": "Cargo.lock", "sha256": "abaf6f66e6a54935c38ef4d79db89de84eef50601e711f46e218ebb6f75242dc", "flag": "--locked"},
-  "artifacts": [
-    {"name": "pn_kernel.g0.wasm", "sha256_a": "547ae4b02f6740c85d05407c0c4ca4851efe42544d03f65d0091e851caf5d269", "sha256_b": "547ae4b02f6740c85d05407c0c4ca4851efe42544d03f65d0091e851caf5d269", "bytes": "197", "identical": true},
-    {"name": "libstrata_protocol.rlib", "sha256_a": "6ed8b14a4e29525a5ba0644cb59b34ad1c7b47f8a3e74df6d79e67bbc07d0e05", "sha256_b": "6ed8b14a4e29525a5ba0644cb59b34ad1c7b47f8a3e74df6d79e67bbc07d0e05", "bytes": "2394992", "identical": true}
-  ],
-  "zero_dynamic_abi": {"wasm_imports": 0, "check": "wasm import-section count == 0 on both runs"},
-  "not_run": ["Ubuntu x86_64", "Alpine x86_64 (musl)"]
-}

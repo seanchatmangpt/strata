@@ -20,7 +20,14 @@
 #   Every frame, both directions: [u32 LE total_len][tag][payload]
 #   (total_len counts the tag byte + payload; 0 < len <= 1 MiB).
 #
-#   Requests:  1 New  = tag + raw wasm module bytes (verbatim artifact)
+#   Requests:  1 New  = tag + CTTG wire-format model buffer (guest ABI v2:
+#              16-byte header `magic b"CTTG" | version 0x01 | reserved
+#              0x00 | model_len::little-16 | reserved2::64-bit zero` +
+#              exactly model_len bytes of POWL DSL text — see
+#              `ctt_session_new` in chicago-tdd-tools
+#              `src/conformance/guest.rs` and the `temprun_step.rs` New
+#              path; NOT wasm module bytes — the module is embedded in the
+#              bridge at build time)
 #              2 Step = <<handle::little-64, quota::little-32>>  (13 bytes)
 #              4 Drop = <<handle::little-64>>                    (9 bytes)
 #   Replies:   1 Newed   = <<handle::little-64>>                   (9 bytes)
@@ -33,12 +40,14 @@
 #
 #   STRATUS_TEMPRUN_STEP_BIN  absolute path to the temprun_step host bin
 #                             (default: stratus/priv/temprun_step, the same
-#                             default `Stratus.Temprun.Worker` pins)
-#   STRATUS_TEMPRUN_GUEST_WASM absolute path to the ctt guest wasm artifact
-#                             (default: ../../chicago-tdd-tools/target/
-#                             wasm32-unknown-unknown/release/ctt_wasm_guest.wasm)
+#                             default `Stratus.Temprun.Worker` pins). The
+#                             ctt guest wasm module is EMBEDDED in this bin
+#                             at build time (temprun/priv/
+#                             ctt_wasm_guest.wasm, pinned release artifact,
+#                             sha256 38258e85...) — the court needs no wasm
+#                             artifact on disk.
 #
-# If either artifact is absent the court prints the typed reason exactly
+# If the bin is absent the court prints the typed reason exactly
 # `temprun-embed-missing` and exits 0 — an honest skip, never a silent pass
 # (E13 discipline).
 #
@@ -47,13 +56,20 @@
 # Alternating classes, one fresh Port per trial (fuzz isolation):
 #
 #   - model-class  (even i): single-bit flip inside the New payload (the
-#     normative ctt guest artifact bytes, which the protocol sends
-#     VERBATIM). The bin must fail closed: no well-formed Newed reply.
+#     CTTG wire-format model buffer). The CTTG header (first 16 bytes) is
+#     fully constrained — a flip there (magic/version/reserved/model_len)
+#     MUST be refused: any well-formed Newed reply is a Wrong-Ok (SDC).
+#     A flip landing in the POWL DSL text MAY still parse as a different
+#     lawful model (the DSL text is opaque payload to the wire law) — such
+#     an acceptance is classified `lawful_dead`, not SDC: the guest has no
+#     reference digest to detect it, and refusing it would demand magic the
+#     wire law does not carry. A DSL flip that is refused counts plain
+#     `refused`.
 #   - stream-class (odd i): clean New, then a Step with quota corrupted to
 #     0 (single-bit flip of quota=1 bit 0) — a zero budget must be
 #     refused, never silently stepped.
 #
-# A well-formed success reply to a corrupted frame is a Wrong-Ok (silent
+# A well-formed success reply to a corrupted HEADER is a Wrong-Ok (silent
 # database of SDC). A 0xFF Error reply, a non-conforming reply, a port
 # exit, or an await timeout is a refusal (timeouts are disclosed
 # separately in the receipt — a hang is disclosed, never laundered as a
@@ -71,8 +87,9 @@
 # Baseline (bin-is-alive guard): one uncorrupted New -> Step -> Drop
 # round must succeed; otherwise the court is RED even at sdc == 0.
 #
-# Receipt: JSON on stdout {court, trials, sdc, refused, timeouts, baseline,
-# control_sdc, verdict}. Exit 0 = pass or honest skip; 1 = fail.
+# Receipt: JSON on stdout {court, trials, sdc, refused, lawful_dead,
+# timeouts, baseline, control_sdc, verdict}. Exit 0 = pass or honest skip;
+# 1 = fail.
 
 defmodule Strata.N09.LiveSessionCourt do
   @trials_env "STRATA_N09_TRIALS"
@@ -88,6 +105,20 @@ defmodule Strata.N09.LiveSessionCourt do
   @tag_drop 4
   @tag_error 0xFF
 
+  # ── CTTG model wire (guest ABI v2) ─────────────────────────────────────
+
+  # The New-frame payload the v2 bridge hands verbatim to
+  # `ctt_session_new`: 16-byte CTTG header + exactly model_len bytes of
+  # POWL DSL. Every byte of the header is constrained (magic, version,
+  # reserved=0, model_len, reserved2=0); the DSL text is parsed by the real
+  # `PowlModel::from_powl_str` inside the guest. Model is minimal: one
+  # activity decl + one-node sequence.
+  def cttg_model do
+    dsl = "activity a = s.e\nsequence { a }"
+    len = byte_size(dsl)
+    <<"CTTG", 0x01, 0x00, len::little-16, 0::little-64, dsl::binary>>
+  end
+
   # ── artifact resolution ────────────────────────────────────────────────
 
   def step_bin do
@@ -95,40 +126,27 @@ defmodule Strata.N09.LiveSessionCourt do
       Path.expand("../priv/temprun_step", __DIR__)
   end
 
-  def guest_wasm do
-    System.get_env("STRATUS_TEMPRUN_GUEST_WASM") ||
-      Path.expand(
-        "../../../chicago-tdd-tools/target/wasm32-unknown-unknown/release/ctt_wasm_guest.wasm",
-        __DIR__
-      )
-  end
-
   def main do
     bin = step_bin()
-    wasm = guest_wasm()
 
-    with :ok <- require_artifact(bin, "temprun_step bin"),
-         :ok <- require_artifact(wasm, "ctt guest wasm") do
-      model = File.read!(wasm)
-      run_court(bin, model)
+    with :ok <- require_artifact(bin, "temprun_step bin", "STRATUS_TEMPRUN_STEP_BIN") do
+      run_court(bin, cttg_model())
     end
   end
 
-  defp require_artifact(path, what) do
+  defp require_artifact(path, what, env) do
     if File.regular?(path) do
       :ok
     else
       IO.puts("temprun-embed-missing")
-      IO.puts(
-        "disclosure: #{what} not found at #{path} " <>
-          "(override: #{if what =~ "bin", do: "STRATUS_TEMPRUN_STEP_BIN", else: "STRATUS_TEMPRUN_GUEST_WASM"})"
-      )
+      IO.puts("disclosure: #{what} not found at #{path} (override: #{env})")
 
       emit(%{
         "court" => "strata_n09_single_bit_flip_court",
         "trials" => 0,
         "sdc" => 0,
         "refused" => 0,
+        "lawful_dead" => 0,
         "timeouts" => 0,
         "baseline" => "skipped",
         "control_sdc" => 0,
@@ -171,6 +189,7 @@ defmodule Strata.N09.LiveSessionCourt do
       end)
 
     sdc = count(results, :wrong_ok)
+    lawful_dead = count(results, :lawful_dead)
     refused = count(results, :refused)
     timeouts = count(results, :timeout)
 
@@ -191,6 +210,7 @@ defmodule Strata.N09.LiveSessionCourt do
       "trials" => trials,
       "sdc" => sdc,
       "refused" => refused,
+      "lawful_dead" => lawful_dead,
       "timeouts" => timeouts,
       "baseline" => baseline,
       "control_sdc" => control_sdc,
@@ -211,16 +231,27 @@ defmodule Strata.N09.LiveSessionCourt do
 
   # ── trials ─────────────────────────────────────────────────────────────
 
-  # Single-bit flip in the New payload -> must fail closed.
+  # Single-bit flip in the New payload -> census over the live guest.
+  #
+  # A flip in the CTTG header (first 16 bytes) must fail closed: any
+  # well-formed Newed there is a Wrong-Ok (SDC). A flip in the POWL DSL
+  # text that still parses as a different lawful model is `lawful_dead` —
+  # the guest has no reference digest over the DSL text, so the acceptance
+  # is lawful, not a detector miss. A DSL flip that is refused is plain
+  # `refused`.
   defp model_trial(bin, model, rng) do
-    flipped = flip_one_bit(model, rng)
+    {flipped, byte_idx} = flip_one_bit_at(model, rng)
     port = open(bin)
 
     case request(port, <<@tag_new, flipped::binary>>) do
       {:ok, <<@tag_new, _handle::little-64>>} ->
-        # A well-formed 9-byte Newed for a corrupted artifact = Wrong-Ok.
         Port.close(port)
-        {:wrong_ok, :corrupted_new_accepted}
+
+        if byte_idx < 16 do
+          {:wrong_ok, :corrupted_header_accepted}
+        else
+          {:lawful_dead, :flipped_dsl_still_parses}
+        end
 
       {:ok, <<@tag_error, _errno::little-32>>} ->
         :ok = teardown(:error_reply, port)
@@ -342,14 +373,20 @@ defmodule Strata.N09.LiveSessionCourt do
 
   defp lcg_step(x), do: rem(@lcg_a * x + @lcg_c, 1 <<< 64)
 
-  defp flip_one_bit(bin, rng) do
+  defp flip_one_bit_at(bin, rng) do
     size = byte_size(bin)
     bit_idx = rem(rng, size * 8)
     byte_idx = div(bit_idx, 8)
     bit = rem(bit_idx, 8)
 
     <<pre::binary-size(byte_idx), byte, post::binary>> = bin
-    <<pre::binary, bxor(byte, 1 <<< bit)::size(8), post::binary>>
+    flipped = <<pre::binary, bxor(byte, 1 <<< bit)::size(8), post::binary>>
+    {flipped, byte_idx}
+  end
+
+  defp flip_one_bit(bin, rng) do
+    {flipped, _idx} = flip_one_bit_at(bin, rng)
+    flipped
   end
 
   # ── positive control (REAL corrupted-accepting shim) ───────────────────
@@ -378,15 +415,12 @@ defmodule Strata.N09.LiveSessionCourt do
     end)
   end
 
-  # Shim transport: parses the framed request exactly like the bridge does
-  # ([u32 LE len][body]), then accepts anything and replies the canned
+  # Shim transport: takes the (flipped) New payload directly — same input
+  # the real bridge receives — accepts anything, and replies the canned
   # encoded Newed frame. Same wire codec, no acceptance logic.
-  defp shim_request(<<len::little-32, body::binary-size(len)>>) do
-    _ = body
-    {:ok, encode_frame(<<@tag_new, 1::little-64>>)}
+  defp shim_request(_flipped_payload) do
+    {:ok, <<@tag_new, 1::little-64>>}
   end
-
-  defp encode_frame(payload), do: <<byte_size(payload)::little-32, payload::binary>>
 
   # ── clean baseline ─────────────────────────────────────────────────────
 

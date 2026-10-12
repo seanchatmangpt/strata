@@ -18,7 +18,14 @@
 #   Every frame, both directions: [u32 LE total_len][tag][payload]
 #   (total_len counts the tag byte + payload; 0 < len <= 1 MiB).
 #
-#   Requests:  1 New  = tag + raw wasm module bytes (verbatim artifact)
+#   Requests:  1 New  = tag + CTTG wire-format model buffer (guest ABI v2:
+#              16-byte header `magic b"CTTG" | version 0x01 | reserved
+#              0x00 | model_len::little-16 | reserved2::64-bit zero` +
+#              exactly model_len bytes of POWL DSL text — see
+#              `ctt_session_new` in chicago-tdd-tools
+#              `src/conformance/guest.rs` and the `temprun_step.rs` New
+#              path; NOT wasm module bytes — the module is embedded in the
+#              bridge at build time)
 #              2 Step = <<handle::little-64, quota::little-32>>  (13 bytes)
 #              4 Drop = <<handle::little-64>>                    (9 bytes)
 #   Replies:   1 Newed   = <<handle::little-64>>                   (9 bytes)
@@ -30,12 +37,12 @@
 # ## Artifact resolution (env-overridable, S1/S2 conventions)
 #
 #   STRATUS_TEMPRUN_STEP_BIN   absolute path to the temprun_step host bin
-#                              (default: stratus/priv/temprun_step)
-#   STRATUS_TEMPRUN_GUEST_WASM absolute path to the ctt guest wasm artifact
-#                              (default: ../../chicago-tdd-tools/target/
-#                              wasm32-unknown-unknown/release/ctt_wasm_guest.wasm)
+#                              (default: stratus/priv/temprun_step). The ctt
+#                              guest wasm module is EMBEDDED in this bin at
+#                              build time (temprun/priv/ctt_wasm_guest.wasm,
+#                              pinned release artifact, sha256 38258e85...).
 #
-# If either artifact is absent the court prints the typed reason exactly
+# If the bin is absent the court prints the typed reason exactly
 # `temprun-embed-missing` and exits 0 — an honest skip, never a silent
 # pass (E13 discipline).
 #
@@ -51,8 +58,8 @@
 #   :zero_fill       — the second half of the framed byte stream is
 #                      overwritten with zeros (the length prefix still
 #                      claims the full L). A zero-filled New is a
-#                      corrupted artifact; a zero-filled Step is a
-#                      corrupted handle/quota. Both must refuse.
+#                      corrupted CTTG model buffer; a zero-filled Step is
+#                      a corrupted handle/quota. Both must refuse.
 #   :split_complete  — CONTRAST class (not torn): the frame is split
 #                      across two writes but BOTH halves arrive. Raw-mode
 #                      stream reassembly must succeed — this class must be
@@ -82,26 +89,27 @@ defmodule Strata.N11.LiveSessionTearCourt do
 
   # ── artifact resolution ────────────────────────────────────────────────
 
+  # ── CTTG model wire (guest ABI v2) ─────────────────────────────────────
+
+  # The New-frame payload the v2 bridge hands verbatim to
+  # `ctt_session_new`: 16-byte CTTG header + exactly model_len bytes of
+  # POWL DSL. Minimal lawful model: one activity decl + one-node sequence.
+  def cttg_model do
+    dsl = "activity a = s.e\nsequence { a }"
+    len = byte_size(dsl)
+    <<"CTTG", 0x01, 0x00, len::little-16, 0::little-64, dsl::binary>>
+  end
+
   def step_bin do
     System.get_env("STRATUS_TEMPRUN_STEP_BIN") ||
       Path.expand("../priv/temprun_step", __DIR__)
   end
 
-  def guest_wasm do
-    System.get_env("STRATUS_TEMPRUN_GUEST_WASM") ||
-      Path.expand(
-        "../../../chicago-tdd-tools/target/wasm32-unknown-unknown/release/ctt_wasm_guest.wasm",
-        __DIR__
-      )
-  end
-
   def main do
     bin = step_bin()
-    wasm = guest_wasm()
 
-    with :ok <- require_artifact(bin, "temprun_step bin", "STRATUS_TEMPRUN_STEP_BIN"),
-         :ok <- require_artifact(wasm, "ctt guest wasm", "STRATUS_TEMPRUN_GUEST_WASM") do
-      run_court(bin, File.read!(wasm))
+    with :ok <- require_artifact(bin, "temprun_step bin", "STRATUS_TEMPRUN_STEP_BIN") do
+      run_court(bin, cttg_model())
     end
   end
 
@@ -149,9 +157,9 @@ defmodule Strata.N11.LiveSessionTearCourt do
       end
 
     torn = List.flatten(torn_results)
-    sdc = torn |> Enum.count(&(&1 == :wrong_ok))
-    refused = torn |> Enum.count(&(&1 == :refused))
-    timeouts = torn |> Enum.count(&(&1 == :timeout))
+    sdc = torn |> Enum.count(fn {_c, _i, v} -> v == :wrong_ok end)
+    refused = torn |> Enum.count(fn {_c, _i, v} -> v == :refused end)
+    timeouts = torn |> Enum.count(fn {_c, _i, v} -> v == :timeout end)
     total = length(torn)
     contrast_accepted = Enum.count(contrast, &(&1 == :accepted))
     contrast_total = length(contrast)

@@ -111,7 +111,7 @@ defmodule Stratus.TemprunTimeoutCourt do
     # Wait for the Newed handle: the worker is live in :stepping.
     wait_until(fn ->
       case safe_registers(pid) do
-        {:ok, %{handle: h}} when h != nil -> true
+        %{handle: h} when h != nil -> true
         _ -> false
       end
     end)

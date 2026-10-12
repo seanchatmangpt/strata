@@ -1,5 +1,38 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+
+- `temprun_step`: bridge rebased to the CTT guest ABI v2 (59ed80c) —
+  probe-first `ctt_guest_abi_version` with typed errno 11
+  `E_ABI_MISMATCH` before any session export; handle-based v2
+  signatures for `ctt_session_new/attach/step/seal/drop`; the `New`
+  frame payload is now the CTTG model buffer; `Step` relays the
+  guest-written 21-byte record verbatim
+  (outcome|remaining|steps|total|marking); `Seal` fetches the
+  guest-written 32-byte digest with the `out_len <= out_cap`
+  defense-in-depth check; the 352-byte receipt-wire path is deleted;
+  flat v2 i32 status space maps onto the stable 10-errno vocabulary at
+  one decode boundary. `worker.ex` decoder rebased in the same commit
+  (`Stepped` = guest v2 record, `Sealed` = `<<handle, status,
+  digest::32>>`, errno 11 added). New cross-check court
+  `tests/abi_version_court.rs` asserts probe == 2 against a real built
+  `ctt_wasm_guest.wasm`.
+
+### Pending
+
+- Guest-payload N09/N11 court New-semantics update: not yet landed as
+  of 59ed80c — N09 not executable in-session, N11 RED_CONTRAST_REFUSED
+  under the new CTTG-bytes `New` payload (strata lane).
+- Guest-module pin law (`install_guest_wasm.sh`): present in the
+  working tree (untracked, not yet committed as of this entry) —
+  resolves the artifact, copies it into `temprun/priv/`, and
+  sha256-verifies it against the pin; missing artifact is a typed
+  refusal with the exact build command. Guest module currently
+  pinned/embedded from `temprun/priv/ctt_wasm_guest.wasm` (gitignored
+  by repo law); commit of the pin script remains queued.
+
 ## 26.10.11 — 2026-10-11 (release, tag v26.10.11 @ e0e7f19)
 
 - Merger cohort: temprun bridge, BEAM agent cohort, sagas, receipt

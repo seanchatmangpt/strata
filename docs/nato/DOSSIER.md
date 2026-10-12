@@ -28,7 +28,7 @@ cited as evidence), never inferred. Digest + ML-DSA-65 signature: see
 
 | Court | Status | Tests | Live-rerun | Scope | Spec mandate | Spec mapping |
 |---|---|---|---|---|---|---|
-| N05 | CITED-GREEN | 2 pass / 0 fail | CITED (1s) | - | dudect: Welch t-test \|t\|<4.5 over valid-vs-refusal timing (spec 10M/class; calibrated-N disclosed) | dudect (Reparaz et al., USENIX 2017); FIPS 140-3 IG C.2 constant-time |
+| N05 | CITED-GREEN | 2 pass / 0 fail | CITED (0s) | - | dudect: Welch t-test \|t\|<4.5 over valid-vs-refusal timing (spec 10M/class; calibrated-N disclosed) | dudect (Reparaz et al., USENIX 2017); FIPS 140-3 IG C.2 constant-time |
 | N06 | EXECUTED-GREEN | - pass / - fail | EXECUTED 0s | - | Branchless disassembly census: zero conditional branches on state paths (wasm + native tiers) | DO-333 method-based verification; Gate 0 G3' branch-free state path |
 | N07 | EXECUTED-GREEN | 2 pass / 0 fail | EXECUTED 1s | - | Prime+Probe-style concurrent eviction vs sequencer: latency invariance | EAL7 AVA_CCA covert-channel analysis (cache timing) |
 | N08 | EXECUTED-GREEN | 2 pass / 0 fail | EXECUTED 1s | - | Hamming weight/distance profile across successive states | Side-channel power profile (Hamming weight/distance) |
@@ -46,8 +46,8 @@ cited as evidence), never inferred. Digest + ML-DSA-65 signature: see
 
 | Court | Status | Tests | Live-rerun | Scope | Spec mandate | Spec mapping |
 |---|---|---|---|---|---|---|
-| N13 | EXECUTED-GREEN | 3 pass / 0 fail | EXECUTED 11s | - | WCET: static + measured cycles per opcode, <=12 cycles target | DO-178C L-A timing bounds (<=12 cycles/opcode) |
-| N14 | EXECUTED-GREEN | 2 pass / 0 fail | EXECUTED 2s | - | CAST-32A thrash: 16 adversarial threads vs sequencer; bounded max latency, zero deadlock | CAST-32A / AMG 6C multicore interference; ARINC 653 partitioning |
+| N13 | EXECUTED-GREEN | 3 pass / 0 fail | EXECUTED 5s | - | WCET: static + measured cycles per opcode, <=12 cycles target | DO-178C L-A timing bounds (<=12 cycles/opcode) |
+| N14 | EXECUTED-GREEN | 2 pass / 0 fail | EXECUTED 1s | - | CAST-32A thrash: 16 adversarial threads vs sequencer; bounded max latency, zero deadlock | CAST-32A / AMG 6C multicore interference; ARINC 653 partitioning |
 | N15 | EXECUTED-GREEN | 6 pass / 0 fail | EXECUTED 1s | - | TLC liveness: box-diamond-admitted under weak fairness | TLA+/TLC liveness (box-diamond under weak fairness) |
 | N16 | EXECUTED-GREEN | 4 pass / 0 fail | EXECUTED 0s | - | Stack bound: <=256B stack, zero recursion (call-graph analysis) | DO-178C L-A resource/stack bound |
 
@@ -56,8 +56,8 @@ cited as evidence), never inferred. Digest + ML-DSA-65 signature: see
 | Court | Status | Tests | Live-rerun | Scope | Spec mandate | Spec mapping |
 |---|---|---|---|---|---|---|
 | N17 | EXECUTED-GREEN | 7 pass / 0 fail | EXECUTED 1s | - | FIPS 204 KAT: official NIST ML-DSA-65 vectors vs signer (vendored ACVP subset per E33) | FIPS 204 ML-DSA-65 KAT; ACVP; FIPS 140-3 module crypto |
-| N18 | EXECUTED-GREEN | 3 pass / 0 fail | EXECUTED 1s | - | Zero-entropy diagnostics: Shannon entropy of emitted error strings == 0 bits about internal state | NIST SP 800-90B entropy; zero-entropy diagnostics |
-| N19 | EXECUTED-GREEN | - pass / - fail | EXECUTED 58s | same-host-2-run scope; 3-env mandate NOT-RUN | Reproducible build: 3-environment SHA-256 identity (delivered same-host 2-run, disclosed) | Reproducible-build evidence class (SLSA / 3-env identity) |
+| N18 | EXECUTED-GREEN | 3 pass / 0 fail | EXECUTED 0s | - | Zero-entropy diagnostics: Shannon entropy of emitted error strings == 0 bits about internal state | NIST SP 800-90B entropy; zero-entropy diagnostics |
+| N19 | EXECUTED-GREEN | - pass / - fail | EXECUTED 26s | same-host-2-run scope; 3-env mandate NOT-RUN | Reproducible build: 3-environment SHA-256 identity (delivered same-host 2-run, disclosed) | Reproducible-build evidence class (SLSA / 3-env identity) |
 
 ## Honest-scoping register (spec figure -> delivered equivalent)
 

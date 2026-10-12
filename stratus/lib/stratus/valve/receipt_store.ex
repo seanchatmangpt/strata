@@ -88,9 +88,13 @@ defmodule Stratus.Valve.ReceiptStore do
 
   Returns `{:ok, id}` where `id` is `<court>-<digest16>`, or a typed
   `{:error, refusal()}`. Fail-closed: the record is validated (length +
-  magic) BEFORE any byte touches disk; both files are written with
-  `:file.write_file/3` in `[:raw, :sync]` mode so the bytes are fsynced
-  (`File.write/2` has no sync option and `File.write!/2` is banned).
+  magic) BEFORE any byte touches disk; both files are written to a
+  `<path>.tmp` sibling with `:file.write_file/3` in `[:raw, :sync]` mode
+  (write + fsync — `File.write/2` has no sync option and `File.write!/2`
+  is banned) and then moved into place with `File.rename/2`, which is
+  atomic on the same filesystem. A reader therefore never observes a
+  torn or half-written record, and a crash mid-write never replaces a
+  good file with a partial one (T15 torn-write finding).
   """
   @spec store(record :: binary(), meta()) :: {:ok, id()} | {:error, refusal()}
   def store(record, meta)
@@ -130,6 +134,161 @@ defmodule Stratus.Valve.ReceiptStore do
   end
 
   def load(_id), do: {:error, :bad_record}
+
+  @doc """
+  Read a stored metadata sidecar by id and validate it parses as the
+  flat JSON object the store writes (T15: the `.json` path previously
+  had no load-side gate — a torn or hand-mangled sidecar read back as
+  if it were fine). Returns `{:ok, map}` with the sidecar fields
+  (`:id`, `:court`, `:digest`, `:steps`, `:outcome`, `:sealed_at`) or
+  `{:error, :corrupt_record}` on any parse/shape failure, and
+  `{:error, :not_found}` when the sidecar is absent.
+  """
+  @spec load_meta(id()) :: {:ok, map()} | {:error, refusal()}
+  def load_meta(id) when is_binary(id) do
+    if safe_token?(id) do
+      do_load_meta(id)
+    else
+      {:error, :bad_record}
+    end
+  end
+
+  def load_meta(_id), do: {:error, :bad_record}
+
+  defp do_load_meta(id) do
+    path = meta_path(storage_root(), id)
+
+    case :file.read_file(String.to_charlist(path)) do
+      {:ok, json} ->
+        case parse_sidecar(json) do
+          {:ok, meta} -> {:ok, meta}
+          {:error, _} -> {:error, :corrupt_record}
+        end
+
+      {:error, _} ->
+        {:error, :not_found}
+    end
+  end
+
+  # Minimal flat-JSON validation for the sidecar shape this module
+  # writes: a single object whose values are strings or non-negative
+  # integers. No JSON dep in stratus; anything that does not parse as
+  # exactly that shape is :corrupt_record (fail-closed).
+  defp parse_sidecar(json) when is_binary(json) do
+    with {:ok, pairs, rest0} <- parse_object(skip_ws(json)),
+         rest = skip_ws(rest0),
+         true <- rest == <<>> do
+      fields = ~w(id court digest steps outcome sealed_at)a
+
+      if Enum.all?(fields, &match?({_, _}, List.keyfind(pairs, &1, 0))) do
+        {:ok, Map.new(pairs)}
+      else
+        {:error, :corrupt_record}
+      end
+    else
+      {:error, _} -> {:error, :corrupt_record}
+      _ -> {:error, :corrupt_record}
+    end
+  end
+
+  defp parse_sidecar(_), do: {:error, :corrupt_record}
+
+  defp parse_object(<<?{, rest::binary>>) do
+    # parse_pairs consumes the closing `}` itself; whatever remains is
+    # trailing whitespace, which parse_sidecar requires to be empty.
+    with {:ok, pairs, rest} <- parse_pairs(skip_ws(rest)) do
+      {:ok, pairs, rest}
+    end
+  end
+
+  defp parse_object(_), do: {:error, :corrupt_record}
+
+  # Only the store's own field names are accepted as keys — unknown or
+  # hostile keys never mint atoms (atom-table safety) and read as corrupt.
+  defp field_atom(key) do
+    case key do
+      "id" -> {:ok, :id}
+      "court" -> {:ok, :court}
+      "digest" -> {:ok, :digest}
+      "steps" -> {:ok, :steps}
+      "outcome" -> {:ok, :outcome}
+      "sealed_at" -> {:ok, :sealed_at}
+      _ -> {:error, :corrupt_record}
+    end
+  end
+
+  defp parse_pairs(rest) do
+    case skip_ws(rest) do
+      <<?}, rest::binary>> ->
+        {:ok, [], rest}
+
+      _ ->
+        parse_pair(rest, [])
+    end
+  end
+
+  defp parse_pair(rest, acc) do
+    with {:ok, key, rest} <- parse_string(skip_ws(rest)),
+         {:ok, key_atom} <- field_atom(key),
+         <<?:, rest::binary>> <- skip_ws(rest),
+         {:ok, value, rest} <- parse_value(skip_ws(rest)),
+         acc = [{key_atom, value} | acc] do
+      case skip_ws(rest) do
+        <<?,, rest::binary>> -> parse_pair(skip_ws(rest), acc)
+        <<?}, rest::binary>> -> {:ok, Enum.reverse(acc), rest}
+        _ -> {:error, :corrupt_record}
+      end
+    end
+  end
+
+  defp parse_value(<<?", _::binary>> = rest), do: parse_string(rest)
+
+  defp parse_value(rest) do
+    {digits, rest} = take_digits(rest, [])
+    int = List.to_integer(digits)
+    {:ok, int, rest}
+  catch
+    :bad_int -> {:error, :corrupt_record}
+  end
+
+  defp take_digits(rest, acc) do
+    case rest do
+      <<c, _::binary>> when c in ?0..?9 ->
+        <<c, rest::binary>> = rest
+        take_digits(rest, [c | acc])
+
+      _ ->
+        case Enum.reverse(acc) do
+          [] -> throw(:bad_int)
+          digits -> {digits, rest}
+        end
+    end
+  end
+
+  defp parse_string(<<?", rest::binary>>) do
+    parse_string_chars(rest, [])
+  end
+
+  defp parse_string(_), do: {:error, :corrupt_record}
+
+  defp parse_string_chars(<<?", rest::binary>>, acc), do: {:ok, acc |> Enum.reverse() |> IO.iodata_to_binary(), rest}
+
+  defp parse_string_chars(<<?\\, ?\\, rest::binary>>, acc),
+    do: parse_string_chars(rest, [?\\ | acc])
+
+  defp parse_string_chars(<<?\\, ?", rest::binary>>, acc),
+    do: parse_string_chars(rest, [?" | acc])
+
+  defp parse_string_chars(<<?\\, ?/, rest::binary>>, acc),
+    do: parse_string_chars(rest, [?/ | acc])
+
+  defp parse_string_chars(<<c, rest::binary>>, acc) when c >= 0x20,
+    do: parse_string_chars(rest, [c | acc])
+
+  defp parse_string_chars(_, _), do: {:error, :corrupt_record}
+
+  defp skip_ws(<<c, rest::binary>>) when c in [?\s, ?\t, ?\n, ?\r], do: skip_ws(rest)
+  defp skip_ws(rest), do: rest
 
   defp do_load(id) do
     path = record_path(storage_root(), id)
@@ -233,10 +392,32 @@ defmodule Stratus.Valve.ReceiptStore do
     end
   end
 
-  # `:file.write_file/3` with :raw + :sync = write + fsync, in one
-  # kernel transition. Any posix error collapses to {:error, :write_failed}.
+  # Atomic write law (T15): write + fsync to a `.tmp` sibling first, then
+  # `File.rename/2` into place — atomic on the same filesystem, so no
+  # reader ever sees a torn record and no crash leaves a partial final
+  # file. Any posix error collapses to {:error, :write_failed}.
   defp write_synced(path, bytes) do
+    tmp = path <> ".tmp"
+
+    with :ok <- do_write_synced(tmp, bytes),
+         :ok <- do_rename(tmp, path) do
+      :ok
+    else
+      {:error, _} = err -> err
+    end
+  end
+
+  # `:file.write_file/3` with :raw + :sync = write + fsync, in one
+  # kernel transition.
+  defp do_write_synced(path, bytes) do
     case :file.write_file(String.to_charlist(path), bytes, [:raw, :sync]) do
+      :ok -> :ok
+      {:error, _} -> {:error, :write_failed}
+    end
+  end
+
+  defp do_rename(tmp, final) do
+    case File.rename(tmp, final) do
       :ok -> :ok
       {:error, _} -> {:error, :write_failed}
     end

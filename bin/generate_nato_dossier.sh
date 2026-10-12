@@ -10,6 +10,16 @@
 #
 # bash 3.2-safe (no assoc arrays, no ${var,,}, no mapfile). macOS darwin.
 set -u
+
+# Serialized-court-runs law (strata CLAUDE.md annealing clause): concurrent
+# invocations share /tmp scratch and produced the rustc LTO ICE class.
+LOCKDIR="/tmp/strata_n20_court.lock"
+if ! mkdir "$LOCKDIR" 2>/dev/null; then
+  echo "N20 generator already running (lock: $LOCKDIR); refusing concurrent run" >&2
+  exit 3
+fi
+trap 'rmdir "$LOCKDIR" 2>/dev/null' EXIT
+
 set -o pipefail
 
 REPO="$(cd "$(dirname "$0")/.." && pwd)"

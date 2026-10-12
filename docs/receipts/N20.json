@@ -1,0 +1,34 @@
+{
+  "lane": "N20",
+  "court": "dossier_generator",
+  "status": "LANDED",
+  "sections": {
+    "totals": {
+      "EXECUTED-GREEN": 18,
+      "CITED-GREEN": 1
+    },
+    "per_lane_statuses": {
+      "N01": "EXECUTED-GREEN",
+      "N02": "EXECUTED-GREEN",
+      "N03": "EXECUTED-GREEN",
+      "N04": "EXECUTED-GREEN",
+      "N05": "CITED-GREEN",
+      "N06": "EXECUTED-GREEN",
+      "N07": "EXECUTED-GREEN",
+      "N08": "EXECUTED-GREEN",
+      "N09": "EXECUTED-GREEN",
+      "N10": "EXECUTED-GREEN",
+      "N11": "EXECUTED-GREEN",
+      "N12": "EXECUTED-GREEN",
+      "N13": "EXECUTED-GREEN",
+      "N14": "EXECUTED-GREEN",
+      "N15": "EXECUTED-GREEN",
+      "N16": "EXECUTED-GREEN",
+      "N17": "EXECUTED-GREEN",
+      "N18": "EXECUTED-GREEN",
+      "N19": "EXECUTED-GREEN"
+    },
+    "dossier_path": "docs/nato/DOSSIER.md",
+    "dossier_sha256": "61e729979f1100254ceef66e07f6aee58919b28ec076d2e4309570bc2893fd33"
+  }
+}

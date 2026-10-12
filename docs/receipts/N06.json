@@ -24,7 +24,7 @@
     },
     "native": {
       "subject": "kernel_step wrapper (inlined strata_protocol::branchless::step_branchless)",
-      "asm_source": "/tmp/strata_lanes/target_N06/release/deps/n06_branchless_disasm-74cf25b47c7aa39e.s",
+      "asm_source": "/tmp/strata_lanes/target_N20/release/deps/n06_branchless_disasm-74cf25b47c7aa39e.s",
       "tool": "compiler-emitted .s text census (arm64)",
       "mode": "asm-text",
       "conditional_branches_b_cond_cbz_cbnz_tbz_tbnz": 0,
@@ -43,5 +43,5 @@
     "arch": "arm64",
     "os": "darwin"
   },
-  "finished_at": "2026-10-11T21:37:18Z"
+  "finished_at": "2026-10-12T03:30:27Z"
 }

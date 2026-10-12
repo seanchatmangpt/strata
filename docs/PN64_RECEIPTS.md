@@ -89,8 +89,9 @@ L29, L31, L37-L42 (L37-L42 carried into wave 2 backlog; L45+ supersede some).
 | L93 | ontology.ttl wave-2 triples | rdflib SPARQL | 349 triples, 32 transitions | FLAG: pn:Committed slot15 dup bitOffset; namespace collision open |
 
 Wave 2 landed lanes: 43 (L45, L47-L67 minus open L46, L68-L93 minus
-unlanded). Open in wave 2: L46 (gate0 re-run, pending), L75/L83/L85
-probes unregistered in lib.rs (coordinator integration).
+unlanded). Open in wave 2: L75/L83/L85 probes unregistered in lib.rs
+(coordinator integration). L46 is closed: Gate 0 kernel court PASS
+(exit 0, 2026-10-11 — docs/GATE0.md).
 
 ## Standing findings
 
@@ -112,8 +113,9 @@ probes unregistered in lib.rs (coordinator integration).
 
 ## Open items
 
-- **Gate 0 verdict pending (L46)**: gate0 re-running against the 197 B
-  memory-free kernel artifact after L45's G1' closure.
+- ~~Gate 0 verdict pending (L46)~~ CLOSED: Gate 0 kernel court **PASS**
+  (exit 0, 2026-10-11; G1'–G4' all green against the 197 B memory-free
+  kernel artifact — see docs/GATE0.md).
 - **ggen re-lock debt (L50)**: sync blocked by pack [FM-PACK-005]
   (.tmpl missing); L17 resumed to fix pack, L50 to re-lock after.
 - **XDP host**: PN64_XDP_INTEGRATION.md (L76) is source + honest status

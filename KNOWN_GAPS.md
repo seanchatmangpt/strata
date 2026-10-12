@@ -204,3 +204,22 @@ FR/NFR test files. Companions: `docs/COURT_ADJUDICATIONS.md` (ledger),
   `stratus/test/stratus/pdu_layout_test.exs`.
 - **Disposition**: FIXED 2026-10-10 — refuse behavior verified by the flipped
   witness tests.
+
+## KG-N05 — dudect constant-time court RED on branched validate_and_advance
+
+- **Requirement ref**: N-05 (constant-time admission kernel; pnabi
+  `validate_and_advance`).
+- **Gap**: the dudect constant-time court is RED on the current BRANCHED
+  `pnabi::validate_and_advance` kernel pairing: Welch t ≈ 231–245, witnessed
+  2026-10-11 and stable across idle re-runs — a large, reproducible timing
+  leakage signal. The prior `N05.json` GREEN receipt (t = +0.33) is STALE for
+  this kernel pairing; `N20.json`'s CITED-GREEN citation of N05 is stale on
+  this same point.
+- **Evidence**: dudect court re-run 2026-10-11, Welch t ≈ 231–245
+  (idle-rerun-stable); stale `N05.json` (GREEN, t=+0.33) and `N20.json`
+  CITED-GREEN reference — receipts themselves not edited here (coordinator
+  concern).
+- **Disposition**: OPEN — resolve by porting the branchless
+  `validate_and_advance` (the `step_branchless`-equivalence precedent
+  exists), or by explicit operator waiver of the constant-time bound for this
+  kernel. Classified pre-existing-red, court-correct.

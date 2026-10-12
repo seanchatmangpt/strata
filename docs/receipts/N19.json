@@ -1,0 +1,44 @@
+{
+  "lane": "N19",
+  "wave": "nato",
+  "status": "LANDED",
+  "owned_files": [
+    "scripts/n19_build_identity.sh"
+  ],
+  "disclosed_touches": [
+    "docs/receipts/N19.json (this receipt)",
+    "bin/generate_nato_dossier.sh: appended N20 emitter step writing docs/receipts/N20.json from $RESULTS; N20 excluded from the replay loop (already hardcoded N01-N19, kept that way)"
+  ],
+  "verification": {
+    "command": "bash scripts/n19_build_identity.sh",
+    "exit": 0,
+    "output_digest": "sha256:586eb627cafe6a2f18c9c585124d875521856ddc92903660dd3d6248c7d3d2ea (run log sha256; court verdict line: '== N19 court: IDENTITY HOLDS ==')",
+    "tests_passed": "-",
+    "tests_failed": "-"
+  },
+  "scoping_law": {
+    "spec_mandate": "N19: Reproducible build — 3-environment SHA-256 identity (NATO_N01_N20.md)",
+    "delivered": "Same-host two-run determinism: two clean CARGO_TARGET_DIR release builds (/tmp/strata_n19_a, /tmp/strata_n19_b) with identical inputs (--locked, pinned toolchain nightly-2026-06-22), SHA-256 + cmp identity on pn_kernel.g0.wasm (547ae4b0..., 197 bytes) and libstrata_protocol.rlib (6ed8b14a..., 2394992 bytes); wasm import-section census = 0 on both runs (zero dynamic ABI).",
+    "not_run": "3-environment identity NOT-RUN on this host: Ubuntu x86_64 and Alpine x86_64 (musl) hosts are unavailable in-repo. The exact per-host commands are pinned in scripts/n19_build_identity.sh output and docs/nato/N19_BUILD_RECEIPT.md. Cross-toolchain identity = documented CI-lane follow-up.",
+    "mapping": "spec 3-environment SHA-256 identity -> delivered same-host 2-run determinism + zero-dynamic-ABI census; cross-host identity disclosed NOT-RUN"
+  },
+  "court": {
+    "design": "(a) two clean release builds into disjoint CARGO_TARGET_DIR roots from identical lockfile-pinned inputs; (b) gate-0 wasm strip via temprun/pn_kernel/strip_memory.py; (c) SHA-256 + byte cmp of pn_kernel.g0.wasm and libstrata_protocol.rlib across roots — any mismatch exits nonzero; (d) wasm import-section census (imports = ∅) on both runs.",
+    "tests": {
+      "n19_two_run_wasm_identity": "pn_kernel.g0.wasm sha256 identical across /tmp/strata_n19_a and /tmp/strata_n19_b",
+      "n19_two_run_rlib_identity": "libstrata_protocol.rlib sha256 identical across both roots",
+      "n19_zero_dynamic_abi": "wasm import-section count 0 on both runs"
+    }
+  },
+  "findings": {
+    "note": "Court landed green: IDENTITY HOLDS on first receipted run of scripts/n19_build_identity.sh. Digests re-read from disk match the prior N19_BUILD_RECEIPT.md record (wasm 547ae4b0..., rlib 6ed8b14a...).",
+    "git_sha": "1ac493d2e392f2a417f51dd5a4bfd268d63b161d",
+    "lockfile_sha256": "b9f4a5338e77581b4bfac1f4d6318a387670e358ea542fd00b312c4ae94bb967",
+    "toolchain": "nightly-2026-06-22 (rustc 1.98.0-nightly (91fe22da8 2026-06-21))"
+  },
+  "deviations": [
+    "SCOPE_NOTE: delivered same-host two-run determinism; 3-environment cross-toolchain identity NOT-RUN (no Linux hosts in-repo) — documented follow-up per docs/nato/N19_BUILD_RECEIPT.md."
+  ],
+  "started_at": "2026-10-12T00:00:00Z",
+  "finished_at": "2026-10-12T02:51:06Z"
+}

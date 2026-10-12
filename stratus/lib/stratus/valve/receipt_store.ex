@@ -129,6 +129,8 @@ defmodule Stratus.Valve.ReceiptStore do
     end
   end
 
+  def load(_id), do: {:error, :bad_record}
+
   defp do_load(id) do
     path = record_path(storage_root(), id)
 
@@ -143,8 +145,6 @@ defmodule Stratus.Valve.ReceiptStore do
         {:error, :not_found}
     end
   end
-
-  def load(_id), do: {:error, :bad_record}
 
   # ---------------------------------------------------------------------------
   # list/0

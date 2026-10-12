@@ -17,9 +17,14 @@ defmodule Strata.Merger.MergerAgent do
       `%{lease_digest: <<_::256>>, result_digest: <<_::256>>, refusal:
       atom() | nil}`.
 
-  Every `admit/1` MUST call `Strata.Merger.Lease.verify/2` first —
-  fail-closed, fixed zero-entropy atoms only (Valve discipline). No
-  exceptions cross this boundary; every failure is a typed atom.
+  Lease enforcement (S6 law): replay enforcement at the single-writer
+  `Strata.Merger.LeaseLedger` is the ONLY in-BEAM lease law. Admission
+  goes through `Strata.Merger.AgentBase` binding a `:lease_ledger` —
+  boot calls `Strata.Merger.Lease.admit/3` (structural law + slot
+  registration + digest recording) BEFORE any `admit/1` callback runs;
+  callbacks therefore receive an already-admitted lease. Fail-closed,
+  fixed zero-entropy atoms only (Valve discipline). No exceptions cross
+  this boundary; every failure is a typed atom.
   """
 
   @typedoc "Fixed zero-entropy refusal atoms (mirrors Strata.Valve)."
@@ -49,9 +54,11 @@ defmodule Strata.Merger.MergerAgent do
   @callback receipt(map()) :: {:ok, settlement()} | {:error, refusal()}
 
   @doc """
-  Verify a Φ_lease for `agent_id` before admission. Thin helper over
-  `Strata.Merger.Lease.verify/2` so agents never reach into the lease
-  module's ledger plumbing directly. Fail-closed; typed atoms only.
+  Verify a Φ_lease for `agent_id` (structural law only). NOTE: this is
+  NOT the admission path — real admission binds a `:lease_ledger` on
+  `Strata.Merger.AgentBase` and goes through `Strata.Merger.Lease.admit/3`
+  (structural law + slot registration + digest recording) at boot.
+  Fail-closed; typed atoms only.
   """
   @spec verify_lease(Strata.Merger.Lease.t(), Strata.Merger.Lease.agent_id()) ::
           :ok | {:error, Strata.Merger.Lease.refusal()}

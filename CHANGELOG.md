@@ -31,8 +31,9 @@
   (stratus/lib/stratus/valve/frame_pipeline.ex), `Provenance` emitter
   (stratus/lib/stratus/valve/provenance.ex), `Stratus.Valve.Dao` +
   fuzz courts (`dao_valve_fuzz_test.exs`,
-  `frame_pipeline_fuzz_test.exs`); current `mix test`: 213 tests,
-  3 failures (pre-existing; this lane introduced no edits).
+  `frame_pipeline_fuzz_test.exs`); `mix test` at lane time: 213
+  tests, 3 failures (pre-existing; this lane introduced no edits).
+  Superseded count — current is 306 tests, 0 failures (README).
 - CLI: `pn table` and `pn rehydrate --xml --tsv` verbs
   (`strata_cli_test`: 42 passed, 0 failed).
 

@@ -20,6 +20,14 @@ defmodule Strata.Merger.Reactor.CapitalAdequacy do
     `:counter_mandate_reserve`, never unsealed.
   - Pure BEAM — no temprun dispatch (E-M20 §3b).
 
+  ## State journal
+
+  Each completed step is journaled as `{step, before_snapshot}` of the
+  BEAM-side tracked state (real data structures, not hashes);
+  `compensate/2` rewinds the journal LIFO, restoring each snapshot and
+  enacting the fixed compensation atom. CTT-side effects (the CTRT wire,
+  the dossier) remain host-side counter-mandate atoms on compensation.
+
   ## Honest not-yet-wired atoms
 
   - Invariant floors evaluate only over cell artifacts loaded with
@@ -31,6 +39,7 @@ defmodule Strata.Merger.Reactor.CapitalAdequacy do
   """
 
   @behaviour Strata.Merger.Saga
+  @behaviour GenServer
 
   @agent_id :a09
 
@@ -75,6 +84,20 @@ defmodule Strata.Merger.Reactor.CapitalAdequacy do
   end
 
   @doc """
+  Supervisor child spec (B-AG4: plain GenServer modules, no `use GenServer`,
+  so the spec is derived by hand). restart: :temporary — a finished or
+  crashed saga is never restarted; a new transition starts a new saga.
+  """
+  def child_spec(opts) do
+    %{
+      id: __MODULE__,
+      start: {__MODULE__, :start_link, [opts]},
+      restart: :temporary,
+      type: :worker
+    }
+  end
+
+  @doc """
   Admit a Φ_lease, fail-closed via `Strata.Merger.Lease.verify/3` against
   the driving agent `#{inspect(@agent_id)}` (A09 SagaCoordinator lane).
   """
@@ -100,6 +123,7 @@ defmodule Strata.Merger.Reactor.CapitalAdequacy do
     GenServer.call(server, {:counter_mandate, mandate})
   end
 
+  @impl true
   def init(_opts) do
     {:ok,
      %{
@@ -107,6 +131,8 @@ defmodule Strata.Merger.Reactor.CapitalAdequacy do
        lease: nil,
        lease_digest: nil,
        done: [],
+       journal: [],
+       tracked: %{},
        step_digests: %{},
        compensations_enacted: [],
        refusal: nil,
@@ -117,6 +143,7 @@ defmodule Strata.Merger.Reactor.CapitalAdequacy do
 
   # -- Admit / load -------------------------------------------------------------
 
+  @impl true
   def handle_call({:admit, lease, ledger}, _from, s) when is_map(lease) do
     case Strata.Merger.Lease.verify(lease, @agent_id, ledger) do
       :ok ->
@@ -154,6 +181,19 @@ defmodule Strata.Merger.Reactor.CapitalAdequacy do
 
   def handle_call({:counter_mandate, _mandate}, _from, s), do: {:reply, {:error, :not_sealed}, s}
 
+  def handle_call(:journal, _from, s), do: {:reply, s.journal, s}
+
+  def handle_call(:tracked, _from, s), do: {:reply, s.tracked, s}
+
+  @doc """
+  Post-unwind introspection: the state journal (entries are
+  `{step, before_snapshot}`); `[]` after a full LIFO compensation pass.
+  """
+  def journal(server \\ __MODULE__), do: GenServer.call(server, :journal)
+
+  @doc "BEAM-side tracked state; restored LIFO to its before-snapshot on compensation."
+  def tracked(server \\ __MODULE__), do: GenServer.call(server, :tracked)
+
   # -- Step engine (strict LIFO compensation on any refusal) -----------------------
 
   defp drive([], s) do
@@ -176,7 +216,9 @@ defmodule Strata.Merger.Reactor.CapitalAdequacy do
         s2 = %{
           s
           | done: [{step, digest} | s.done],
-            step_digests: Map.put(s.step_digests, step, digest)
+            step_digests: Map.put(s.step_digests, step, digest),
+            journal: [{step, s.tracked} | s.journal],
+            tracked: Map.put(s.tracked, step, product(step, s))
         }
 
         case check_invariants(s2) do
@@ -189,12 +231,24 @@ defmodule Strata.Merger.Reactor.CapitalAdequacy do
     end
   end
 
-  defp compensate(refusal, s) do
-    case compensate_done(s.done, compensations(), []) do
-      {:ok, atoms} ->
+  # LIFO over `s.done` zipped with the state journal (E-M20 real rollback):
+  # each compensation restores its `{step, before_snapshot}` entry for the
+  # BEAM-side tracked state and enacts its fixed compensation atom. CTT-side
+  # effects (CTRT wire, dossier) stay host-side counter-mandate atoms; SEALED
+  # steps are never unsealed.
+  defp compensate(refusal, s) when length(s.done) == length(s.journal) do
+    case compensate_done(Enum.zip(s.done, s.journal), compensations(), {[], %{}}) do
+      {:ok, atoms, tracked} ->
         emit(:refuse, %{refusal: refusal})
         {:reply, {:error, refusal},
-         %{s | state: :sealed, refusal: refusal, compensations_enacted: atoms}}
+         %{
+           s
+           | state: :sealed,
+             refusal: refusal,
+             compensations_enacted: atoms,
+             journal: [],
+             tracked: tracked
+         }}
 
       :error ->
         emit(:refuse, %{refusal: :no_compensation})
@@ -202,18 +256,27 @@ defmodule Strata.Merger.Reactor.CapitalAdequacy do
     end
   end
 
-  defp compensate_done([], _table, atoms), do: {:ok, Enum.reverse(atoms)}
+  # Fail-closed: done/journal drift refuses :no_compensation.
+  defp compensate(_refusal, s) do
+    emit(:refuse, %{refusal: :no_compensation})
+    {:reply, {:error, :no_compensation}, %{s | state: :sealed, refusal: :no_compensation}}
+  end
 
-  defp compensate_done([{step, _} | rest], table, atoms) do
+  defp compensate_done([], _table, {atoms, tracked}), do: {:ok, Enum.reverse(atoms), tracked}
+
+  defp compensate_done([{{step, _}, {step, before}} | rest], table, {atoms, _}) do
     case Map.fetch(table, step) do
       {:ok, atom} ->
         emit(:compensate, %{step: step, atom: atom})
-        compensate_done(rest, table, [atom | atoms])
+        compensate_done(rest, table, {[atom | atoms], before})
 
       :error ->
         :error
     end
   end
+
+  # done/journal misalignment fails the compensation pass closed.
+  defp compensate_done(_misaligned, _table, _acc), do: :error
 
   # -- Step bodies (pure BEAM; no temprun dispatch) ----------------------------------
 
@@ -233,6 +296,19 @@ defmodule Strata.Merger.Reactor.CapitalAdequacy do
   end
 
   defp run_step(_step, _s), do: {:error, :saga_step_unknown}
+
+  # -- BEAM-side state journal (E-M20 real rollback) -------------------------------
+
+  # The step's BEAM-side product as a real data structure — the saga's
+  # artifact slice for the step (instruction lists, tally maps, allocation
+  # vectors, chapter bundles), never a hash. Compensation restores these
+  # structures LIFO via the `{step, before_snapshot}` journal.
+  defp product(step, s), do: Map.take(s.artifacts, product_keys(step))
+
+  defp product_keys(:rwa_compute), do: [:rwa]
+  defp product_keys(:cet1_check), do: [:cet1_ratio, :lcr_ratio]
+  defp product_keys(:lcr_check), do: [:cet1_ratio, :lcr_ratio]
+  defp product_keys(step), do: [step]
 
   # -- Invariants (fail-closed on present-but-failing values; absent = not yet) -----
 

@@ -109,7 +109,7 @@ defmodule Strata.Merger.Agents.Tier4 do
     def admit(payload) when is_map(payload) do
       with :ok <- Strata.Merger.MergerAgent.verify_lease(payload.lease, :a15),
            :ok <- verify_structural(payload.lease) do
-        {:ok, %{lease: payload.lease}}
+        {:ok, %{lease: payload.lease, lease_digest: Lease.digest(payload.lease)}}
       end
     end
 
@@ -128,11 +128,11 @@ defmodule Strata.Merger.Agents.Tier4 do
 
     @impl true
     def receipt(%{lease: lease, refusal: refusal}) do
-      {:ok, %{lease_digest: lease.lease_digest, result_digest: <<0::256>>, refusal: refusal}}
+      {:ok, %{lease_digest: Lease.digest(lease), result_digest: <<0::256>>, refusal: refusal}}
     end
 
     def receipt(%{lease: lease, sig: sig}) when is_binary(sig) do
-      {:ok, %{lease_digest: lease.lease_digest, result_digest: <<0::256>>, refusal: nil}}
+      {:ok, %{lease_digest: Lease.digest(lease), result_digest: <<0::256>>, refusal: nil}}
     end
 
     def receipt(_), do: {:error, :malformed_payload}
@@ -217,7 +217,10 @@ defmodule Strata.Merger.Agents.Tier4 do
         def admit(payload) when is_map(payload) do
           with :ok <- Strata.Merger.MergerAgent.verify_lease(payload.lease, @agent_id),
                {:ok, _req} <- request(payload) do
-            {:ok, %{lease: payload.lease}}
+            {:ok, %{
+              lease: payload.lease,
+              lease_digest: Strata.Merger.Lease.digest(payload.lease)
+            }}
           end
         end
 
@@ -236,7 +239,7 @@ defmodule Strata.Merger.Agents.Tier4 do
 
         @impl true
         def receipt(%{lease: lease, refusal: refusal}) do
-          {:ok, %{lease_digest: lease.lease_digest, result_digest: <<0::256>>, refusal: refusal}}
+          {:ok, %{lease_digest: Lease.digest(lease), result_digest: <<0::256>>, refusal: refusal}}
         end
 
         def receipt(_), do: {:error, :malformed_payload}
@@ -326,7 +329,11 @@ defmodule Strata.Merger.Agents.Tier4 do
     def admit(payload) when is_map(payload) do
       with :ok <- Strata.Merger.MergerAgent.verify_lease(payload.lease, :a20),
            :ok <- validate_wire(Map.get(payload, :wire)) do
-        {:ok, %{lease: payload.lease, wire: Map.get(payload, :wire)}}
+        {:ok, %{
+          lease: payload.lease,
+          lease_digest: Lease.digest(payload.lease),
+          wire: Map.get(payload, :wire)
+        }}
       end
     end
 
@@ -348,10 +355,10 @@ defmodule Strata.Merger.Agents.Tier4 do
       # the honest refusal atom.
       case Map.get(lease, :ctt_digest) do
         nil ->
-          {:ok, %{lease_digest: lease.lease_digest, result_digest: <<0::256>>, refusal: :digest_host_side}}
+          {:ok, %{lease_digest: Lease.digest(lease), result_digest: <<0::256>>, refusal: :digest_host_side}}
 
         digest ->
-          {:ok, %{lease_digest: lease.lease_digest, result_digest: digest, refusal: nil}}
+          {:ok, %{lease_digest: Lease.digest(lease), result_digest: digest, refusal: nil}}
       end
     end
 

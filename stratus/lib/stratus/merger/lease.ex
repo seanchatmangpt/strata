@@ -22,6 +22,26 @@ defmodule Strata.Merger.Lease do
   invalid signature value is only detectable at the CTT boundary —
   documented, not hidden.
 
+  ## Enforcement law (S6 forgery fix)
+
+  Because in-BEAM checks alone cannot distinguish a real lease from a
+  garbage-signature forgery, the ONLY in-BEAM lease law is replay
+  enforcement through the single-writer ledger. Therefore:
+
+    - Admission (`admit/3`, used by `Strata.Merger.AgentBase`) REQUIRES
+      a bound `Strata.Merger.LeaseLedger` — it consumes the slot and
+      records the lease digest single-writer. Receipts sealed over an
+      admission are `attested: true`.
+    - The no-ledger structural path (`verify/2`, and `verify/3` given
+      `skip_lease_enforcement: true`) is TEST-ONLY: it never proves
+      authority. `Strata.Merger.AgentBase` admits under it only with
+      the explicit `:skip_lease_enforcement` opt, and then forces
+      `:unattested` into the receipt so downstream consumers know the
+      lease was never crypto-verified nor replay-checked.
+    - `verify/3` with an explicit `nil` ledger (or opts with neither
+      `:lease_ledger` nor `:skip_lease_enforcement`) refuses
+      `:lease_unbound` — fail-closed, never a silent structural pass.
+
   ## Canonical wire field order (normative)
 
   The lease is a map, but the canonical term encoding order (what BLAKE3
@@ -42,8 +62,9 @@ defmodule Strata.Merger.Lease do
           :a01 | :a02 | :a03 | :a04 | :a05 | :a06 | :a07 | :a08 | :a09 | :a10
           | :a11 | :a12 | :a13 | :a14 | :a15 | :a16 | :a17 | :a18 | :a19 | :a20
 
-  @typedoc "Fixed zero-entropy lease refusal atoms (E-M12 §4)."
-  @type refusal :: :lease_invalid | :lease_expired | :lease_replayed | :lease_wrong_agent
+  @typedoc "Fixed zero-entropy lease refusal atoms (E-M12 §4, S6 binding law)."
+  @type refusal ::
+          :lease_invalid | :lease_expired | :lease_replayed | :lease_wrong_agent | :lease_unbound
 
   @typedoc "ML-DSA-65 encoded verifying key (1952 B)."
   @type lease_pk :: <<_::15616>>
@@ -60,7 +81,10 @@ defmodule Strata.Merger.Lease do
           agent_id: agent_id(),
           phase: 1..10,
           cell: binary(),
-          saga_id: binary() | nil,
+          # REQUIRED: every saga carries a binary saga_id. The structural
+          # law (valid_field?/2) refuses nil fail-closed; the type is
+          # tightened to match the enforcement (was `binary() | nil`).
+          saga_id: binary(),
           fuel: pos_integer(),
           slot: non_neg_integer(),
           expiry_ms: integer(),
@@ -71,7 +95,7 @@ defmodule Strata.Merger.Lease do
   @pk_bytes 1952
   @sig_bytes 3309
   # Refusal atoms exported for exhaustiveness checks by callers.
-  @refusals [:lease_invalid, :lease_expired, :lease_replayed, :lease_wrong_agent]
+  @refusals [:lease_invalid, :lease_expired, :lease_replayed, :lease_wrong_agent, :lease_unbound]
 
   @doc "Canonical wire field order — BLAKE3 subject coverage order (normative)."
   @spec canonical_fields() :: [atom()]
@@ -101,7 +125,20 @@ defmodule Strata.Merger.Lease do
   def refusals, do: @refusals
 
   @doc """
-  Verify a lease for `agent_id`, fail-closed. Checks, in order:
+  TEST-ONLY structural verification. Checks structural validity, agent
+  identity and expiry — NO anti-replay, NO ledger, NO authority. This is
+  the law the agent callbacks use for their own payload shape law
+  (`Strata.Merger.MergerAgent.verify_lease/2`); it is NOT admission.
+  Route real admission through `admit/3` (ledger-enforced) or, in
+  `Strata.Merger.AgentBase`, bind `:lease_ledger`.
+  """
+  @spec verify(t(), agent_id()) :: :ok | {:error, refusal()}
+  def verify(lease, agent_id) do
+    check(lease, agent_id)
+  end
+
+  @doc """
+  Verify a lease for `agent_id`, fail-closed, with enforcement. Checks, in order:
 
     1. structural validity (`:lease_invalid`) — shape, sizes, phase range,
        positive fuel, non-negative slot;
@@ -110,34 +147,82 @@ defmodule Strata.Merger.Lease do
     3. expiry (`:lease_expired`) — `expiry_ms` against monotonic-ish wall
        clock via `System.system_time/1`;
     4. anti-replay (`:lease_replayed`) — (run_id, agent_id, slot) not
-       already consumed at the LeaseLedger.
+       already consumed at the bound LeaseLedger (or opts
+       `lease_ledger: server`).
 
-  On success the slot is CONSUMED at the ledger (single-writer) before
-  `:ok` is returned. On any refusal the ledger is untouched.
+  The third argument is a ledger server, `nil`, or opts:
+
+    - ledger server — the slot is CONSUMED at the ledger
+      (single-writer) before `:ok` is returned; on any refusal the
+      ledger is untouched.
+    - opts list — `lease_ledger: server` routes as above;
+      `skip_lease_enforcement: true` runs the TEST-ONLY no-ledger path
+      (structural law only, receipt forced `:unattested` downstream);
+      anything else refuses `:lease_unbound`.
+    - `nil` — refuses `:lease_unbound` (S6: fail-closed; a structural
+      pass without enforcement proves nothing).
   """
-  @spec verify(t(), agent_id(), GenServer.server() | nil) ::
+  @spec verify(t(), agent_id(), GenServer.server() | nil | keyword()) ::
           :ok | {:error, refusal()}
-  def verify(lease, agent_id, ledger \\ nil)
+  def verify(lease, agent_id, ledger_or_opts)
 
-  def verify(lease, agent_id, ledger) when is_map(lease) and is_atom(agent_id) do
-    now_ms = System.system_time(:millisecond)
-
-    cond do
-      not structurally_valid?(lease) ->
-        {:error, :lease_invalid}
-
-      lease.agent_id != agent_id ->
-        {:error, :lease_wrong_agent}
-
-      lease.expiry_ms <= now_ms ->
-        {:error, :lease_expired}
-
-      true ->
-        consume_slot(lease, ledger)
+  def verify(lease, agent_id, ledger_or_opts) when is_map(lease) and is_atom(agent_id) do
+    with :ok <- check(lease, agent_id) do
+      enforce(lease, ledger_or_opts)
     end
   end
 
-  def verify(_lease, _agent_id, _ledger), do: {:error, :lease_invalid}
+  def verify(_lease, _agent_id, _ledger_or_opts), do: {:error, :lease_invalid}
+
+  @doc """
+  ADMISSION path (S6): full structural/identity/expiry law, then slot
+  registration + digest recording at the single-writer
+  `Strata.Merger.LeaseLedger`. This is the only in-BEAM proof of lease
+  authority (replay enforcement); `Strata.Merger.AgentBase` routes every
+  real admission through here. On success the receipt is `attested: true`.
+  """
+  @spec admit(t(), agent_id(), GenServer.server()) :: :ok | {:error, refusal()}
+  def admit(lease, agent_id, ledger) do
+    with :ok <- check(lease, agent_id) do
+      case Strata.Merger.LeaseLedger.admit(ledger, lease, digest(lease)) do
+        :ok -> :ok
+        {:error, _} = refusal -> refusal
+      end
+    end
+  end
+
+  @doc """
+  Pure pre-ledger law: structural validity (`:lease_invalid`), agent
+  identity (`:lease_wrong_agent`), expiry (`:lease_expired`). Consumes
+  nothing, touches no ledger. Shared by `verify/2,3` and `admit/3`.
+  """
+  @spec check(t(), agent_id()) :: :ok | {:error, :lease_invalid | :lease_expired | :lease_wrong_agent}
+  def check(lease, agent_id) when is_map(lease) and is_atom(agent_id) do
+    now_ms = System.system_time(:millisecond)
+
+    cond do
+      not structurally_valid?(lease) -> {:error, :lease_invalid}
+      lease.agent_id != agent_id -> {:error, :lease_wrong_agent}
+      lease.expiry_ms <= now_ms -> {:error, :lease_expired}
+      true -> :ok
+    end
+  end
+
+  def check(_lease, _agent_id), do: {:error, :lease_invalid}
+
+  # -- Enforcement binding (S6 fail-closed) ------------------------------------
+
+  defp enforce(_lease, nil), do: {:error, :lease_unbound}
+
+  defp enforce(lease, opts) when is_list(opts) do
+    cond do
+      Keyword.get(opts, :skip_lease_enforcement) == true -> :ok
+      ledger = Keyword.get(opts, :lease_ledger) -> consume_slot(lease, ledger)
+      true -> {:error, :lease_unbound}
+    end
+  end
+
+  defp enforce(lease, ledger), do: consume_slot(lease, ledger)
 
   # -- Structural law ----------------------------------------------------------
 
@@ -164,12 +249,6 @@ defmodule Strata.Merger.Lease do
   defp valid_sig?(_), do: false
 
   # -- Anti-replay slot consumption (single-writer ledger) ----------------------
-
-  defp consume_slot(_lease, nil) do
-    # No ledger bound (tests / pure callers): structural+expiry+identity
-    # law only, replay law not enforced. Disclosed, not silent.
-    :ok
-  end
 
   defp consume_slot(lease, ledger) do
     case :gen_server.call(ledger, {:consume_slot, lease.run_id, lease.agent_id, lease.slot}) do

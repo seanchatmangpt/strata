@@ -167,8 +167,9 @@ per Transition; (3) no two Places share a bitOffset; (4) all masks within
 the first 12 `Transition{}` entries of `strata_protocol/src/ronr.rs` by
 opcode — any mask drift fails with a diff (automates the L90 manual check).
 Opcodes present on only one side are skipped, not drift: only opcodes
-present on BOTH sides must match, so the current 6/12 coverage is honest
-partial coverage (opcodes 0x07-0x0C are not yet projected).
+present on BOTH sides must match — current coverage is 12/12 table
+opcodes with all masks equal (opcodes 0x07-0x0C now projected;
+CHANGELOG 26.10.11 wave-2).
 
 ### Namespace-collision open decision
 

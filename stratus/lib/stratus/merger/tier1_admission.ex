@@ -336,7 +336,7 @@ defmodule Strata.Merger.A04AntitrustHHI do
     - 1000 < HHI <= 1800 and delta > 100 -> `:scrutinize`
     - otherwise -> `:unconcentrated_clear`
 
-  Worked fixture: `analytics/hhi.ttl` (post-merger HHI 3336, delta 840 on
+  Worked fixture: `analytics/hhi.ttl` (post-merger HHI 3336, delta 1320 (post-F3 fixture correction; was 840) on
   the six counted firms -> presumed illegal). Guest leaf: `hhi_calc`
   (E-M20 seven-leaf list). No Pn64 replay here — masks are per-transition
   16-bit pairs on the Valve path, not part of this law.

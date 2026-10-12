@@ -121,5 +121,5 @@ defmodule Strata.Merger.LeaseLedger do
     end
   end
 
-  defp slot_key(run_id, agent_id, slot), do: {:erlang.phash2(run_id), agent_id, slot}
+  defp slot_key(run_id, agent_id, slot), do: {run_id, agent_id, slot}
 end

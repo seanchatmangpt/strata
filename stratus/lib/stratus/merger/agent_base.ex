@@ -18,9 +18,26 @@ defmodule Strata.Merger.AgentBase do
   ## Refusal vocabulary
 
   From `Strata.Merger.MergerAgent.refusal/0` semantics: `:lease_invalid`,
-  `:lease_expired`, `:lease_replayed`, `:lease_wrong_agent` (lease law),
-  `:not_admitted`, `:sealed` (trajectory law), plus whatever fixed atom
-  the concrete agent's callbacks return.
+  `:lease_expired`, `:lease_replayed`, `:lease_wrong_agent`,
+  `:lease_unbound` (lease law), `:not_admitted`, `:sealed` (trajectory
+  law), plus whatever fixed atom the concrete agent's callbacks return.
+
+  ## Lease enforcement (S6 forgery fix)
+
+  Replay enforcement at the single-writer `Strata.Merger.LeaseLedger` is
+  the ONLY in-BEAM lease law (signature crypto is CTT-host-side), so an
+  agent with no ledger bound cannot prove its lease at all. Fail-closed:
+
+    - `start_link/child_spec` WITHOUT `:lease_ledger` refuses boot with
+      `{:stop, :lease_unbound}` — an unbound agent cannot admit.
+    - With `:lease_ledger`, boot admission goes through
+      `Strata.Merger.Lease.admit/3` (structural law + slot registration
+      + digest recording); receipts are `attested: true`.
+    - `skip_lease_enforcement: true` is the EXPLICIT TEST-ONLY opt: it
+      runs structural law only and forces `attested: false` +
+      `enforcement: :unattested` into every receipt so downstream
+      consumers know the lease was never crypto-verified nor
+      replay-checked.
   """
 
   @behaviour :gen_statem
@@ -29,6 +46,7 @@ defmodule Strata.Merger.AgentBase do
   @type data :: %{
           module: module(),
           lease: Strata.Merger.Lease.t() | nil,
+          enforcement: :attested | :unattested,
           admitted: map() | nil,
           executed: map() | nil,
           settlement: Strata.Merger.MergerAgent.settlement() | nil,
@@ -42,6 +60,14 @@ defmodule Strata.Merger.AgentBase do
   `Strata.Merger.MergerAgent`. The agent verifies the lease in `init/1`
   (fail-closed: a lease that does not verify stops the start, so a
   supervisor never holds a half-admitted agent).
+
+  Options:
+
+    - `:lease_ledger` (REQUIRED for real admission) — server of the
+      `Strata.Merger.LeaseLedger`. Without it (and without
+      `:skip_lease_enforcement`) boot refuses `{:stop, :lease_unbound}`.
+    - `:skip_lease_enforcement` (TEST-ONLY) — admit on structural law
+      only; receipts carry `attested: false` / `:unattested`.
   """
   @spec start_link(module(), Strata.Merger.Lease.t(), keyword()) :: :gen_statem.start_ret()
   def start_link(module, lease, opts \\ []) when is_atom(module) and is_map(lease) do
@@ -80,15 +106,52 @@ defmodule Strata.Merger.AgentBase do
   def init({module, lease, opts}) do
     ledger = Keyword.get(opts, :lease_ledger)
 
-    case Strata.Merger.Lease.verify(lease, lease.agent_id, ledger) do
-      :ok ->
-        data = %{module: module, lease: lease, admitted: nil, executed: nil, settlement: nil, refusal: nil}
-        {:ok, :admitting, data}
+    cond do
+      is_nil(ledger) and Keyword.get(opts, :skip_lease_enforcement) == true ->
+        # TEST-ONLY path: structural law only, receipt forced :unattested.
+        case Strata.Merger.Lease.verify(lease, lease.agent_id) do
+          :ok ->
+            data = %{
+              module: module,
+              lease: lease,
+              enforcement: :unattested,
+              admitted: nil,
+              executed: nil,
+              settlement: nil,
+              refusal: nil
+            }
 
-      {:error, refusal} ->
-        # Fail-closed at boot: refuse the START, never hold a half-admitted
-        # agent. Fixed atom, zero entropy.
-        {:stop, refusal}
+            {:ok, :admitting, data}
+
+          {:error, refusal} ->
+            {:stop, refusal}
+        end
+
+      is_nil(ledger) ->
+        # S6 fail-closed: replay enforcement is the only in-BEAM lease
+        # law, so an agent with no ledger bound cannot prove its lease.
+        {:stop, :lease_unbound}
+
+      ledger ->
+        case Strata.Merger.Lease.admit(lease, lease.agent_id, ledger) do
+          :ok ->
+            data = %{
+              module: module,
+              lease: lease,
+              enforcement: :attested,
+              admitted: nil,
+              executed: nil,
+              settlement: nil,
+              refusal: nil
+            }
+
+            {:ok, :admitting, data}
+
+          {:error, refusal} ->
+            # Fail-closed at boot: refuse the START, never hold a
+            # half-admitted agent. Fixed atom, zero entropy.
+            {:stop, refusal}
+        end
     end
   end
 
@@ -97,6 +160,7 @@ defmodule Strata.Merger.AgentBase do
 
   # -- :admitting ------------------------------------------------------------------
 
+  @impl :gen_statem
   def handle_event({:call, from}, :run, :admitting, data) do
     case data.module.admit(%{lease: data.lease}) do
       {:ok, admitted} ->
@@ -104,6 +168,8 @@ defmodule Strata.Merger.AgentBase do
           {:ok, executed} ->
             case data.module.receipt(%{lease: data.lease, executed: executed}) do
               {:ok, settlement} ->
+                settlement = attest(settlement, data.enforcement)
+
                 {:next_state, :sealed,
                  %{data | admitted: admitted, executed: executed, settlement: settlement},
                  [{:reply, from, {:ok, settlement}}, :hibernate]}
@@ -145,8 +211,22 @@ defmodule Strata.Merger.AgentBase do
 
   # -- Fail-closed sealing ------------------------------------------------------------
 
+  defp attest(settlement, enforcement) when is_map(settlement) do
+    settlement
+    |> Map.put(:attested, enforcement == :attested)
+    |> Map.put(:enforcement, enforcement)
+  end
+
   defp seal_with_refusal(from, data, refusal) do
-    settlement = %{lease_digest: Strata.Merger.Lease.digest(data.lease), result_digest: <<0::256>>, refusal: refusal}
+    settlement =
+      attest(
+        %{
+          lease_digest: Strata.Merger.Lease.digest(data.lease),
+          result_digest: <<0::256>>,
+          refusal: refusal
+        },
+        data.enforcement
+      )
 
     {:next_state, :sealed, %{data | refusal: refusal, settlement: settlement},
      [{:reply, from, {:error, refusal}}, :hibernate]}

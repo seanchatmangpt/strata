@@ -1,5 +1,16 @@
 # N19 Build Receipt — Reproducible Build Court
 
+> **Dual-subject reconciliation (SK10-F2, 2026-10-12).** Two runs of the N19 court
+> exist. The **current-of-record run is the one in `docs/receipts/N19.json`**
+> (post-R18/R21): git SHA `1ac493d2e392f2a417f51dd5a4bfd268d63b161d`,
+> `Cargo.lock` sha256 `b9f4a5338e77581b4bfac1f4d6318a387670e358ea542fd00b312c4ae94bb967`.
+> The subject recorded below (git SHA `e83f3a4fe09191db566c8d04c3cb4133b8450846`,
+> lockfile sha256 `e0cc7388c282e4aa8ed971b347367f07a4de6a31b97045182088d94317905d2a`)
+> is the **earlier train-time run**, retained for provenance of the original
+> method/digest record. The artifact digests (wasm `547ae4b0...`, rlib
+> `6ed8b14a...`) agree across both runs; the subject identities differ because
+> the receipted run was re-executed after R18/R21 landed.
+
 - Lane: N19 (NATO High-Assurance Verification Suite)
 - Status: ALIVE (same-host two-run determinism; 3-environment identity NOT-RUN)
 - Date: 2026-10-12

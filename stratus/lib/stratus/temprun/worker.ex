@@ -133,6 +133,7 @@ defmodule Stratus.Temprun.Worker do
           optional(:receipt) => sealed_receipt(),
           optional(:refusal) => refusal(),
           optional(:pending) => :gen_statem.from(),
+          optional(:bridge_dead) => boolean(),
           port: port() | nil,
           model: binary(),
           quota: pos_integer(),
@@ -236,9 +237,15 @@ defmodule Stratus.Temprun.Worker do
               # arrives. The port message is decoded in handle_event(:info, ...).
               send_frame(port, <<@tag_new>> <> model)
 
-              {:ok, :init, %{port: port, model: model, quota: quota, buf: <<>>, pending: nil}}
+              {:ok, :init,
+               %{port: port, model: model, quota: quota, buf: <<>>, pending: nil,
+                 handle: nil, receipt: nil, refusal: nil, bridge_dead: false}}
 
           {:error, _} ->
+            {:stop, :bridge_down}
+
+          _ ->
+            # Defensive: any other open_bridge shape fails closed.
             {:stop, :bridge_down}
         end
 
@@ -255,6 +262,7 @@ defmodule Stratus.Temprun.Worker do
 
   # -- :init — New frame sent; awaiting the Newed handle ------------------------
 
+  @impl :gen_statem
   def handle_event({:call, from}, :step, :init, data) do
     # A step before the handle exists is an out-of-trajectory refusal —
     # constant-time atom, state preserved.
@@ -316,17 +324,37 @@ defmodule Stratus.Temprun.Worker do
   # -- Fail-closed: bridge death -------------------------------------------------
 
   def handle_event(:info, {port, :eof}, _state, %{port: port} = data) do
-    seal_with_refusal(data, :bridge_down)
+    # The bridge's stdout is gone: mark the bridge dead so close_bridge/1
+    # skips the Drop frame (writing it would EPIPE-kill this process).
+    seal_with_refusal(%{data | bridge_dead: true}, :bridge_down)
+  end
+
+  # Port death with the :exit_status option arrives as a data message, not
+  # an exit signal — same fail-closed lane as :eof.
+  def handle_event(:info, {port, {:exit_status, _code}}, _state, %{port: port} = data) do
+    seal_with_refusal(%{data | bridge_dead: true}, :bridge_down)
   end
 
   def handle_event(:info, {:EXIT, port, _reason}, _state, %{port: port} = data) do
-    seal_with_refusal(data, :bridge_down)
+    seal_with_refusal(%{data | bridge_dead: true}, :bridge_down)
   end
 
   # Unknown messages: ignore (never crash on ambient traffic).
   def handle_event(:info, _other, _state, data), do: {:keep_state, data}
 
   # -- :sealed — terminal ---------------------------------------------------------
+
+  # Observability: the sealed registers stay readable post-seal (read-only,
+  # non-mutating) so the recorded refusal is inspectable.
+  def handle_event({:call, from}, :registers, :sealed, data) do
+    {:keep_state, data,
+     {:reply, from,
+      %{
+        handle: Map.get(data, :handle),
+        receipt: Map.get(data, :receipt),
+        refusal: Map.get(data, :refusal)
+      }}}
+  end
 
   def handle_event({:call, from}, _call, :sealed, data) do
     {:keep_state, data, {:reply, from, {:error, Map.get(data, :refusal, :sealed)}}}
@@ -370,7 +398,9 @@ defmodule Stratus.Temprun.Worker do
           other -> other
         end
 
-      <<prefix::binary-size(4)>> ->
+      # Shorter than a length prefix: hold the partial bytes for the next
+      # {:data, bytes} delivery.
+      prefix when byte_size(prefix) < 4 ->
         {:keep_state, %{data | buf: prefix}}
     end
   end
@@ -380,7 +410,9 @@ defmodule Stratus.Temprun.Worker do
   defp handle_bridge_frame(data, frame, :init) do
     case frame do
       <<@tag_new, handle::little-64>> ->
-        {:handled, %{data | handle: handle, buf: <<>>}}
+        # Handle in hand: leave :init for :stepping (the trajectory's first
+        # hop). Remaining buffered frames decode under the live-state clause.
+        {:next_state, :stepping, %{data | handle: handle, buf: <<>>}}
 
       <<@tag_error, _errno::little-32>> ->
         seal_with_refusal(%{data | buf: <<>>}, :bridge_down)
@@ -452,7 +484,7 @@ defmodule Stratus.Temprun.Worker do
 
   # The session handle as a 32-bit-safe u64 for wire packing; nil (pre-Newed)
   # must never reach a Step/Seal/Drop frame (state machine guarantees it).
-  defp session_handle(data), do: Map.get(data, :handle, 0)
+  defp session_handle(data), do: Map.get(data, :handle) || 0
 
   defp step_bin_path(explicit) when is_binary(explicit) and explicit != "",
     do: {:ok, explicit}
@@ -482,8 +514,10 @@ defmodule Stratus.Temprun.Worker do
       # Raw stream mode (no :packet): the u32 LE length prefix is hand-rolled
       # in with_frames/3 because the BEAM packet: 4 option is big-endian and
       # the bridge speaks little-endian framing.
-      Port.open({:spawn_executable, path}, [:binary, :exit_status, :eof])
+      {:ok, Port.open({:spawn_executable, path}, [:binary, :exit_status, :eof])}
     rescue
+      # Missing/unspawnable binary raises :badarg from the port BIF —
+      # fail closed the same way.
       _ -> {:error, :bridge_down}
     end
   end
@@ -506,8 +540,12 @@ defmodule Stratus.Temprun.Worker do
 
   defp close_bridge(%{port: port} = data) when is_port(port) do
     # Drop frame first (tag 4 + handle), then tear the port down. Best-effort:
-    # a dead bridge is sealed as :bridge_down elsewhere.
-    _ = safe_command(port, <<@tag_drop, session_handle(data)::little-64>>)
+    # a dead bridge is sealed as :bridge_down elsewhere. A bridge known to
+    # have died (eof/EXIT/exit_status) gets NO Drop frame — the pipe is gone
+    # and the EPIPE port kill is not rescuable.
+    unless Map.get(data, :bridge_dead, false) do
+      _ = safe_command(port, <<@tag_drop, session_handle(data)::little-64>>)
+    end
 
     try do
       Port.close(port)

@@ -4,7 +4,7 @@ members = ["strata_protocol", "temprun", "temprun/pn_kernel"]
 
 [package]
 name = "strata"
-version = "26.10.10"
+version = "26.10.11"
 edition = "2021"
 publish = false
 

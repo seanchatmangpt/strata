@@ -333,7 +333,7 @@ impl Session {
         };
         self.steps_done = self.steps_done.saturating_add(1);
         let errno = (packed >> 56) as u8;
-        let word = packed & 0x00FF_FFFF_FFFF_FFFF;
+        let word = (packed & 0x00FF_FFFF_FFFF_FFFF) as u64;
         let (status, phase) = match errno {
             0x00 => (ST_YIELDED, PH_YIELDED),
             0x10 => (ST_COMPLETE, PH_COMPLETE),

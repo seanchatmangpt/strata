@@ -107,7 +107,7 @@ defmodule Strata.Merger.Agents.Tier3 do
     def admit(payload) when is_map(payload) do
       with :ok <- Strata.Merger.MergerAgent.verify_lease(payload.lease, :a11),
            {:ok, plan} <- plan_from_payload(payload) do
-        {:ok, %{lease: payload.lease, plan: plan}}
+        {:ok, %{lease: payload.lease, lease_digest: Lease.digest(payload.lease), plan: plan}}
       end
     end
 
@@ -130,7 +130,7 @@ defmodule Strata.Merger.Agents.Tier3 do
 
     @impl true
     def receipt(%{lease: lease, result_digest: result_digest}) do
-      {:ok, %{lease_digest: lease.lease_digest, result_digest: result_digest, refusal: nil}}
+      {:ok, %{lease_digest: Lease.digest(lease), result_digest: result_digest, refusal: nil}}
     end
 
     def receipt(_), do: {:error, :malformed_payload}
@@ -282,7 +282,7 @@ defmodule Strata.Merger.Agents.Tier3 do
     def admit(payload) when is_map(payload) do
       with :ok <- Strata.Merger.MergerAgent.verify_lease(payload.lease, :a12),
            :ok <- cell_and_fuel_ok?(payload.lease) do
-        {:ok, %{lease: payload.lease}}
+        {:ok, %{lease: payload.lease, lease_digest: Lease.digest(payload.lease)}}
       end
     end
 
@@ -311,11 +311,11 @@ defmodule Strata.Merger.Agents.Tier3 do
     @impl true
     def receipt(%{lease: lease, receipt: receipt}) do
       # The sealed receipt's 32-byte digest IS the CTT-computed result digest.
-      {:ok, %{lease_digest: lease.lease_digest, result_digest: receipt.digest, refusal: nil}}
+      {:ok, %{lease_digest: Lease.digest(lease), result_digest: receipt.digest, refusal: nil}}
     end
 
     def receipt(%{lease: lease, refusal: refusal}) when is_atom(refusal) do
-      {:ok, %{lease_digest: lease.lease_digest, result_digest: <<0::256>>, refusal: refusal}}
+      {:ok, %{lease_digest: Lease.digest(lease), result_digest: <<0::256>>, refusal: refusal}}
     end
 
     def receipt(_), do: {:error, :malformed_payload}
@@ -417,7 +417,11 @@ defmodule Strata.Merger.Agents.Tier3 do
     @impl true
     def admit(payload) when is_map(payload) do
       with :ok <- Strata.Merger.MergerAgent.verify_lease(payload.lease, :a13) do
-        {:ok, %{lease: payload.lease, words: Map.get(payload, :words, [])}}
+        {:ok, %{
+          lease: payload.lease,
+          lease_digest: Lease.digest(payload.lease),
+          words: Map.get(payload, :words, [])
+        }}
       end
     end
 
@@ -439,15 +443,15 @@ defmodule Strata.Merger.Agents.Tier3 do
       # until a CTT digest is attached upstream.
       case Map.get(lease, :ctt_digest) do
         nil ->
-          {:ok, %{lease_digest: lease.lease_digest, result_digest: <<0::256>>, refusal: :digest_host_side}}
+          {:ok, %{lease_digest: Lease.digest(lease), result_digest: <<0::256>>, refusal: :digest_host_side}}
 
         digest ->
-          {:ok, %{lease_digest: lease.lease_digest, result_digest: digest, refusal: nil}}
+          {:ok, %{lease_digest: Lease.digest(lease), result_digest: digest, refusal: nil}}
       end
     end
 
     def receipt(%{lease: lease, refusal: refusal}) when is_atom(refusal) do
-      {:ok, %{lease_digest: lease.lease_digest, result_digest: <<0::256>>, refusal: refusal}}
+      {:ok, %{lease_digest: Lease.digest(lease), result_digest: <<0::256>>, refusal: refusal}}
     end
 
     def receipt(_), do: {:error, :malformed_payload}
@@ -539,7 +543,11 @@ defmodule Strata.Merger.Agents.Tier3 do
     @impl true
     def admit(payload) when is_map(payload) do
       with :ok <- Strata.Merger.MergerAgent.verify_lease(payload.lease, :a14) do
-        {:ok, %{lease: payload.lease, chain: Map.get(payload, :chain, [])}}
+        {:ok, %{
+          lease: payload.lease,
+          lease_digest: Lease.digest(payload.lease),
+          chain: Map.get(payload, :chain, [])
+        }}
       end
     end
 
@@ -567,7 +575,7 @@ defmodule Strata.Merger.Agents.Tier3 do
 
     @impl true
     def receipt(%{lease: lease, result_digest: result_digest, refusal: refusal}) do
-      {:ok, %{lease_digest: lease.lease_digest, result_digest: result_digest, refusal: refusal}}
+      {:ok, %{lease_digest: Lease.digest(lease), result_digest: result_digest, refusal: refusal}}
     end
 
     def receipt(_), do: {:error, :malformed_payload}

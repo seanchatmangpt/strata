@@ -135,9 +135,16 @@ scoping() {
         N16) echo "Stack bound proven by call-graph/size analysis of the wasm kernel + zero-recursion census; not a qualified stack-usage tool output. [docs/receipts/N16.json]" ;;
         N17) echo "Official NIST ML-DSA-65 KAT executed against a VENDORED ACVP SUBSET per E33 — the full NIST ACVP server protocol is NOT executed; vectors are official, transport is vendored. [docs/receipts/N17.json]" ;;
         N18) echo "55 diagnostic templates censused, leak-metric 0 (zero state-derived captures); runtime refusal strings byte-identical across 3 adversarial-input runs; exit-code vocabulary pinned. Leak-0 + determinism + address-ban jointly deliver the spec's 0-bit guarantee. [docs/receipts/N18.json]" ;;
-        N19) echo "Spec 3-environment identity NOT executed — delivered same-host two-run determinism (clean target dirs A/B, byte-identical pn_kernel.g0.wasm sha256 547ae4b0... and libstrata_protocol.rlib sha256 6ed8b14a...). 3-environment cross-toolchain identity = documented follow-up. [docs/nato/N19_BUILD_RECEIPT.md]" ;;
+        N19) echo "Spec 3-environment identity NOT executed — delivered same-host two-run determinism (clean target dirs A/B, byte-identical pn_kernel.g0.wasm sha256 547ae4b0... and libstrata_protocol.rlib sha256 6ed8b14a...). 3-environment cross-toolchain identity = documented follow-up. [docs/receipts/N19.json scoping_law; docs/nato/N19_BUILD_RECEIPT.md]" ;;
     esac
 }
+
+# SK10-F2 scoping honesty: N19's court proves same-host 2-run determinism, not
+# the spec'd 3-environment identity (NOT-RUN; no cross-toolchain hosts in-repo).
+# The dossier must not launder that scoped result into unscoped green, so every
+# green grading of N19 carries this scope marker in its status/detail text and
+# in the per-table Scope column. Machine status values stay compatible.
+n19_scope_note() { echo "same-host-2-run scope; 3-env mandate NOT-RUN"; }
 
 test_target() {
     case "$1" in
@@ -236,7 +243,7 @@ main() {
         if [ "$lane" = "N19" ] && [ ! -f "$rcpt" ]; then
             if [ -f docs/nato/N19_BUILD_RECEIPT.md ]; then
                 secs=$(( $(date +%s) - t0 ))
-                emit "$lane" "CITED-GREEN" "no JSON receipt; markdown build receipt is the evidence of record" "-" "-" "$secs" "docs/nato/N19_BUILD_RECEIPT.md"
+                emit "$lane" "CITED-GREEN" "no JSON receipt; markdown build receipt is the evidence of record ($(n19_scope_note))" "-" "-" "$secs" "docs/nato/N19_BUILD_RECEIPT.md"
             else
                 emit "$lane" "SKIPPED" "NO-RECEIPT" "-" "-" "0" "-"
             fi
@@ -291,16 +298,23 @@ PYEOF
 
         # Receipt carries a CARGO_TARGET_DIR env prefix; strip it (we export ours).
         run_cmd="${cmd#CARGO_TARGET_DIR=* }"
-        if run_with_timeout "$TIMEOUT_SECS" $run_cmd > docs/nato/.n20_run_N.log 2>&1; then
+        # Per-lane budget: N19 rebuilds the world and needs a generous budget.
+        lane_secs="$TIMEOUT_SECS"
+        [ "$lane" = "N19" ] && lane_secs=300
+        run_detail="court re-executed this run"
+        [ "$lane" = "N19" ] && run_detail="court re-executed this run ($(n19_scope_note))"
+        if run_with_timeout "$lane_secs" $run_cmd > docs/nato/.n20_run_N.log 2>&1; then
             secs=$(( $(date +%s) - t0 ))
             tail_line="$(grep 'test result' docs/nato/.n20_run_N.log | tail -1)"
-            emit "$lane" "EXECUTED-GREEN" "court re-executed this run" "$R_PASS" "$R_FAIL" "$secs" "${tail_line:-live rerun green}"
+            emit "$lane" "EXECUTED-GREEN" "$run_detail" "$R_PASS" "$R_FAIL" "$secs" "${tail_line:-live rerun green}"
         else
             rc=$?
             secs=$(( $(date +%s) - t0 ))
             tail_line="$(grep 'test result' docs/nato/.n20_run_N.log | tail -1)"
             if [ "$rc" = "124" ]; then
-                emit "$lane" "CITED-GREEN" "live rerun exceeded ${TIMEOUT_SECS}s budget; receipted verdict cited" "$R_PASS" "$R_FAIL" "$secs" "receipted run tail: $R_TAIL"
+                cited_detail="live rerun exceeded ${lane_secs}s budget; receipted verdict cited"
+                [ "$lane" = "N19" ] && cited_detail="$cited_detail ($(n19_scope_note))"
+                emit "$lane" "CITED-GREEN" "$cited_detail" "$R_PASS" "$R_FAIL" "$secs" "receipted run tail: $R_TAIL"
             else
                 emit "$lane" "FAILED" "live rerun rc=$rc" "$R_PASS" "$R_FAIL" "$secs" "${tail_line:-see docs/nato/.n20_run_N.log}"
             fi
@@ -318,6 +332,11 @@ dump_meta() {
         echo "$lane|mandate|$(mandate "$lane")" >> "$f"
         echo "$lane|specmap|$(specmap "$lane")" >> "$f"
         echo "$lane|scoping|$(scoping "$lane")" >> "$f"
+        if [ "$lane" = "N19" ]; then
+            echo "$lane|scope|$(n19_scope_note)" >> "$f"
+        else
+            echo "$lane|scope|-" >> "$f"
+        fi
     done
 }
 
@@ -336,6 +355,7 @@ for line in open("docs/nato/.n20_meta.txt"):
 mandates = {l: meta.get((l, "mandate"), "") for l in ("N%02d" % i for i in range(1, 20))}
 specmaps = {l: meta.get((l, "specmap"), "") for l in ("N%02d" % i for i in range(1, 20))}
 scopings = {l: meta.get((l, "scoping"), "") for l in ("N%02d" % i for i in range(1, 20))}
+scopenotes = {l: meta.get((l, "scope"), "-") for l in ("N%02d" % i for i in range(1, 20))}
 digest_file_path = "docs/nato/DOSSIER.sha256"
 
 LANES = ["N%02d" % i for i in range(1, 20)]
@@ -375,24 +395,27 @@ out.append("- EXECUTED-GREEN: the court's verify command was re-run in this doss
 out.append("- CITED-GREEN: the court was NOT re-run (over 60s budget or no executable command);")
 out.append("  the last receipted verdict is cited as evidence.")
 out.append("- FAILED / SKIPPED: no qualified evidence of success; recorded honestly.")
+out.append("- Scope column: disclosure when a court's delivered evidence is narrower than")
+out.append("  its spec mandate. N19 is graded green on same-host 2-run determinism only;")
+out.append("  the spec'd 3-environment identity is NOT-RUN and must not read as covered.")
 out.append("")
 tally = {}
 for p in PILLARS:
     out.append("## Pillar %s" % p[0])
     out.append("")
-    out.append("| Court | Status | Tests | Live-rerun | Spec mandate | Spec mapping |")
-    out.append("|---|---|---|---|---|---|")
+    out.append("| Court | Status | Tests | Live-rerun | Scope | Spec mandate | Spec mapping |")
+    out.append("|---|---|---|---|---|---|---|")
     for lane in p[1]:
         r = rows.get(lane)
         if r is None:
-            out.append("| %s | MISSING-ROW | - | - | - | - |" % lane)
+            out.append("| %s | MISSING-ROW | - | - | - | - | - |" % lane)
             continue
         _, status, detail, tpass, tfail, secs, evidence = r
         tally[status] = tally.get(status, 0) + 1
         live = "EXECUTED %ss" % secs if status == "EXECUTED-GREEN" else ("CITED (%ss)" % secs if status == "CITED-GREEN" else detail)
         out.append(
-            "| %s | %s | %s pass / %s fail | %s | %s | %s |"
-            % (lane, status, tpass, tfail, esc(live), esc(mandates[lane]), esc(specmaps[lane]))
+            "| %s | %s | %s pass / %s fail | %s | %s | %s | %s |"
+            % (lane, status, tpass, tfail, esc(live), esc(scopenotes.get(lane, "-")), esc(mandates[lane]), esc(specmaps[lane]))
         )
     out.append("")
 
@@ -465,10 +488,54 @@ PYEOF
     return 1
 }
 
+# ------------------------------------------------------------ N20 receipt emitter
+# N20 is NOT replayed as a court (no self-replay recursion): the replay loop is
+# hardcoded N01-N19. This step transforms this run's accumulated $RESULTS plus
+# the sealed dossier digest into docs/receipts/N20.json.
+emit_n20_receipt() { # $1 = final dossier digest hex
+    python3 - "$RESULTS" "$DIGEST" "$DOSSIER" <<'PYEOF'
+import json, sys
+
+results_path, digest, dossier_path = sys.argv[1], sys.argv[2], sys.argv[3]
+lanes = ["N%02d" % i for i in range(1, 20)]
+ORDER = {"EXECUTED-GREEN": 0, "CITED-GREEN": 1, "SKIPPED": 2, "FAILED": 3,
+         "MISSING-ROW": 3}
+statuses, secs = {}, {}
+for line in open(results_path):
+    parts = line.rstrip("\n").split("|")
+    if len(parts) == 7:
+        statuses[parts[0]] = parts[1]
+        secs[parts[0]] = parts[5]
+per_lane = {l: statuses.get(l, "MISSING-ROW") for l in lanes}
+tally = {}
+for st in per_lane.values():
+    tally[st] = tally.get(st, 0) + 1
+worst = min((ORDER[s] for s in per_lane.values()), default=3)
+status = "LANDED" if per_lane.get("N19") in ("EXECUTED-GREEN", "CITED-GREEN") and worst <= 1 else ("PARTIAL" if worst == 2 else "FAILED")
+
+receipt = {
+    "lane": "N20",
+    "court": "dossier_generator",
+    "status": status,
+    "sections": {
+        "totals": dict(sorted(tally.items(), key=lambda kv: ORDER.get(kv[0], 9))),
+        "per_lane_statuses": per_lane,
+        "dossier_path": dossier_path,
+        "dossier_sha256": digest,
+    },
+}
+with open("docs/receipts/N20.json", "w") as f:
+    json.dump(receipt, f, indent=2)
+    f.write("\n")
+print("N20 receipt: %s (%s)" % (status, json.dumps(tally)))
+PYEOF
+}
+
 SIGN_STATUS=OK
 main
 DIGEST="$(assemble)" || { echo "ASSEMBLE FAILED" >&2; exit 1; }
 sign_seal "$DIGEST" || SIGN_STATUS=MANUAL
+emit_n20_receipt "$DIGEST"
 echo "dossier: $DOSSIER"
 echo "digest: $DIGEST ($DIGEST_FILE)"
 echo "signature: $SIG_FILE (status $SIGN_STATUS)"

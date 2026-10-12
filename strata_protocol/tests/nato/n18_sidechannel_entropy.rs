@@ -175,7 +175,7 @@ fn split_args(frag: &str) -> Vec<String> {
                 cur.push(c);
             }
             '(' | '[' => depth += 1,
-            ')' | ']' => depth -= 1,
+            ')' | ']' => depth = depth.saturating_sub(1),
             ',' if depth == 0 => {
                 parts.push(cur.trim().to_string());
                 cur.clear();

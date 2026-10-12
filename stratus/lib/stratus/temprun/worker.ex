@@ -20,7 +20,10 @@ defmodule Stratus.Temprun.Worker do
 
       host -> guest (requests):
 
-        1  New    = model bytes (normative guest artifact, verbatim)
+        1  New    = CTTG wire-format model buffer (magic `CTTG`, wire
+                    version 0x01 — verbatim what the guest's
+                    `ctt_session_new` accepts; NOT wasm module bytes — the
+                    guest module is pinned into the bridge binary)
         2  Step   = <<handle::little-64, quota::little-32>>
         3  Seal   = <<handle::little-64>>
         4  Drop   = <<handle::little-64>>
@@ -29,38 +32,41 @@ defmodule Stratus.Temprun.Worker do
 
         1  Newed   = <<handle::little-64>>
         2  Stepped = <<handle::little-64, status::8, record::bytes(21)>>
-        3  Sealed  = <<handle::little-64, status::8,
-                     dlen::little-16, digest::bytes(dlen),
-                     wire::bytes(352)?>>
+        3  Sealed  = <<handle::little-64, status::8, digest::bytes(32)>>
         4  Dropped = <<handle::little-64, status::8>>
         0xFF Error = <<errno::little-32>>
 
-  - Status lanes mirror `YieldStatus`: 0 = Yielded, 1 = Complete,
-    2 = Violation, 3 = Trap.
-  - Step record (21 bytes): `word::little-64` (guest word, errno high bits
-    stripped) `| quota_remaining::little-32 | steps_done::little-32 |
-    phase::8 | reserved::little-32(=0)`. Phase: 0 Idle, 1 Running,
-    2 Yielded, 3 Complete, 4 Faulted (latching).
-  - Sealed digest field: `u16 LE len(=32) || BLAKE3(receipt_wire)`.
-    The 352-byte receipt wire follows iff the guest produced one
-    (status == 0).
+  - Status lanes derive from the guest step record's outcome byte: 0 =
+    Yielded, 1 = Complete, 2 = Violation, 3 = Trap (bridge-side; the
+    guest wrote no record on that lane, record is all zeros).
+  - Step record (21 bytes, written by the GUEST and relayed verbatim):
+    `outcome::8 | remaining_events::little-32 | steps_executed::little-32
+    | events_total::little-32 | final_marking::little-64`. Outcome:
+    0 Yielded, 1 Complete, 2 Violation.
+  - Sealed digest: the guest-written 32-byte BLAKE3 digest, relayed
+    verbatim (the bridge validates `out_len <= out_cap = 32` before
+    trusting it). The former 352-byte receipt wire is DEAD under guest
+    ABI v2 and deleted from the wire.
   - Errno vocabulary: 1 trap, 2 unknown handle, 3 missing export,
-    4 malformed frame, 5 frame over 1 MiB, 6 invalid module,
+    4 malformed frame, 5 frame over 1 MiB, 6 invalid model,
     7 instantiation failure, 8 seal not produced, 9 fuel error,
-    10 session faulted (terminal). Any `Error` frame is fail-closed
-    at this layer (refusal `:bridge_down`).
+    10 session faulted (terminal), 11 guest ABI version mismatch
+    (probe != 2, refused before any session export). Any `Error` frame
+    is fail-closed at this layer (refusal `:bridge_down`).
 
-  ## ABI rebase pending (strata build lane reconcile item)
+  ## Guest ABI v2 (rebased — W-ABI2)
 
-  This bridge's v1 spec assumes the guest export ABI
-  `ctt_session_step(quota: i32) -> i64` (errno `<< 56 | word`) — see the
-  "Guest ABI (v1)" section of `temprun/src/bin/temprun_step.rs`.
-  chicago-tdd-tools' landed guest ABI (`chicago-tdd-tools src/conformance/guest.rs`)
-  instead uses `ctt_session_step(handle: u64, quota: u32, out_status: *mut u8, out_cap: u32) -> i32` with a
-  host-written out-buffer. These two surfaces must be reconciled before the
-  bridge is exercised end-to-end against a real guest; the reconcile item
-  belongs to the strata build lane. Until then the wire framing here tracks
-  the bridge (canonical), not the guest.
+  The bridge consumes chicago-tdd-tools' landed guest ABI v2
+  (`chicago-tdd-tools src/conformance/guest.rs`): probe-first
+  `ctt_guest_abi_version` (must return 2, typed errno 11 refusal
+  otherwise), handle-based `ctt_session_new/attach/step/seal/drop`, and
+  the flat i32 status space mapped onto the errno table above at the
+  bridge's single decode boundary. See the "Guest ABI (v2)" section of
+  `temprun/src/bin/temprun_step.rs`. The port protocol has no stream
+  frame yet: the bridge attaches the zero-length stream, the guest
+  refuses it typed (`ERR_STREAM_EMPTY`), and the session runs UNATTACHED
+  (the guest's step-time law then latches Violation on first step —
+  fail-closed, never a vacuous Complete).
 
   Any reply that does not decode exactly (wrong tag, wrong size, out-of-
   trajectory reply, oversize frame) is a refusal:
@@ -86,9 +92,8 @@ defmodule Stratus.Temprun.Worker do
   ## Binary-reference discipline
 
   Model bytes and frames stay refc binaries; pattern-matched fields are
-  sub-binary references. Nothing larger than the 32-byte digest and the
-  optional 352-byte receipt wire is ever copied onto the worker heap, and
-  the receipt wire only when the guest produced one.
+  sub-binary references. Nothing larger than the 32-byte digest is ever
+  copied onto the worker heap.
 
   ## Reduction-budget yield
 
@@ -109,16 +114,17 @@ defmodule Stratus.Temprun.Worker do
   @typedoc "32-byte BLAKE3 digest as carried in the Sealed reply."
   @type digest :: <<_::256>>
 
-  @typedoc "Seal result: the BLAKE3 digest plus the receipt wire iff produced."
-  @type sealed_receipt :: %{digest: digest(), wire: <<_::2816>> | nil}
+  @typedoc "Seal result: the guest-written 32-byte BLAKE3 digest."
+  @type sealed_receipt :: %{digest: digest()}
 
-  @typedoc "Decoded 21-byte step record (see moduledoc wire table)."
+  @typedoc "Decoded 21-byte guest step record (see moduledoc wire table)."
   @type step_record :: %{
           status: 0 | 1 | 2 | 3,
-          word: non_neg_integer(),
-          quota_remaining: non_neg_integer(),
-          steps_done: non_neg_integer(),
-          phase: 0 | 1 | 2 | 3 | 4
+          outcome: 0 | 1 | 2,
+          remaining_events: non_neg_integer(),
+          steps_executed: non_neg_integer(),
+          events_total: non_neg_integer(),
+          final_marking: non_neg_integer()
         }
 
   @typedoc """
@@ -162,7 +168,7 @@ defmodule Stratus.Temprun.Worker do
   @status_yielded 0
 
   @step_record_bytes 21
-  @wire_bytes 352
+  @digest_bytes 32
   @max_frame 1024 * 1024
 
   # Yield state: the hibernate window between steps. Bounded so a stalled
@@ -486,19 +492,11 @@ defmodule Stratus.Temprun.Worker do
            [{{:timeout, :bridge_stall}, :cancel}]}
         end
 
-      # Sealed: <<handle::le-64, status::8, dlen::le-16, digest::dlen, wire?>
-      <<@tag_seal, _handle::little-64, _status::8, dlen::little-16,
-        digest::binary-size(dlen), rest::binary>>
-      when rest == <<>> or byte_size(rest) == @wire_bytes ->
-        wire =
-          case rest do
-            <<>> -> nil
-            <<receipt::binary-size(@wire_bytes)>> -> receipt
-          end
-
-        reply_pending(data, {:ok, %{digest: digest, wire: wire}})
+      # Sealed: <<handle::le-64, status::8, digest::bytes(32)>>
+      <<@tag_seal, _handle::little-64, _status::8, digest::binary-size(@digest_bytes)>> ->
+        reply_pending(data, {:ok, %{digest: digest}})
         {:ok, data} = close_bridge(%{data | buf: <<>>})
-        {:next_state, :sealed, %{data | port: nil, receipt: %{digest: digest, wire: wire}, pending: nil}}
+        {:next_state, :sealed, %{data | port: nil, receipt: %{digest: digest}, pending: nil}}
 
       # Dropped: informational; the port is torn down right after Drop.
       <<@tag_drop, _handle::little-64, _status::8>> ->
@@ -512,16 +510,19 @@ defmodule Stratus.Temprun.Worker do
     end
   end
 
-  # Decode the 21-byte step record:
-  # word::le-64 | quota_remaining::le-32 | steps_done::le-32 | phase::8 | reserved::le-32
-  defp decode_step_record(status, <<word::little-64, quota_remaining::little-32,
-                                    steps_done::little-32, phase::8, _reserved::little-32>>) do
+  # Decode the 21-byte GUEST step record (v2, relayed by the bridge):
+  # outcome::8 | remaining_events::le-32 | steps_executed::le-32
+  # | events_total::le-32 | final_marking::le-64
+  defp decode_step_record(status, <<outcome::8, remaining_events::little-32,
+                                    steps_executed::little-32, events_total::little-32,
+                                    final_marking::little-64>>) do
     %{
       status: status,
-      word: word,
-      quota_remaining: quota_remaining,
-      steps_done: steps_done,
-      phase: phase
+      outcome: outcome,
+      remaining_events: remaining_events,
+      steps_executed: steps_executed,
+      events_total: events_total,
+      final_marking: final_marking
     }
   end
 

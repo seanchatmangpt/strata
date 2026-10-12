@@ -44,7 +44,7 @@
 #                             ctt guest wasm module is EMBEDDED in this bin
 #                             at build time (temprun/priv/
 #                             ctt_wasm_guest.wasm, pinned release artifact,
-#                             sha256 38258e85...) — the court needs no wasm
+#                             sha256 af932e6c...) — the court needs no wasm
 #                             artifact on disk.
 #
 # If the bin is absent the court prints the typed reason exactly

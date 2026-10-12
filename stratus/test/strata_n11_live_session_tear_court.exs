@@ -40,7 +40,7 @@
 #                              (default: stratus/priv/temprun_step). The ctt
 #                              guest wasm module is EMBEDDED in this bin at
 #                              build time (temprun/priv/ctt_wasm_guest.wasm,
-#                              pinned release artifact, sha256 38258e85...).
+#                              pinned release artifact, sha256 af932e6c...).
 #
 # If the bin is absent the court prints the typed reason exactly
 # `temprun-embed-missing` and exits 0 — an honest skip, never a silent

@@ -223,3 +223,23 @@ FR/NFR test files. Companions: `docs/COURT_ADJUDICATIONS.md` (ledger),
   `validate_and_advance` (the `step_branchless`-equivalence precedent
   exists), or by explicit operator waiver of the constant-time bound for this
   kernel. Classified pre-existing-red, court-correct.
+
+## KG-SX1 — Sybil resistance: burn/odometer absent; lease attestation was unverified (PARTIAL — attestation FIXED, burn/odometer OPEN)
+
+- **Requirement ref**: thesis §24.6 (Sybil resistance via burn/odometer);
+  `Stratus.Merger.Lease.admit/3`.
+- **Gap**: burn and odometer mechanisms are absent — the §24.6 Sybil-resistance
+  claim is UNSUPPORTED as shipped. Separately, `Lease.admit/3` accepted
+  `attested: true` without verifying the lease signature, and fuel was an
+  unsigned constant — an unverified attestation could carry arbitrary fuel.
+- **Evidence**: skeptic-ensemble finding SX1 (v26.10.12 adversarial skeptic
+  ensemble). Attestation half fixed by R35: `514308f` (lease admission
+  fail-closed on unverified signatures) + `3125f63` (lease ledger tests to
+  honest semantics) — `attested: true` is now reachable ONLY behind a
+  `verify_sig` callback (ML-DSA-65 verify stays at the CTT host-bin boundary;
+  in-BEAM deference marks `attested: false, verification:
+  :deferred_ctt_boundary`). Witnessed on disk in
+  `stratus/lib/stratus/merger/lease.ex` at `3125f63`.
+- **Disposition**: PARTIAL — attestation half FIXED (514308f, 3125f63);
+  burn/odometer Sybil mechanisms remain OPEN/UNSUPPORTED (thesis §24.6
+  unachievable in current design).

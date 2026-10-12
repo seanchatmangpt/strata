@@ -84,7 +84,8 @@ defmodule Stratus.TemprunPortBackpressureCourt do
         end
       end, max_concurrency: 20, timeout: 20_000)
 
-    outcomes = for {:ok, o} <- Task.yield_many(results, 20_000), do: o
+    results_out = Enum.to_list(results)
+    outcomes = for {:ok, o} <- results_out, do: o
     # step/1 before the Newed handle refuses :not_initialized in constant
     # time (worker.ex:266-270): bounded caller latency under a dead bridge.
     assert Enum.all?(outcomes, &(&1 in [:ok, :caller_timeout])),

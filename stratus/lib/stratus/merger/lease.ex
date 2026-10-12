@@ -18,9 +18,38 @@ defmodule Strata.Merger.Lease do
 
   The detached-signature verification itself happens CTT-side; this
   module refuses a lease whose `lease_sig`/`lease_pk` sizes do not match
-  the ML-DSA-65 wire sizes, but a structurally-well-formed lease with an
-  invalid signature value is only detectable at the CTT boundary —
-  documented, not hidden.
+  the ML-DSA-65 wire sizes. A structurally-well-formed lease with an
+  invalid signature VALUE is only detectable at the CTT boundary —
+  SX1 demonstrated this hole concretely: 200 all-zero-signature leases
+  passed the size-only law and admitted `:ok` in 5ms.
+
+  ## SX1-F1 fix: signature verification is fail-closed-deferred
+
+  There is no ML-DSA-65 verify primitive in-BEAM (no NIF/port; verified
+  by sweep at fix time). Therefore `attested: true` is reachable ONLY
+  when a verification callback is injected via the lease options
+  (`verify_sig: fun`) — the CTT host bridge injects it when it lands.
+  The callback receives the canonical subject digest and the raw lease
+  and MUST return `true` (or `:ok`) iff the ML-DSA-65 signature over the
+  digest verifies against `lease_pk`:
+
+      verify_sig: fn digest, lease -> CttHost.mldsa65_verify(lease.lease_pk, digest, lease.lease_sig) end
+
+  - With the callback: a failed verification refuses `:lease_invalid`
+    BEFORE any ledger slot is consumed (fail-closed, zero side effects);
+    success admits with receipt `attested: true, verification: :completed`.
+  - WITHOUT the callback: admission still succeeds (the single-writer
+    replay ledger remains the in-BEAM lease law) but the receipt is
+    honestly marked `attested: false, verification: :deferred_ctt_boundary`.
+    An unverified signature can never yield `attested: true`.
+
+  ## Known limitation: `fuel` is an unsigned constant (SX1)
+
+  `fuel` is carried in the canonical encoding as an unsigned 64-bit
+  constant and validated only as `pos_integer()`. It is NOT a metered
+  balance: nothing in-BEAM decrements it per unit of work, so a lease's
+  fuel cannot be exhausted by consumption. Budget enforcement is CTT
+  host work, same boundary as signature verification.
 
   ## Enforcement law (S6 forgery fix)
 
@@ -28,10 +57,12 @@ defmodule Strata.Merger.Lease do
   garbage-signature forgery, the ONLY in-BEAM lease law is replay
   enforcement through the single-writer ledger. Therefore:
 
-    - Admission (`admit/3`, used by `Strata.Merger.AgentBase`) REQUIRES
+    - Admission (`admit/4`, used by `Strata.Merger.AgentBase`) REQUIRES
       a bound `Strata.Merger.LeaseLedger` — it consumes the slot and
       records the lease digest single-writer. Receipts sealed over an
-      admission are `attested: true`.
+      admission are `attested: true` ONLY when a `verify_sig` callback
+      verified the signature; otherwise `attested: false` with
+      `verification: :deferred_ctt_boundary` (see SX1-F1 below).
     - The no-ledger structural path (`verify/2`, and `verify/3` given
       `skip_lease_enforcement: true`) is TEST-ONLY: it never proves
       authority. `Strata.Merger.AgentBase` admits under it only with
@@ -175,21 +206,55 @@ defmodule Strata.Merger.Lease do
   def verify(_lease, _agent_id, _ledger_or_opts), do: {:error, :lease_invalid}
 
   @doc """
-  ADMISSION path (S6): full structural/identity/expiry law, then slot
-  registration + digest recording at the single-writer
-  `Strata.Merger.LeaseLedger`. This is the only in-BEAM proof of lease
-  authority (replay enforcement); `Strata.Merger.AgentBase` routes every
-  real admission through here. On success the receipt is `attested: true`.
+  ADMISSION path (S6): full structural/identity/expiry law, then
+  signature law (SX1-F1), then slot registration + digest recording at
+  the single-writer `Strata.Merger.LeaseLedger`. This is the only
+  in-BEAM proof of lease authority (replay enforcement);
+  `Strata.Merger.AgentBase` routes every real admission through here.
+
+  Returns `{:ok, :attested}` when an injected `verify_sig` callback
+  verified the signature, `{:ok, :deferred_ctt_boundary}` when none was
+  injected (receipt honestly `attested: false` downstream). Never
+  `:ok`-with-attestation on an unverified signature.
   """
-  @spec admit(t(), agent_id(), GenServer.server()) :: :ok | {:error, refusal()}
-  def admit(lease, agent_id, ledger) do
-    with :ok <- check(lease, agent_id) do
+  @spec admit(t(), agent_id(), GenServer.server(), keyword()) ::
+          {:ok, :attested | :deferred_ctt_boundary} | {:error, refusal()}
+  def admit(lease, agent_id, ledger, opts \\ [])
+
+  def admit(lease, agent_id, ledger, opts) when is_list(opts) do
+    with :ok <- check(lease, agent_id),
+         :ok <- verify_signature(lease, opts) do
       case Strata.Merger.LeaseLedger.admit(ledger, lease, digest(lease)) do
-        :ok -> :ok
+        :ok -> {:ok, verification_state(opts)}
         {:error, _} = refusal -> refusal
       end
     end
   end
+
+  def admit(_lease, _agent_id, _ledger, _opts), do: {:error, :lease_invalid}
+
+  # -- SX1-F1 signature law -------------------------------------------------------
+
+  # Fail-closed: an injected callback that returns anything other than
+  # `true`/`:ok` refuses BEFORE the ledger slot is consumed.
+  defp verify_signature(lease, opts) do
+    case Keyword.get(opts, :verify_sig) do
+      fun when is_function(fun, 2) ->
+        case fun.(digest(lease), lease) do
+          true -> :ok
+          :ok -> :ok
+          _ -> {:error, :lease_invalid}
+        end
+
+      _ ->
+        # No in-BEAM ML-DSA-65 verify exists; defer honestly rather than
+        # pretend attestation. Receipt marks it downstream.
+        :ok
+      end
+  end
+
+  defp verification_state(opts),
+    do: if(is_function(Keyword.get(opts, :verify_sig), 2), do: :attested, else: :deferred_ctt_boundary)
 
   @doc """
   Pure pre-ledger law: structural validity (`:lease_invalid`), agent

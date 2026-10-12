@@ -253,7 +253,7 @@ FR/NFR test files. Companions: `docs/COURT_ADJUDICATIONS.md` (ledger),
   control. Additionally the bridge process inherits the full BEAM environment
   and runs with no rlimits, so the zero-ambient property holds only inside
   the BEAM, not across the port boundary.
-- **Evidence**: skeptic-ensemble finding SX7 (v26.10.12 adversarial skeptic
+- **Evidence**: skeptic-ensemble finding SK7 (CTT adversarial-findings.md first-ensemble row 7) (v26.10.12 adversarial skeptic
   ensemble); court `temprun_port_backpressure_court.exs` is the existing
   qualification surface.
 - **Disposition**: OPEN — no fix landed as of `e42b9b7` (A163).

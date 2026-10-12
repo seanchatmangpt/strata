@@ -123,9 +123,15 @@ defmodule Strata.Merger.LeaseLedgerTest do
     assert {:error, :lease_invalid} == LeaseLedger.verify_conservation(ledger, l, forged)
   end
 
-  test "verify_conservation/3 refuses :lease_invalid for a never-admitted lease", %{ledger: ledger} do
+  test "verify_conservation/3 refuses :lease_invalid for a never-admitted lease", %{
+    ledger: ledger
+  } do
     assert {:error, :lease_invalid} ==
-             LeaseLedger.verify_conservation(ledger, lease(run_id: "ghost"), :binary.copy(<<0>>, 32))
+             LeaseLedger.verify_conservation(
+               ledger,
+               lease(run_id: "ghost"),
+               :binary.copy(<<0>>, 32)
+             )
   end
 
   # -- (5) append-only ----------------------------------------------------------
@@ -180,5 +186,51 @@ defmodule Strata.Merger.LeaseLedgerTest do
     assert :ok == Lease.verify(l, :a07, ledger)
     # exactly-once: the slot is now consumed
     assert {:error, :lease_replayed} == Lease.verify(l, :a07, ledger)
+  end
+
+  # -- (7) SX1-F1 signature-verification honesty --------------------------------
+
+  describe "SX1-F1 admit/4 signature law" do
+    test "admit without verify_sig succeeds but is honestly DEFERRED, never attested", %{
+      ledger: ledger
+    } do
+      l = lease(run_id: "sx1-deferred")
+      # SX1 repro class: a well-formed garbage signature admits via replay
+      # enforcement, but the verification state is deferral, not attestation.
+      assert {:ok, :deferred_ctt_boundary} == Lease.admit(l, :a07, ledger)
+    end
+
+    test "admit with a passing verify_sig callback is ATTESTED", %{ledger: ledger} do
+      l = lease(run_id: "sx1-attested")
+
+      fun = fn digest, lease_map ->
+        assert byte_size(digest) == 32
+        assert lease_map == l
+        true
+      end
+
+      assert {:ok, :attested} == Lease.admit(l, :a07, ledger, verify_sig: fun)
+    end
+
+    test "admit with a FAILING verify_sig callback refuses :lease_invalid and consumes NO slot",
+         %{
+           ledger: ledger
+         } do
+      l = lease(run_id: "sx1-forged")
+
+      assert {:error, :lease_invalid} ==
+               Lease.admit(l, :a07, ledger, verify_sig: fn _d, _l -> false end)
+
+      # fail-closed: the slot was never consumed, so the same slot admits
+      # under a later verification pass
+      assert {:ok, :attested} == Lease.admit(l, :a07, ledger, verify_sig: fn _d, _l -> :ok end)
+    end
+
+    test "all-zero signature (SX1 repro) is deferred, never attested", %{ledger: ledger} do
+      l = lease(run_id: "sx1-zeros", lease_sig: :binary.copy(<<0>>, Lease.sig_bytes()))
+
+      assert {:ok, :deferred_ctt_boundary} == Lease.admit(l, :a07, ledger)
+      refute Lease.admit(l, :a07, ledger, verify_sig: fn _d, _l -> false end) == {:ok, :attested}
+    end
   end
 end

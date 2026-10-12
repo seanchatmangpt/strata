@@ -90,8 +90,26 @@ defmodule Strata.Merger.Lease do
 
   @typedoc "Merger agent identity, A01–A20."
   @type agent_id ::
-          :a01 | :a02 | :a03 | :a04 | :a05 | :a06 | :a07 | :a08 | :a09 | :a10
-          | :a11 | :a12 | :a13 | :a14 | :a15 | :a16 | :a17 | :a18 | :a19 | :a20
+          :a01
+          | :a02
+          | :a03
+          | :a04
+          | :a05
+          | :a06
+          | :a07
+          | :a08
+          | :a09
+          | :a10
+          | :a11
+          | :a12
+          | :a13
+          | :a14
+          | :a15
+          | :a16
+          | :a17
+          | :a18
+          | :a19
+          | :a20
 
   @typedoc "Fixed zero-entropy lease refusal atoms (E-M12 §4, S6 binding law)."
   @type refusal ::
@@ -131,7 +149,18 @@ defmodule Strata.Merger.Lease do
   @doc "Canonical wire field order — BLAKE3 subject coverage order (normative)."
   @spec canonical_fields() :: [atom()]
   def canonical_fields,
-    do: [:run_id, :agent_id, :phase, :cell, :saga_id, :fuel, :slot, :expiry_ms, :lease_pk, :lease_sig]
+    do: [
+      :run_id,
+      :agent_id,
+      :phase,
+      :cell,
+      :saga_id,
+      :fuel,
+      :slot,
+      :expiry_ms,
+      :lease_pk,
+      :lease_sig
+    ]
 
   @doc """
   In-BEAM stand-in digest over the canonical encoding. DISCLOSED
@@ -250,18 +279,23 @@ defmodule Strata.Merger.Lease do
         # No in-BEAM ML-DSA-65 verify exists; defer honestly rather than
         # pretend attestation. Receipt marks it downstream.
         :ok
-      end
+    end
   end
 
   defp verification_state(opts),
-    do: if(is_function(Keyword.get(opts, :verify_sig), 2), do: :attested, else: :deferred_ctt_boundary)
+    do:
+      if(is_function(Keyword.get(opts, :verify_sig), 2),
+        do: :attested,
+        else: :deferred_ctt_boundary
+      )
 
   @doc """
   Pure pre-ledger law: structural validity (`:lease_invalid`), agent
   identity (`:lease_wrong_agent`), expiry (`:lease_expired`). Consumes
   nothing, touches no ledger. Shared by `verify/2,3` and `admit/3`.
   """
-  @spec check(t(), agent_id()) :: :ok | {:error, :lease_invalid | :lease_expired | :lease_wrong_agent}
+  @spec check(t(), agent_id()) ::
+          :ok | {:error, :lease_invalid | :lease_expired | :lease_wrong_agent}
   def check(lease, agent_id) when is_map(lease) and is_atom(agent_id) do
     now_ms = System.system_time(:millisecond)
 

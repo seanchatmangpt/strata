@@ -31,8 +31,11 @@ defmodule Strata.Merger.AgentBase do
     - `start_link/child_spec` WITHOUT `:lease_ledger` refuses boot with
       `{:stop, :lease_unbound}` — an unbound agent cannot admit.
     - With `:lease_ledger`, boot admission goes through
-      `Strata.Merger.Lease.admit/3` (structural law + slot registration
-      + digest recording); receipts are `attested: true`.
+      `Strata.Merger.Lease.admit/4` (structural law + SX1-F1 signature
+      law + slot registration + digest recording). Receipts are
+      `attested: true` ONLY when a `verify_sig` callback was injected
+      and verified the ML-DSA-65 signature; otherwise they are honestly
+      `attested: false, verification: :deferred_ctt_boundary`.
     - `skip_lease_enforcement: true` is the EXPLICIT TEST-ONLY opt: it
       runs structural law only and forces `attested: false` +
       `enforcement: :unattested` into every receipt so downstream
@@ -46,7 +49,7 @@ defmodule Strata.Merger.AgentBase do
   @type data :: %{
           module: module(),
           lease: Strata.Merger.Lease.t() | nil,
-          enforcement: :attested | :unattested,
+          enforcement: :attested | :deferred_ctt_boundary | :unattested,
           admitted: map() | nil,
           executed: map() | nil,
           settlement: Strata.Merger.MergerAgent.settlement() | nil,
@@ -133,12 +136,18 @@ defmodule Strata.Merger.AgentBase do
         {:stop, :lease_unbound}
 
       ledger ->
-        case Strata.Merger.Lease.admit(lease, lease.agent_id, ledger) do
-          :ok ->
+        # SX1-F1: attestation is honest — `attested: true` only when a
+        # `verify_sig` callback (CTT host bridge) verified the signature;
+        # otherwise the receipt defers, never fakes attestation.
+        case Strata.Merger.Lease.admit(lease, lease.agent_id, ledger, opts) do
+          {:ok, verification} ->
+            enforcement =
+              if verification == :attested, do: :attested, else: :deferred_ctt_boundary
+
             data = %{
               module: module,
               lease: lease,
-              enforcement: :attested,
+              enforcement: enforcement,
               admitted: nil,
               executed: nil,
               settlement: nil,
@@ -215,6 +224,10 @@ defmodule Strata.Merger.AgentBase do
     settlement
     |> Map.put(:attested, enforcement == :attested)
     |> Map.put(:enforcement, enforcement)
+    |> Map.put(
+      :verification,
+      if(enforcement == :attested, do: :completed, else: :deferred_ctt_boundary)
+    )
   end
 
   defp seal_with_refusal(from, data, refusal) do

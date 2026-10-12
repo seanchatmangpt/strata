@@ -14,12 +14,28 @@ zeroize = "1"
 # /Users/sac/bcinr. HOST-SIDE ONLY: optional + non-default feature, so the
 # wasm32 build (default features) never links bcinr-powl and stays zero-import.
 bcinr-powl = { path = "../../bcinr/crates/bcinr-powl", features = ["std"], optional = true }
+# Host-side wasm executor for the BEAM port bridge (temprun_step).
+# wasmi (pure-Rust interpreter) over wasmtime: wasmi 2.0.0 is in the local
+# registry cache (E12 found no wasmtime) -> hermetic/offline build. The
+# guest imports nothing (Imports = ∅), so wasmi_wasi is NOT needed.
+# HOST-ONLY: optional + non-default, so the wasm32 build (default features)
+# never links wasmi and stays zero-import.
+wasmi = { version = "2.0", optional = true, default-features = false, features = ["stable", "std", "validate"] }
 
 [features]
 default = []
 # Compile the conformance policy via bcinr-powl's real POWL compiler
 # (temprun/src/conformance.rs `compile_workflow` bridge).
 powl-bcinr = ["dep:bcinr-powl"]
+# Host-side session stepper bin (temprun/src/bin/temprun_step.rs).
+host-step = ["dep:wasmi"]
+
+# The port bridge bin exists only on the host target; required-features
+# keeps it out of the wasm32 build (same gate discipline as powl-bcinr).
+[[bin]]
+name = "temprun_step"
+path = "src/bin/temprun_step.rs"
+required-features = ["host-step"]
 
 [dev-dependencies]
 serde_json = "1"

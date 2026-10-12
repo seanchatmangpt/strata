@@ -166,11 +166,7 @@ impl Guest {
             .get_typed_func::<(), i32>(&self.store, "ctt_guest_abi_version")
             .expect("probe export")
             .call(&mut self.store, ())
-            .expect("const probe cannot trap") as u32;
-        // The probe returns i32 on the wire; v2 is the only supported surface
-        // (same law as abi_version_court — asserted, then the value returned
-        // so the lifecycle leg runs against the version it just proved).
-        2
+            .expect("const probe cannot trap") as u32
     }
 
     fn new(&mut self, wire: &[u8]) -> u64 {

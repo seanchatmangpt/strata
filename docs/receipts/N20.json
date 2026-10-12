@@ -1,11 +1,12 @@
 {
   "lane": "N20",
   "court": "dossier_generator",
-  "status": "LANDED",
+  "status": "FAILED",
   "sections": {
     "totals": {
-      "EXECUTED-GREEN": 18,
-      "CITED-GREEN": 1
+      "EXECUTED-GREEN": 17,
+      "CITED-GREEN": 1,
+      "FAILED": 1
     },
     "per_lane_statuses": {
       "N01": "EXECUTED-GREEN",
@@ -26,9 +27,9 @@
       "N16": "EXECUTED-GREEN",
       "N17": "EXECUTED-GREEN",
       "N18": "EXECUTED-GREEN",
-      "N19": "EXECUTED-GREEN"
+      "N19": "FAILED"
     },
     "dossier_path": "docs/nato/DOSSIER.md",
-    "dossier_sha256": "0f1d60bb82212f434ab4f10d1e42b2b593bb511b3304081eb27900d53af99647"
+    "dossier_sha256": "ae90024cbdd96c8172d59cb8059cd5e84de4fbcc7b8b0bdf38579cd311786ed9"
   }
 }

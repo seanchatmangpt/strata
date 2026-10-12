@@ -37,19 +37,19 @@ cited as evidence), never inferred. Digest + ML-DSA-65 signature: see
 
 | Court | Status | Tests | Live-rerun | Scope | Spec mandate | Spec mapping |
 |---|---|---|---|---|---|---|
-| N09 | EXECUTED-GREEN | 1 pass / 0 fail | EXECUTED 0s | - | SEU single-bit: 1M randomized flips; 100% fail-closed-or-halt; 0% SDC | DO-254/ED-80 SEU immunity; ECSS-E-ST-10-12 fault count |
-| N10 | EXECUTED-GREEN | 1 pass / 0 fail | EXECUTED 1s | - | SEU double-bit adjacent-lane flips vs forbidden-bit check; SDC == 0 | DO-254/ED-80 double-bit fault enforcement (latent faults) |
+| N09 | EXECUTED-GREEN | 1 pass / 0 fail | EXECUTED 1s | - | SEU single-bit: 1M randomized flips; 100% fail-closed-or-halt; 0% SDC | DO-254/ED-80 SEU immunity; ECSS-E-ST-10-12 fault count |
+| N10 | EXECUTED-GREEN | 1 pass / 0 fail | EXECUTED 0s | - | SEU double-bit adjacent-lane flips vs forbidden-bit check; SDC == 0 | DO-254/ED-80 double-bit fault enforcement (latent faults) |
 | N11 | EXECUTED-GREEN | 4 pass / 0 fail | EXECUTED 0s | - | Torn-write/bus-disconnect fuzz over the 64B CAS ring: recovery to valid prior state | DO-178C L-A failure classification; atomic publication law |
-| N12 | EXECUTED-GREEN | 5 pass / 0 fail | EXECUTED 0s | - | Clock-glitch: jittered tick sources; sequencer rejects time-travel | DO-254 time integrity; monotonic-time law |
+| N12 | EXECUTED-GREEN | 5 pass / 0 fail | EXECUTED 1s | - | Clock-glitch: jittered tick sources; sequencer rejects time-travel | DO-254 time integrity; monotonic-time law |
 
 ## Pillar IV - WCET / liveness / resource bounds (N13-N16)
 
 | Court | Status | Tests | Live-rerun | Scope | Spec mandate | Spec mapping |
 |---|---|---|---|---|---|---|
-| N13 | EXECUTED-GREEN | 3 pass / 0 fail | EXECUTED 4s | - | WCET: static + measured cycles per opcode, <=12 cycles target | DO-178C L-A timing bounds (<=12 cycles/opcode) |
-| N14 | EXECUTED-GREEN | 2 pass / 0 fail | EXECUTED 1s | - | CAST-32A thrash: 16 adversarial threads vs sequencer; bounded max latency, zero deadlock | CAST-32A / AMG 6C multicore interference; ARINC 653 partitioning |
+| N13 | EXECUTED-GREEN | 3 pass / 0 fail | EXECUTED 3s | - | WCET: static + measured cycles per opcode, <=12 cycles target | DO-178C L-A timing bounds (<=12 cycles/opcode) |
+| N14 | EXECUTED-GREEN | 2 pass / 0 fail | EXECUTED 2s | - | CAST-32A thrash: 16 adversarial threads vs sequencer; bounded max latency, zero deadlock | CAST-32A / AMG 6C multicore interference; ARINC 653 partitioning |
 | N15 | EXECUTED-GREEN | 6 pass / 0 fail | EXECUTED 0s | - | TLC liveness: box-diamond-admitted under weak fairness | TLA+/TLC liveness (box-diamond under weak fairness) |
-| N16 | EXECUTED-GREEN | 4 pass / 0 fail | EXECUTED 0s | - | Stack bound: <=256B stack, zero recursion (call-graph analysis) | DO-178C L-A resource/stack bound |
+| N16 | EXECUTED-GREEN | 4 pass / 0 fail | EXECUTED 1s | - | Stack bound: <=256B stack, zero recursion (call-graph analysis) | DO-178C L-A resource/stack bound |
 
 ## Pillar V - Crypto / provenance / build identity (N17-N19)
 
@@ -57,7 +57,7 @@ cited as evidence), never inferred. Digest + ML-DSA-65 signature: see
 |---|---|---|---|---|---|---|
 | N17 | EXECUTED-GREEN | 7 pass / 0 fail | EXECUTED 0s | - | FIPS 204 KAT: official NIST ML-DSA-65 vectors vs signer (vendored ACVP subset per E33) | FIPS 204 ML-DSA-65 KAT; ACVP; FIPS 140-3 module crypto |
 | N18 | EXECUTED-GREEN | 3 pass / 0 fail | EXECUTED 1s | - | Zero-entropy diagnostics: Shannon entropy of emitted error strings == 0 bits about internal state | NIST SP 800-90B entropy; zero-entropy diagnostics |
-| N19 | EXECUTED-GREEN | - pass / - fail | EXECUTED 24s | same-host-2-run scope; 3-env mandate NOT-RUN | Reproducible build: 3-environment SHA-256 identity (delivered same-host 2-run, disclosed) | Reproducible-build evidence class (SLSA / 3-env identity) |
+| N19 | EXECUTED-GREEN | - pass / - fail | EXECUTED 28s | same-host-2-run scope; 3-env mandate NOT-RUN | Reproducible build: 3-environment SHA-256 identity (delivered same-host 2-run, disclosed) | Reproducible-build evidence class (SLSA / 3-env identity) |
 
 ## Honest-scoping register (spec figure -> delivered equivalent)
 

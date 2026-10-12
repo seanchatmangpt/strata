@@ -1,6 +1,12 @@
 # Adversarial skeptic lane 7 — port backpressure falsification court.
 # Attacks the worker's frame write path (worker.ex send_frame -> Port.command)
 # with a deliberately non-responding stub bridge via the :step_bin override.
+#
+# Measured semantics (see the two tests): spawn ports do NOT propagate pipe
+# backpressure to the caller — Port.command returns immediately and the port
+# driver queues the bytes in BEAM driver memory without bound. The failure
+# mode against a stalled bridge is unbounded host-side memory buffering, not
+# scheduler blocking.
 defmodule Stratus.TemprunPortBackpressureCourt do
   use ExUnit.Case, async: false
 
@@ -18,39 +24,37 @@ defmodule Stratus.TemprunPortBackpressureCourt do
   end
 
   @tag :backpressure
-  test "init blocks indefinitely when the bridge never reads stdin (model > pipe capacity)" do
-    # 256 KiB model vs ~64 KiB macOS pipe buffer: the New frame write must hit
-    # kernel backpressure. worker.ex init (line 238) -> send_frame (525-529) ->
-    # Port.command: bare blocking BIF, no timeout, no async port_command.
-    model = :binary.copy(<<0>>, 256 * 1024)
+  @tag timeout: 20_000
+  test "no backpressure on the write path: 64 MiB New frame accepted instantly, driver buffers unboundedly" do
+    model = :binary.copy(<<0>>, 64 * 1024 * 1024)
 
     task =
       Task.async(fn ->
-        try do
-          Stratus.Temprun.Worker.start_link(
-            model: model,
-            quota: 1000,
-            step_bin: @stub_no_read
-          )
-        rescue
-          _ -> :rescued
-        catch
-          :exit, _ -> :exit
-        end
+        Stratus.Temprun.Worker.start_link(
+          model: model,
+          quota: 1000,
+          step_bin: @stub_no_read
+        )
       end)
 
-    Process.sleep(3_000)
-    status = if Process.alive?(task.pid), do: :blocked, else: :returned
+    result =
+      try do
+        {:returned, Task.await(task, 5_000)}
+      catch
+        :exit, {:timeout, _} ->
+          Process.exit(task.pid, :kill)
+          {:blocked, nil}
+      end
 
-    if status == :blocked do
-      Process.exit(task.pid, :kill)
-      flunk(
-        "FALSIFIED: start_link still blocked after 3s against a never-reading bridge. " <>
-          "init/238 -> send_frame/527 -> Port.command blocks with no timeout; if this worker " <>
-          "is composed under Stratus.Supervisor (application.ex:45) the blocking init " <>
-          "blocks Supervisor.start_link itself, wedging sibling starts."
-      )
-    end
+    assert {:returned, {:ok, _worker}} = result,
+           "FALSIFIED-REVERSED: start_link BLOCKED against a never-reading bridge: " <>
+             inspect(elem(result, 1))
+
+    # The worker is alive, sitting in :init, with 64 MiB of model bytes queued
+    # inside the port driver (kernel pipe holds only ~64 KiB). No write
+    # timeout, no busy-port signal, no refusal: the "fail-closed" claim does
+    # not cover a stalled-but-alive bridge on the WRITE side.
+    Process.exit(task.pid, :kill)
   end
 
   @tag :mailbox
@@ -59,12 +63,12 @@ defmodule Stratus.TemprunPortBackpressureCourt do
     {:ok, pid} =
       Stratus.Temprun.Worker.start_link(
         model: <<1, 2, 3>>,
+        quota: 1000,
         step_bin: @stub_drain
       )
 
     # Worker sits in :init — the drain stub never sends a Newed reply.
-    # step/1 in :init refuses :not_initialized (constant-time), so the
-    # interesting surface here is bounded caller latency, not state abuse.
+    Process.flag(:trap_exit, true)
     Process.sleep(300)
 
     results =
@@ -81,10 +85,20 @@ defmodule Stratus.TemprunPortBackpressureCourt do
       end, max_concurrency: 20, timeout: 20_000)
 
     outcomes = for {:ok, o} <- Task.yield_many(results, 20_000), do: o
-    assert :caller_timeout in outcomes, "expected callers to hit the 5s gen_statem timeout"
+    # step/1 before the Newed handle refuses :not_initialized in constant
+    # time (worker.ex:266-270): bounded caller latency under a dead bridge.
+    assert Enum.all?(outcomes, &(&1 in [:ok, :caller_timeout])),
+           "unexpected caller outcomes: #{inspect(outcomes -- [:ok, :caller_timeout])}"
 
     Process.sleep(200)
-    len = :erlang.process_flag(pid, :message_queue_len)
+    {:message_queue_len, len} = Process.info(pid, :message_queue_len)
+    for n <- 0..200 do
+      receive do
+        m -> IO.inspect(m, label: "trapped#{n}")
+      after
+        0 -> nil
+      end
+    end
     Process.exit(pid, :kill)
     assert len < 100, "worker mailbox grew to #{len} — mailbox explosion"
   end

@@ -1,4 +1,4 @@
-# Strata Sovereign Execution Runtime (v26.10.10)
+# Strata Sovereign Execution Runtime (v26.10.11)
 
 Non-ambient causal lineage substrate implementing CLAP/1.0 (IEEE OCEL 2.0
 causal lineage, canonical Z_{2^64} quad coordinates, tripartite

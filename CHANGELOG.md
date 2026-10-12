@@ -1,5 +1,19 @@
 # Changelog
 
+## 26.10.11 — 2026-10-11 (release, tag v26.10.11 @ 12fc104)
+
+- Merger cohort: temprun bridge, BEAM agent cohort, sagas, receipt
+  store, live courts — stratus 306/0 (1ac493d).
+- temprun port bridge enforcement, 352-byte CTRT receipt persistence,
+  N19/N20 courts; n18 saturation fix; temprun_step compile + smoke
+  (9c38d36).
+- N20 run logs + N06 receipt refreshed post-convergence (12fc104).
+- Post-tag: N19 scope-honest grading + dual-subject receipt
+  reconciliation (R28); backpressure-court lane residue (2fe1878).
+
+The two 26.10.11 wave entries below are the same train's protocol-kernel
+record; see docs/nato/DOSSIER.md for the N-court ledger.
+
 ## 26.10.11 — 2026-10-11 (wave 2)
 
 ### Added

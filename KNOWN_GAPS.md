@@ -243,3 +243,17 @@ FR/NFR test files. Companions: `docs/COURT_ADJUDICATIONS.md` (ledger),
 - **Disposition**: PARTIAL — attestation half FIXED (514308f, 3125f63);
   burn/odometer Sybil mechanisms remain OPEN/UNSUPPORTED (thesis §24.6
   unachievable in current design).
+
+## KG-SX7 — port membrane: no write-side backpressure; ambient confinement ends at the BEAM boundary (OPEN)
+
+- **Requirement ref**: zero-ambient capability claim (strata/port membrane);
+  court `stratus/test/stratus/temprun_port_backpressure_court.exs`.
+- **Gap**: no write-side backpressure on the port membrane — up to 64 MiB can
+  buffer in driver memory against a stalled bridge process with no admission
+  control. Additionally the bridge process inherits the full BEAM environment
+  and runs with no rlimits, so the zero-ambient property holds only inside
+  the BEAM, not across the port boundary.
+- **Evidence**: skeptic-ensemble finding SX7 (v26.10.12 adversarial skeptic
+  ensemble); court `temprun_port_backpressure_court.exs` is the existing
+  qualification surface.
+- **Disposition**: OPEN — no fix landed as of `e42b9b7` (A163).

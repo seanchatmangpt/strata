@@ -1,144 +1,76 @@
 N01|mandate|MILS non-interference: dState(TA)/dInput(TB) == 0 (spec figure: full 2^64 SMT via Kani/Z3)
-N03|mandate|Bell-LaPadula/Biba lattice over the transition table: no-write-down / no-read-up / strong tranquility
 N01|specmap|EAL7 ADV_IMP/AVA (MILS separation kernel)
-N03|specmap|Bell-LaPadula/Biba; EAL7 AVA; DO-178C L-A data-coupling analysis
 N01|scoping|Spec 2^64 SMT (Kani/Z3) NOT executed — Kani unavailable in-repo per feasibility ledger. Delivered: exhaustive 16-bit small-domain over ALL 65,536 markings x 16 transition shapes x 3 activity regimes x 2 ticks x 8 payloads (~50.3M armed-B audits) + calibrated 10^7 dual-tenant LCG sweep over the full joint domain. Kani/Z3 full-domain proof = documented follow-up. [docs/receipts/N01.json scoping_law]
 N01|scope|-
-N03|scoping|Fully exhaustive: 25 transitions x 65,536 markings x 2 kernels = 1,638,400 checked pairs, no sampling — no substitution. [docs/receipts/N03.json coverage]
-N03|scope|-
 N02|mandate|Exhaustive bit-spill census: no field write perturbs neighbors (fully exhaustive, real proof)
-N04|mandate|Zero ambient authority: zero env/fs/unmetered-clock imports on state paths
 N02|specmap|EAL7 ADV_IMP; DO-178C L-A structural coverage
-N04|specmap|EAL7 AVA_CCA; least privilege (zero ambient authority)
 N02|scoping|Fully exhaustive — 100% of the field-write x neighbor census, no sampling, no substitution. [docs/receipts/N02.json]
 N02|scope|-
 N03|mandate|Bell-LaPadula/Biba lattice over the transition table: no-write-down / no-read-up / strong tranquility
-N04|scoping|Static audit (banned-import census over final state-path modules) — strongest sound substitute for a dynamic least-privilege proof; a dynamic ambient-authority probe court is a documented follow-up. [docs/receipts/N04.json]
-N04|scope|-
 N03|specmap|Bell-LaPadula/Biba; EAL7 AVA; DO-178C L-A data-coupling analysis
-N05|mandate|dudect: Welch t-test |t|<4.5 over valid-vs-refusal timing (spec 10M/class; calibrated-N disclosed)
 N03|scoping|Fully exhaustive: 25 transitions x 65,536 markings x 2 kernels = 1,638,400 checked pairs, no sampling — no substitution. [docs/receipts/N03.json coverage]
 N03|scope|-
-N05|specmap|dudect (Reparaz et al., USENIX 2017); FIPS 140-3 IG C.2 constant-time
 N04|mandate|Zero ambient authority: zero env/fs/unmetered-clock imports on state paths
-N05|scoping|Spec 10M/class; delivered 51.2M/class (5.1x spec). Runtime ~95s EXCEEDS the 60s dossier budget, so the dossier CITES the receipted verdict (t=+0.3325 validate_and_advance, t=+0.7502 step_branchless, leaky positive control detected 4/4) rather than re-running. Disclosed lane finding: initial variant timed single execs against a 41 ns clock resolution — vacuous pass caught and fixed with 1024-exec burst timing + resolution soundness floors. [docs/receipts/N05.json]
-N05|scope|-
 N04|specmap|EAL7 AVA_CCA; least privilege (zero ambient authority)
-N06|mandate|Branchless disassembly census: zero conditional branches on state paths (wasm + native tiers)
 N04|scoping|Static audit (banned-import census over final state-path modules) — strongest sound substitute for a dynamic least-privilege proof; a dynamic ambient-authority probe court is a documented follow-up. [docs/receipts/N04.json]
 N04|scope|-
-N06|specmap|DO-333 method-based verification; Gate 0 G3' branch-free state path
 N05|mandate|dudect: Welch t-test |t|<4.5 over valid-vs-refusal timing (spec 10M/class; calibrated-N disclosed)
-N06|scoping|Native tier audited via compiler-emitted .s text census instead of otool/objdump .o disassembly (nightly-LLVM-22 .o unreadable by host LLVM 21/Xcode tools; same codegen rendered as text). step_branchless has no standalone symbol; subject is the #[inline(never)] kernel_step wrapper. [docs/receipts/N06.json deviations]
-N06|scope|-
 N05|specmap|dudect (Reparaz et al., USENIX 2017); FIPS 140-3 IG C.2 constant-time
-N07|mandate|Prime+Probe-style concurrent eviction vs sequencer: latency invariance
 N05|scoping|Spec 10M/class; delivered 51.2M/class (5.1x spec). Runtime ~95s EXCEEDS the 60s dossier budget, so the dossier CITES the receipted verdict (t=+0.3325 validate_and_advance, t=+0.7502 step_branchless, leaky positive control detected 4/4) rather than re-running. Disclosed lane finding: initial variant timed single execs against a 41 ns clock resolution — vacuous pass caught and fixed with 1024-exec burst timing + resolution soundness floors. [docs/receipts/N05.json]
 N05|scope|-
-N07|specmap|EAL7 AVA_CCA covert-channel analysis (cache timing)
 N06|mandate|Branchless disassembly census: zero conditional branches on state paths (wasm + native tiers)
-N07|scoping|Prime+Probe-style concurrent eviction is a bounded host simulation of the attacker, not a hardware-counter proof on a fixed cache topology. [docs/receipts/N07.json]
 N06|specmap|DO-333 method-based verification; Gate 0 G3' branch-free state path
-N07|scope|-
 N06|scoping|Native tier audited via compiler-emitted .s text census instead of otool/objdump .o disassembly (nightly-LLVM-22 .o unreadable by host LLVM 21/Xcode tools; same codegen rendered as text). step_branchless has no standalone symbol; subject is the #[inline(never)] kernel_step wrapper. [docs/receipts/N06.json deviations]
 N06|scope|-
-N08|mandate|Hamming weight/distance profile across successive states
 N07|mandate|Prime+Probe-style concurrent eviction vs sequencer: latency invariance
-N08|specmap|Side-channel power profile (Hamming weight/distance)
 N07|specmap|EAL7 AVA_CCA covert-channel analysis (cache timing)
-N08|scoping|Every Hamming bin matches EXACTLY across high/low payload classes (Welch t = 0.0000, max per-bin diff/N = 0.000000); identity proven STRUCTURAL (kernel never reads OCEL64 above the activity byte); leaky +8-bit negative control FIRES (receipted t = -894.9, in-repo control t = +882) — court proven non-vacuous. [docs/receipts/N08.json]
 N07|scoping|Prime+Probe-style concurrent eviction is a bounded host simulation of the attacker, not a hardware-counter proof on a fixed cache topology. [docs/receipts/N07.json]
-N08|scope|-
 N07|scope|-
-N09|mandate|SEU single-bit: 1M randomized flips; 100% fail-closed-or-halt; 0% SDC
 N08|mandate|Hamming weight/distance profile across successive states
 N08|specmap|Side-channel power profile (Hamming weight/distance)
-N09|specmap|DO-254/ED-80 SEU immunity; ECSS-E-ST-10-12 fault count
 N08|scoping|Every Hamming bin matches EXACTLY across high/low payload classes (Welch t = 0.0000, max per-bin diff/N = 0.000000); identity proven STRUCTURAL (kernel never reads OCEL64 above the activity byte); leaky +8-bit negative control FIRES (receipted t = -894.9, in-repo control t = +882) — court proven non-vacuous. [docs/receipts/N08.json]
 N08|scope|-
-N09|scoping|Spec 1M executed at FULL 1M scale (release <1s), no calibration. SDC defined as fault amplification (admitted output != lawful image of corrupted input), not 'any admitted corrupted word'. Real lane defect found and fixed: naive LCG '% n' bit-selection never selected the OCEL word (ocel=0/1M); court now samples high LCG bits (ocel=500287/1M). [docs/receipts/N09.json]
-N09|scope|-
 N09|mandate|SEU single-bit: 1M randomized flips; 100% fail-closed-or-halt; 0% SDC
-N10|mandate|SEU double-bit adjacent-lane flips vs forbidden-bit check; SDC == 0
 N09|specmap|DO-254/ED-80 SEU immunity; ECSS-E-ST-10-12 fault count
-N10|specmap|DO-254/ED-80 double-bit fault enforcement (latent faults)
-N10|scoping|Spec >=500k calibrated double-bit faults; delivered full 500,000 (168k exhaustive-adjacent + 40k adversarial bypass + 292k random non-adjacent), SDC 0.000%. [docs/receipts/N10.json]
-N10|scope|-
 N09|scoping|Spec 1M executed at FULL 1M scale (release <1s), no calibration. SDC defined as fault amplification (admitted output != lawful image of corrupted input), not 'any admitted corrupted word'. Real lane defect found and fixed: naive LCG '% n' bit-selection never selected the OCEL word (ocel=0/1M); court now samples high LCG bits (ocel=500287/1M). [docs/receipts/N09.json]
 N09|scope|-
 N10|mandate|SEU double-bit adjacent-lane flips vs forbidden-bit check; SDC == 0
-N11|mandate|Torn-write/bus-disconnect fuzz over the 64B CAS ring: recovery to valid prior state
 N10|specmap|DO-254/ED-80 double-bit fault enforcement (latent faults)
-N11|specmap|DO-178C L-A failure classification; atomic publication law
 N10|scoping|Spec >=500k calibrated double-bit faults; delivered full 500,000 (168k exhaustive-adjacent + 40k adversarial bypass + 292k random non-adjacent), SDC 0.000%. [docs/receipts/N10.json]
 N10|scope|-
-N11|scoping|Hammer tier is LCG-driven (torn injection ~1/8 of writes); outcome counts vary run-to-run (genuinely concurrent); garbage=0 invariant held across 3 receipted runs. Corruption injected via the pinned #[repr(C,align(64))] layout contract because slot fields are private. [docs/receipts/N11.json deviations]
 N11|mandate|Torn-write/bus-disconnect fuzz over the 64B CAS ring: recovery to valid prior state
-N11|scope|-
 N11|specmap|DO-178C L-A failure classification; atomic publication law
-N12|mandate|Clock-glitch: jittered tick sources; sequencer rejects time-travel
 N11|scoping|Hammer tier is LCG-driven (torn injection ~1/8 of writes); outcome counts vary run-to-run (genuinely concurrent); garbage=0 invariant held across 3 receipted runs. Corruption injected via the pinned #[repr(C,align(64))] layout contract because slot fields are private. [docs/receipts/N11.json deviations]
 N11|scope|-
-N12|specmap|DO-254 time integrity; monotonic-time law
 N12|mandate|Clock-glitch: jittered tick sources; sequencer rejects time-travel
-N12|scoping|Jitter classes bounded to the receipted generator's envelope (~1% backwards / 0-jump / huge-jump / duplicate ticks) — not an exhaustive glitch space. [docs/receipts/N12.json]
-N12|scope|-
 N12|specmap|DO-254 time integrity; monotonic-time law
-N13|mandate|WCET: static + measured cycles per opcode, <=12 cycles target
 N12|scoping|Jitter classes bounded to the receipted generator's envelope (~1% backwards / 0-jump / huge-jump / duplicate ticks) — not an exhaustive glitch space. [docs/receipts/N12.json]
 N12|scope|-
-N13|specmap|DO-178C L-A timing bounds (<=12 cycles/opcode)
 N13|mandate|WCET: static + measured cycles per opcode, <=12 cycles target
-N13|scoping|Measured cycles are host-CPU release-mode measurements, not a qualified static WCET analysis per DO-178C L-A; the measured table is published in the receipt. [docs/receipts/N13.json]
-N13|scope|-
 N13|specmap|DO-178C L-A timing bounds (<=12 cycles/opcode)
-N14|mandate|CAST-32A thrash: 16 adversarial threads vs sequencer; bounded max latency, zero deadlock
 N13|scoping|Measured cycles are host-CPU release-mode measurements, not a qualified static WCET analysis per DO-178C L-A; the measured table is published in the receipt. [docs/receipts/N13.json]
 N13|scope|-
-N14|specmap|CAST-32A / AMG 6C multicore interference; ARINC 653 partitioning
 N14|mandate|CAST-32A thrash: 16 adversarial threads vs sequencer; bounded max latency, zero deadlock
-N14|scoping|16 adversarial threads on a many-core host simulates CAST-32A MC/2 interference channels at software level — not a certified multicore interference analysis (MILS stack required). [docs/receipts/N14.json]
-N14|scope|-
 N14|specmap|CAST-32A / AMG 6C multicore interference; ARINC 653 partitioning
-N15|mandate|TLC liveness: box-diamond-admitted under weak fairness
 N14|scoping|16 adversarial threads on a many-core host simulates CAST-32A MC/2 interference channels at software level — not a certified multicore interference analysis (MILS stack required). [docs/receipts/N14.json]
 N14|scope|-
-N15|specmap|TLA+/TLC liveness (box-diamond under weak fairness)
 N15|mandate|TLC liveness: box-diamond-admitted under weak fairness
-N15|scoping|Delivered as a Rust property court over the full state graph (all interleavings enumerated), NOT the Erlang TLC model-checker named in the spec — the equivalence mapping to the TLC evidence class is disclosed. [docs/receipts/N15.json]
-N15|scope|-
 N15|specmap|TLA+/TLC liveness (box-diamond under weak fairness)
-N16|mandate|Stack bound: <=256B stack, zero recursion (call-graph analysis)
 N15|scoping|Delivered as a Rust property court over the full state graph (all interleavings enumerated), NOT the Erlang TLC model-checker named in the spec — the equivalence mapping to the TLC evidence class is disclosed. [docs/receipts/N15.json]
 N15|scope|-
-N16|specmap|DO-178C L-A resource/stack bound
 N16|mandate|Stack bound: <=256B stack, zero recursion (call-graph analysis)
 N16|specmap|DO-178C L-A resource/stack bound
 N16|scoping|Stack bound proven by call-graph/size analysis of the wasm kernel + zero-recursion census; not a qualified stack-usage tool output. [docs/receipts/N16.json]
 N16|scope|-
-N16|scoping|Stack bound proven by call-graph/size analysis of the wasm kernel + zero-recursion census; not a qualified stack-usage tool output. [docs/receipts/N16.json]
-N16|scope|-
-N17|mandate|FIPS 204 KAT: official NIST ML-DSA-65 vectors vs signer (vendored ACVP subset per E33)
 N17|mandate|FIPS 204 KAT: official NIST ML-DSA-65 vectors vs signer (vendored ACVP subset per E33)
 N17|specmap|FIPS 204 ML-DSA-65 KAT; ACVP; FIPS 140-3 module crypto
-N17|specmap|FIPS 204 ML-DSA-65 KAT; ACVP; FIPS 140-3 module crypto
-N17|scoping|Official NIST ML-DSA-65 KAT executed against a VENDORED ACVP SUBSET per E33 — the full NIST ACVP server protocol is NOT executed; vectors are official, transport is vendored. [docs/receipts/N17.json]
 N17|scoping|Official NIST ML-DSA-65 KAT executed against a VENDORED ACVP SUBSET per E33 — the full NIST ACVP server protocol is NOT executed; vectors are official, transport is vendored. [docs/receipts/N17.json]
 N17|scope|-
-N17|scope|-
 N18|mandate|Zero-entropy diagnostics: Shannon entropy of emitted error strings == 0 bits about internal state
-N18|mandate|Zero-entropy diagnostics: Shannon entropy of emitted error strings == 0 bits about internal state
-N18|specmap|NIST SP 800-90B entropy; zero-entropy diagnostics
 N18|specmap|NIST SP 800-90B entropy; zero-entropy diagnostics
 N18|scoping|55 diagnostic templates censused, leak-metric 0 (zero state-derived captures); runtime refusal strings byte-identical across 3 adversarial-input runs; exit-code vocabulary pinned. Leak-0 + determinism + address-ban jointly deliver the spec's 0-bit guarantee. [docs/receipts/N18.json]
 N18|scope|-
-N18|scoping|55 diagnostic templates censused, leak-metric 0 (zero state-derived captures); runtime refusal strings byte-identical across 3 adversarial-input runs; exit-code vocabulary pinned. Leak-0 + determinism + address-ban jointly deliver the spec's 0-bit guarantee. [docs/receipts/N18.json]
-N18|scope|-
-N19|mandate|Reproducible build: 3-environment SHA-256 identity (delivered same-host 2-run, disclosed)
 N19|mandate|Reproducible build: 3-environment SHA-256 identity (delivered same-host 2-run, disclosed)
 N19|specmap|Reproducible-build evidence class (SLSA / 3-env identity)
-N19|specmap|Reproducible-build evidence class (SLSA / 3-env identity)
 N19|scoping|Spec 3-environment identity NOT executed — delivered same-host two-run determinism (clean target dirs A/B, byte-identical pn_kernel.g0.wasm sha256 547ae4b0... and libstrata_protocol.rlib sha256 6ed8b14a...). 3-environment cross-toolchain identity = documented follow-up. [docs/receipts/N19.json scoping_law; docs/nato/N19_BUILD_RECEIPT.md]
-N19|scoping|Spec 3-environment identity NOT executed — delivered same-host two-run determinism (clean target dirs A/B, byte-identical pn_kernel.g0.wasm sha256 547ae4b0... and libstrata_protocol.rlib sha256 6ed8b14a...). 3-environment cross-toolchain identity = documented follow-up. [docs/receipts/N19.json scoping_law; docs/nato/N19_BUILD_RECEIPT.md]
-N19|scope|same-host-2-run scope; 3-env mandate NOT-RUN
 N19|scope|same-host-2-run scope; 3-env mandate NOT-RUN

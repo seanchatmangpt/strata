@@ -1,19 +1,18 @@
-N01|EXECUTED-GREEN|court re-executed this run|4|0|0|test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.53s
-N02|EXECUTED-GREEN|court re-executed this run|5|0|1|test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
-N03|EXECUTED-GREEN|court re-executed this run|-|-|0|test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.08s
+N01|EXECUTED-GREEN|court re-executed this run|4|0|1|test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.52s
+N02|EXECUTED-GREEN|court re-executed this run|5|0|0|test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+N03|EXECUTED-GREEN|court re-executed this run|-|-|1|test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.08s
 N04|EXECUTED-GREEN|banned-import census re-executed over state-path modules|-|-|0|receipted status PASS; live census clean
 N05|CITED-GREEN|receipted runtime ~95s exceeds 60s dossier budget; receipted verdict cited|2|0|0|receipted run tail: sha256:7c6812eac062916ddaed144af7ecf9a8d493afc0c676aaf80996f97f7c5e54cc
-N06|EXECUTED-GREEN|court re-executed this run|-|-|1|test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.16s
-N07|EXECUTED-GREEN|court re-executed this run|2|0|0|test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.34s
+N06|EXECUTED-GREEN|court re-executed this run|-|-|0|test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.18s
+N07|EXECUTED-GREEN|court re-executed this run|2|0|1|test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.34s
 N08|EXECUTED-GREEN|court re-executed this run|2|0|0|test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
-N09|EXECUTED-GREEN|court re-executed this run|1|0|1|test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
-N10|EXECUTED-GREEN|court re-executed this run|1|0|0|test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+N09|EXECUTED-GREEN|court re-executed this run|1|0|0|test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+N10|EXECUTED-GREEN|court re-executed this run|1|0|1|test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 N11|EXECUTED-GREEN|court re-executed this run|4|0|0|test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.06s
-N12|EXECUTED-GREEN|court re-executed this run|5|0|0|test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
-N13|EXECUTED-GREEN|court re-executed this run|3|0|6|test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 5.79s
-N14|EXECUTED-GREEN|court re-executed this run|2|0|2|test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.95s
-N15|EXECUTED-GREEN|court re-executed this run|6|0|0|test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.48s
-N16|EXECUTED-GREEN|court re-executed this run|4|0|1|test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
-N17|EXECUTED-GREEN|court re-executed this run|7|0|0|test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
-N18|EXECUTED-GREEN|court re-executed this run|3|0|1|test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.46s
-N19|EXECUTED-GREEN|court re-executed this run|-|-|43|live rerun green
+N12|EXECUTED-GREEN|court re-executed this run|5|0|0|test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+N13|EXECUTED-GREEN|court re-executed this run|3|0|4|test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.38s
+N14|EXECUTED-GREEN|court re-executed this run|2|0|1|test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.68s
+N15|EXECUTED-GREEN|court re-executed this run|6|0|0|test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.53s
+N16|EXECUTED-GREEN|court re-executed this run|4|0|0|test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+N17|EXECUTED-GREEN|court re-executed this run|7|0|0|test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+N18|EXECUTED-GREEN|court re-executed this run|3|0|1|test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.51s

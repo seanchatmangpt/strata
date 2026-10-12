@@ -170,6 +170,22 @@ warning: unused import: `strata_protocol::receipt`
 
 warning: `strata-protocol` (bin "bench_wire") generated 1 warning (run `cargo fix --bin "bench_wire" -p strata-protocol` to apply 1 suggestion)
 warning: `strata-protocol` (bin "strata") generated 1 warning (run `cargo fix --bin "strata" -p strata-protocol` to apply 1 suggestion)
-    Finished `release` profile [optimized] target(s) in 32.13s
+    Finished `release` profile [optimized] target(s) in 29.87s
 OK: pn_kernel.g0.wasm: imports = ∅
-shasum: : No such file or directory
+== N19 court: IDENTITY HOLDS ==
+{
+  "lane": "N19",
+  "status": "ALIVE",
+  "scope": "same-host two-run determinism (macOS); 3-environment identity NOT-RUN (needs Linux hosts, CI-lane follow-up)",
+  "host": "Darwin arm64 26.2",
+  "git_sha": "ee980ea38eb82f5b3180aff8c5f72a5b053d5d5b",
+  "toolchain": "nightly-2026-06-22",
+  "rustc": "rustc 1.98.0-nightly (91fe22da8 2026-06-21)",
+  "lockfile": {"path": "Cargo.lock", "sha256": "abaf6f66e6a54935c38ef4d79db89de84eef50601e711f46e218ebb6f75242dc", "flag": "--locked"},
+  "artifacts": [
+    {"name": "pn_kernel.g0.wasm", "sha256_a": "547ae4b02f6740c85d05407c0c4ca4851efe42544d03f65d0091e851caf5d269", "sha256_b": "547ae4b02f6740c85d05407c0c4ca4851efe42544d03f65d0091e851caf5d269", "bytes": "197", "identical": true},
+    {"name": "libstrata_protocol.rlib", "sha256_a": "6ed8b14a4e29525a5ba0644cb59b34ad1c7b47f8a3e74df6d79e67bbc07d0e05", "sha256_b": "6ed8b14a4e29525a5ba0644cb59b34ad1c7b47f8a3e74df6d79e67bbc07d0e05", "bytes": "2394992", "identical": true}
+  ],
+  "zero_dynamic_abi": {"wasm_imports": 0, "check": "wasm import-section count == 0 on both runs"},
+  "not_run": ["Ubuntu x86_64", "Alpine x86_64 (musl)"]
+}

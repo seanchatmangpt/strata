@@ -57,7 +57,7 @@ cited as evidence), never inferred. Digest + ML-DSA-65 signature: see
 |---|---|---|---|---|---|---|
 | N17 | EXECUTED-GREEN | 7 pass / 0 fail | EXECUTED 1s | - | FIPS 204 KAT: official NIST ML-DSA-65 vectors vs signer (vendored ACVP subset per E33) | FIPS 204 ML-DSA-65 KAT; ACVP; FIPS 140-3 module crypto |
 | N18 | EXECUTED-GREEN | 3 pass / 0 fail | EXECUTED 1s | - | Zero-entropy diagnostics: Shannon entropy of emitted error strings == 0 bits about internal state | NIST SP 800-90B entropy; zero-entropy diagnostics |
-| N19 | FAILED | - pass / - fail | live rerun rc=1 | same-host-2-run scope; 3-env mandate NOT-RUN | Reproducible build: 3-environment SHA-256 identity (delivered same-host 2-run, disclosed) | Reproducible-build evidence class (SLSA / 3-env identity) |
+| N19 | EXECUTED-GREEN | - pass / - fail | EXECUTED 58s | same-host-2-run scope; 3-env mandate NOT-RUN | Reproducible build: 3-environment SHA-256 identity (delivered same-host 2-run, disclosed) | Reproducible-build evidence class (SLSA / 3-env identity) |
 
 ## Honest-scoping register (spec figure -> delivered equivalent)
 
@@ -83,9 +83,8 @@ cited as evidence), never inferred. Digest + ML-DSA-65 signature: see
 
 ## Totals
 
-- EXECUTED-GREEN: 17
+- EXECUTED-GREEN: 18
 - CITED-GREEN: 1
-- FAILED: 1
 
 TOTAL courts covered: 19 of 19 (balance: no receipt landed / not qualified)
 

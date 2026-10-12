@@ -17,3 +17,4 @@ N16|EXECUTED-GREEN|court re-executed this run|4|0|0|test result: ok. 4 passed; 0
 N17|EXECUTED-GREEN|court re-executed this run|7|0|1|test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
 N18|EXECUTED-GREEN|court re-executed this run|3|0|1|Binary file docs/nato/.n20_run_N.log matches
 N19|FAILED|live rerun rc=1|-|-|58|see docs/nato/.n20_run_N.log
+N19|EXECUTED-GREEN|court re-executed this run (same-host-2-run scope; 3-env mandate NOT-RUN)|-|-|58|live rerun green

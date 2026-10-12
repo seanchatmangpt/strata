@@ -1,7 +1,11 @@
 warning: profiles for the non root package will be ignored, specify profiles at the workspace root:
 package:   /Users/sac/strata/temprun/pn_kernel/Cargo.toml
 workspace: /Users/sac/strata/Cargo.toml
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
 warning: unused import: `self`
+  --> strata_protocol/swarning: unused import: `self`
   --> strata_protocol/src/trace_slice.rs:17:22
    |
 17 | use crate::logsink::{self, LogEntry};
@@ -49,14 +53,6 @@ warning: comparison is useless due to type limits
 warning: `strata-protocol` (lib) generated 1 warning (run `cargo fix --lib -p strata-protocol` to apply 1 suggestion)
 warning: `strata-protocol` (lib) generated 1 warning (1 duplicate)
 warning: `strata-protocol` (lib test) generated 4 warnings
-warning: unused import: `strata_protocol::receipt`
-  --> strata_protocol/src/bin/strata.rs:39:5
-   |
-39 | use strata_protocol::receipt;
-   |     ^^^^^^^^^^^^^^^^^^^^^^^^
-   |
-   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
-
 warning: unused variable: `seed`
    --> strata_protocol/tests/cas_ring_fuzz_court.rs:109:5
     |
@@ -71,17 +67,57 @@ warning: unused variable: `drained`
 152 |             let drained = Arc::clone(&drained);
     |                 ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_drained`
 
-warning: `strata-protocol` (bin "strata" test) generated 1 warning (run `cargo fix --bin "strata" -p strata-protocol --tests` to apply 1 suggestion)
+warning: variable does not need to be mutable
+  --> strata_protocol/tests/mutation_ltl_court.rs:54:9
+   |
+54 |     let mut step = |mark: u16, tid: u8, activity: u16, ticks: &mut u8| {
+   |         ----^^^^
+   |         |
+   |         help: remove this `mut`
+   |
+   = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
 warning: `strata-protocol` (test "cas_ring_fuzz_court") generated 2 warnings (run `cargo fix --test "cas_ring_fuzz_court" -p strata-protocol` to apply 2 suggestions)
-warning: unused variable: `refused`
-   --> strata_protocol/tests/mutation_wormhole_court.rs:192:32
+warning: `strata-protocol` (test "mutation_ltl_court") generated 1 warning (run `cargo fix --test "mutation_ltl_court" -p strata-protocol` to apply 1 suggestion)
+warning: calls to `std::mem::forget` with a value that implements `Copy` does nothing
+   --> strata_protocol/tests/mutation_cas_ring_court.rs:261:5
     |
-192 | fn m4_delta_len(wh: &Wormhole, refused: &WormholeDelta) -> usize {
-    |                                ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_refused`
+261 |     std::mem::forget(leaked); // leave the slot CLAIMED, uncommitted
+    |     ^^^^^^^^^^^^^^^^^------^
+    |                      |
+    |                      argument has type `SlotId`
+    |
+    = note: `#[warn(forgetting_copy_types)]` on by default
+help: use `let _ = ...` to ignore the expression or result
+    |
+261 -     std::mem::forget(leaked); // leave the slot CLAIMED, uncommitted
+261 +     let _ = leaked; // leave the slot CLAIMED, uncommitted
+    |
+
+warning: unused variable: `get`
+  --> strata_protocol/tests/nato/n02_coordinate_orthogonality.rs:79:24
+   |
+79 |         for (k, (name, get, set)) in Dims::axes().into_iter().enumerate() {
+   |                        ^^^ help: if this is intentional, prefix it with an underscore: `_get`
+   |
+   = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `s`
+   --> strata_protocol/tests/nato/n17_fips204_kat.rs:442:13
+    |
+442 |         let s = Signer::from_seed(kat_seed(seed_hex));
+    |             ^ help: if this is intentional, prefix it with an underscore: `_s`
     |
     = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
 
-warning: `strata-protocol` (test "mutation_wormhole_court") generated 1 warning (run `cargo fix --test "mutation_wormhole_court" -p strata-protocol` to apply 1 suggestion)
+warning: unused variable: `race_id`
+  --> strata_protocol/tests/concurrent_race_court.rs:80:13
+   |
+80 | fn run_race(race_id: usize, seed: u64) -> Settled {
+   |             ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_race_id`
+   |
+   = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
 warning: unused variable: `pending`
   --> strata_protocol/tests/precedence_court.rs:83:30
    |
@@ -112,14 +148,62 @@ warning: comparison is useless due to type limits
 199 |             assert!(t.post <= 0xFFFF, "post mask out of 16-bit range");
     |                     ^^^^^^^^^^^^^^^^
 
-warning: unused variable: `adjourn`
-   --> strata_protocol/tests/ronr_extension_court.rs:141:9
-    |
-141 |     let adjourn = ronr::lookup(0x0A).unwrap();
-    |         ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_adjourn`
-    |
-    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+warning: `strata-protocol` (test "mutation_cas_ring_court") generated 1 warning
+warning: `strata-protocol` (test "n02_coordinate_orthogonality") generated 1 warning (run `cargo fix --test "n02_coordinate_orthogonality" -p strata-protocol` to apply 1 suggestion)
+warning: `strata-protocol` (test "n17_fips204_kat") generated 1 warning (run `cargo fix --test "n17_fips204_kat" -p strata-protocol` to apply 1 suggestion)
+warning: `strata-protocol` (test "concurrent_race_court") generated 1 warning (run `cargo fix --test "concurrent_race_court" -p strata-protocol` to apply 1 suggestion)
+warning: `strata-protocol` (test "precedence_court") generated 4 warnings (run `cargo fix --test "precedence_court" -p strata-protocol` to apply 1 suggestion)
+warning: unused import: `strata_protocol::receipt`
+  --> strata_protocol/src/bin/strata.rs:39:5
+   |
+39 | use strata_protocol::receipt;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
 
+warning: field `storm_wall_s` is never read
+  --> strata_protocol/tests/nato/n07_cache_sidechannel.rs:51:5
+   |
+44 | struct Pass {
+   |        ---- field in this struct
+...
+51 |     storm_wall_s: f64,
+   |     ^^^^^^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `strata-protocol` (bin "strata" test) generated 1 warning (run `cargo fix --bin "strata" -p strata-protocol --tests` to apply 1 suggestion)
+warning: `strata-protocol` (test "n07_cache_sidechannel") generated 1 warning
+warning: unused import: `strata_protocol::receipt`
+  --> strata_protocol/src/bin/bench_wire.rs:17:5
+   |
+17 | use strata_protocol::receipt;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: variable does not need to be mutable
+  --> strata_protocol/tests/slot_layout_court.rs:24:9
+   |
+24 |     let mut boxes: Vec<Box<Slot>> = (0..8).map(|_| Box::new(Slot::new())).collect();
+   |         ----^^^^^
+   |         |
+   |         help: remove this `mut`
+   |
+   = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `pk`
+  --> strata_protocol/tests/mutation_logchain_court.rs:66:9
+   |
+66 |     let pk = signer.public_key();
+   |         ^^ help: if this is intentional, prefix it with an underscore: `_pk`
+   |
+   = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: `strata-protocol` (bin "bench_wire") generated 1 warning (run `cargo fix --bin "bench_wire" -p strata-protocol` to apply 1 suggestion)
+warning: `strata-protocol` (test "slot_layout_court") generated 1 warning (run `cargo fix --test "slot_layout_court" -p strata-protocol` to apply 1 suggestion)
+warning: `strata-protocol` (bin "bench_wire" test) generated 1 warning (1 duplicate)
+warning: `strata-protocol` (test "mutation_logchain_court") generated 1 warning (run `cargo fix --test "mutation_logchain_court" -p strata-protocol` to apply 1 suggestion)
 warning: constant `EXPECTED` is never used
   --> strata_protocol/tests/ronr_mutation_court.rs:48:7
    |
@@ -134,66 +218,15 @@ warning: function `accepted` is never used
 82 | fn accepted(mutations: &[Mutation]) -> bool {
    |    ^^^^^^^^
 
-warning: field `storm_wall_s` is never read
-  --> strata_protocol/tests/nato/n07_cache_sidechannel.rs:51:5
-   |
-44 | struct Pass {
-   |        ---- field in this struct
-...
-51 |     storm_wall_s: f64,
-   |     ^^^^^^^^^^^^
-   |
-   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
-
-warning: unused variable: `next_m`
-   --> strata_protocol/tests/mutation_crosslang_court.rs:116:9
+warning: `strata-protocol` (test "ronr_mutation_court") generated 2 warnings
+warning: unused variable: `adjourn`
+   --> strata_protocol/tests/ronr_extension_court.rs:141:9
     |
-116 |     let next_m = (m ^ pre) | post;
-    |         ^^^^^^ help: if this is intentional, prefix it with an underscore: `_next_m`
+141 |     let adjourn = ronr::lookup(0x0A).unwrap();
+    |         ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_adjourn`
     |
     = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
 
-warning: variable does not need to be mutable
-   --> strata_protocol/tests/nato/n01_mils_separation.rs:220:13
-    |
-220 |         let mut tid = lcg.below(1 << 8) as u8;
-    |             ----^^^
-    |             |
-    |             help: remove this `mut`
-    |
-    = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
-
-warning: unused variable: `pk`
-  --> strata_protocol/tests/mutation_logchain_court.rs:66:9
-   |
-66 |     let pk = signer.public_key();
-   |         ^^ help: if this is intentional, prefix it with an underscore: `_pk`
-   |
-   = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
-
-warning: `strata-protocol` (test "precedence_court") generated 4 warnings (run `cargo fix --test "precedence_court" -p strata-protocol` to apply 1 suggestion)
-warning: `strata-protocol` (test "ronr_extension_court") generated 1 warning (run `cargo fix --test "ronr_extension_court" -p strata-protocol` to apply 1 suggestion)
-warning: `strata-protocol` (test "ronr_mutation_court") generated 2 warnings
-warning: `strata-protocol` (test "n07_cache_sidechannel") generated 1 warning
-warning: `strata-protocol` (test "mutation_crosslang_court") generated 1 warning (run `cargo fix --test "mutation_crosslang_court" -p strata-protocol` to apply 1 suggestion)
-warning: `strata-protocol` (test "n01_mils_separation") generated 1 warning (run `cargo fix --test "n01_mils_separation" -p strata-protocol` to apply 1 suggestion)
-warning: `strata-protocol` (test "mutation_logchain_court") generated 1 warning (run `cargo fix --test "mutation_logchain_court" -p strata-protocol` to apply 1 suggestion)
-warning: calls to `std::mem::forget` with a value that implements `Copy` does nothing
-   --> strata_protocol/tests/mutation_cas_ring_court.rs:261:5
-    |
-261 |     std::mem::forget(leaked); // leave the slot CLAIMED, uncommitted
-    |     ^^^^^^^^^^^^^^^^^------^
-    |                      |
-    |                      argument has type `SlotId`
-    |
-    = note: `#[warn(forgetting_copy_types)]` on by default
-help: use `let _ = ...` to ignore the expression or result
-    |
-261 -     std::mem::forget(leaked); // leave the slot CLAIMED, uncommitted
-261 +     let _ = leaked; // leave the slot CLAIMED, uncommitted
-    |
-
-warning: `strata-protocol` (test "mutation_cas_ring_court") generated 1 warning
 warning: unused variable: `w_post_masked`
    --> strata_protocol/tests/mutation_branchless_court.rs:150:9
     |
@@ -216,65 +249,36 @@ warning: function `mutant_conformance_drops_0xFF` should have a snake case name
 195 | fn mutant_conformance_drops_0xFF(pn: u64, ocel: u64, invariant_mask: u64) -> u64 {
     |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `mutant_conformance_drops_0x_ff`
 
-warning: variable does not need to be mutable
-  --> strata_protocol/tests/slot_layout_court.rs:24:9
-   |
-24 |     let mut boxes: Vec<Box<Slot>> = (0..8).map(|_| Box::new(Slot::new())).collect();
-   |         ----^^^^^
-   |         |
-   |         help: remove this `mut`
-   |
-   = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
-
+warning: `strata-protocol` (test "ronr_extension_court") generated 1 warning (run `cargo fix --test "ronr_extension_court" -p strata-protocol` to apply 1 suggestion)
 warning: `strata-protocol` (test "mutation_branchless_court") generated 3 warnings (run `cargo fix --test "mutation_branchless_court" -p strata-protocol` to apply 1 suggestion)
-warning: `strata-protocol` (test "slot_layout_court") generated 1 warning (run `cargo fix --test "slot_layout_court" -p strata-protocol` to apply 1 suggestion)
-warning: unused import: `strata_protocol::receipt`
-  --> strata_protocol/src/bin/bench_wire.rs:17:5
-   |
-17 | use strata_protocol::receipt;
-   |     ^^^^^^^^^^^^^^^^^^^^^^^^
-   |
-   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
-
-warning: unused variable: `get`
-  --> strata_protocol/tests/nato/n02_coordinate_orthogonality.rs:79:24
-   |
-79 |         for (k, (name, get, set)) in Dims::axes().into_iter().enumerate() {
-   |                        ^^^ help: if this is intentional, prefix it with an underscore: `_get`
-   |
-   = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
-
-warning: unused variable: `s`
-   --> strata_protocol/tests/nato/n17_fips204_kat.rs:442:13
+warning: unused variable: `next_m`
+   --> strata_protocol/tests/mutation_crosslang_court.rs:116:9
     |
-442 |         let s = Signer::from_seed(kat_seed(seed_hex));
-    |             ^ help: if this is intentional, prefix it with an underscore: `_s`
+116 |     let next_m = (m ^ pre) | post;
+    |         ^^^^^^ help: if this is intentional, prefix it with an underscore: `_next_m`
     |
     = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
 
-warning: `strata-protocol` (bin "bench_wire") generated 1 warning (run `cargo fix --bin "bench_wire" -p strata-protocol` to apply 1 suggestion)
-warning: `strata-protocol` (test "n02_coordinate_orthogonality") generated 1 warning (run `cargo fix --test "n02_coordinate_orthogonality" -p strata-protocol` to apply 1 suggestion)
-warning: `strata-protocol` (test "n17_fips204_kat") generated 1 warning (run `cargo fix --test "n17_fips204_kat" -p strata-protocol` to apply 1 suggestion)
-warning: `strata-protocol` (bin "strata") generated 1 warning (1 duplicate)
-warning: unused variable: `race_id`
-  --> strata_protocol/tests/concurrent_race_court.rs:80:13
-   |
-80 | fn run_race(race_id: usize, seed: u64) -> Settled {
-   |             ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_race_id`
-   |
-   = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
-
 warning: variable does not need to be mutable
-  --> strata_protocol/tests/mutation_ltl_court.rs:54:9
-   |
-54 |     let mut step = |mark: u16, tid: u8, activity: u16, ticks: &mut u8| {
-   |         ----^^^^
-   |         |
-   |         help: remove this `mut`
-   |
-   = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+   --> strata_protocol/tests/nato/n01_mils_separation.rs:220:13
+    |
+220 |         let mut tid = lcg.below(1 << 8) as u8;
+    |             ----^^^
+    |             |
+    |             help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
 
-warning: `strata-protocol` (test "concurrent_race_court") generated 1 warning (run `cargo fix --test "concurrent_race_court" -p strata-protocol` to apply 1 suggestion)
-warning: `strata-protocol` (bin "bench_wire" test) generated 1 warning (1 duplicate)
-warning: `strata-protocol` (test "mutation_ltl_court") generated 1 warning (run `cargo fix --test "mutation_ltl_court" -p strata-protocol` to apply 1 suggestion)
-    Finished `release` profile [optimized] target(s) in 0.13s
+warning: unused variable: `refused`
+   --> strata_protocol/tests/mutation_wormhole_court.rs:192:32
+    |
+192 | fn m4_delta_len(wh: &Wormhole, refused: &WormholeDelta) -> usize {
+    |                                ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_refused`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: `strata-protocol` (test "mutation_crosslang_court") generated 1 warning (run `cargo fix --test "mutation_crosslang_court" -p strata-protocol` to apply 1 suggestion)
+warning: `strata-protocol` (test "n01_mils_separation") generated 1 warning (run `cargo fix --test "n01_mils_separation" -p strata-protocol` to apply 1 suggestion)
+warning: `strata-protocol` (bin "strata") generated 1 warning (1 duplicate)
+warning: `strata-protocol` (test "mutation_wormhole_court") generated 1 warning (run `cargo fix --test "mutation_wormhole_court" -p strata-protocol` to apply 1 suggestion)
+    Finished `release` profile [optimized] target(s) in 0.34s

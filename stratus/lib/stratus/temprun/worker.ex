@@ -134,6 +134,8 @@ defmodule Stratus.Temprun.Worker do
           optional(:refusal) => refusal(),
           optional(:pending) => :gen_statem.from(),
           optional(:bridge_dead) => boolean(),
+          optional(:init_timeout) => pos_integer(),
+          optional(:stall_timeout) => pos_integer(),
           port: port() | nil,
           model: binary(),
           quota: pos_integer(),
@@ -167,6 +169,17 @@ defmodule Stratus.Temprun.Worker do
   # bridge cannot wedge the session forever — on expiry the worker returns
   # to :stepping (the next step/1 re-arms the bridge round-trip).
   @yield_timeout 5_000
+
+  # Init window (T15): if the bridge accepts the New frame but never replies
+  # with the Newed handle, the worker would sit in :init forever. On expiry
+  # the worker seals with the same :bridge_down refusal as a dead bridge.
+  @init_timeout 30_000
+
+  # Bridge-stall window (T15): a Step/Seal frame the bridge accepts but never
+  # answers must not wedge a pending caller. Armed with `pending`, cleared on
+  # the matching reply; on expiry the worker seals :bridge_down (fail-closed,
+  # pending caller replied first).
+  @bridge_stall_timeout 60_000
 
   # -- Client API ------------------------------------------------------------
 
@@ -237,9 +250,17 @@ defmodule Stratus.Temprun.Worker do
               # arrives. The port message is decoded in handle_event(:info, ...).
               send_frame(port, <<@tag_new>> <> model)
 
+              # T15: bound the New round-trip. If the bridge accepted the New
+              # frame but never answers, this timer seals :bridge_down instead
+              # of wedging in :init forever.
+              init_timeout = Keyword.get(opts, :init_timeout, @init_timeout)
+
               {:ok, :init,
                %{port: port, model: model, quota: quota, buf: <<>>, pending: nil,
-                 handle: nil, receipt: nil, refusal: nil, bridge_dead: false}}
+                 handle: nil, receipt: nil, refusal: nil, bridge_dead: false,
+                 init_timeout: init_timeout,
+                 stall_timeout: Keyword.get(opts, :stall_timeout, @bridge_stall_timeout)},
+               [{{:timeout, :init_bridge}, init_timeout, :init_expired}]}
 
           {:error, _} ->
             {:stop, :bridge_down}
@@ -284,7 +305,11 @@ defmodule Stratus.Temprun.Worker do
 
   def handle_event({:call, from}, :step, :stepping, data) do
     send_frame(data.port, <<@tag_step, session_handle(data)::little-64, data.quota::little-32>>)
-    {:keep_state, %{data | pending: from}}
+
+    # T15: bound the Step round-trip — a bridge that accepts the frame but
+    # never answers must not wedge the pending caller.
+    {:keep_state, %{data | pending: from},
+     [{{:timeout, :bridge_stall}, data.stall_timeout, :stalled}]}
   end
 
   def handle_event({:call, from}, :step, :yielding, data) do
@@ -297,7 +322,7 @@ defmodule Stratus.Temprun.Worker do
 
   def handle_event({:call, from}, :seal, state, data) when state in [:stepping, :yielding] do
     send_frame(data.port, <<@tag_seal, session_handle(data)::little-64>>)
-    {:keep_state, %{data | pending: from}}
+    {:keep_state, %{data | pending: from}, [{{:timeout, :bridge_stall}, data.stall_timeout, :stalled}]}
   end
 
   def handle_event({:call, from}, :registers, state, data) when state in [:stepping, :yielding] do
@@ -319,6 +344,20 @@ defmodule Stratus.Temprun.Worker do
   # Yield expiry: return to :stepping; nothing else changes.
   def handle_event({:timeout, :yield}, :yield_expired, :yielding, data) do
     {:next_state, :stepping, data}
+  end
+
+  # Init expiry (T15): the bridge accepted New but never replied with the
+  # handle — same fail-closed lane as bridge death (pending caller, if any,
+  # is replied first; here pending is always nil, but the path is shared).
+  def handle_event({:timeout, :init_bridge}, :init_expired, :init, data) do
+    seal_with_refusal(data, :bridge_down)
+  end
+
+  # Bridge-stall expiry (T15): a Step/Seal accepted but never answered —
+  # fail closed exactly like bridge death; the pending caller is replied
+  # with {:error, :bridge_down} before the seal.
+  def handle_event({:timeout, :bridge_stall}, :stalled, _state, data) do
+    seal_with_refusal(data, :bridge_down)
   end
 
   # -- Fail-closed: bridge death -------------------------------------------------
@@ -412,7 +451,11 @@ defmodule Stratus.Temprun.Worker do
       <<@tag_new, handle::little-64>> ->
         # Handle in hand: leave :init for :stepping (the trajectory's first
         # hop). Remaining buffered frames decode under the live-state clause.
-        {:next_state, :stepping, %{data | handle: handle, buf: <<>>}}
+        # The init timer is cancelled explicitly: a named event timer is not
+        # implicitly dropped by this transition, and a late :init_expired in
+        # :stepping has no clause (it would crash the worker).
+        {:next_state, :stepping, %{data | handle: handle, buf: <<>>},
+         [{{:timeout, :init_bridge}, :cancel}]}
 
       <<@tag_error, _errno::little-32>> ->
         seal_with_refusal(%{data | buf: <<>>}, :bridge_down)
@@ -437,8 +480,10 @@ defmodule Stratus.Temprun.Worker do
         else
           # Violation/Trap latch Faulted host-side (errno 10 Error frame next
           # Step); Complete stays live and sealable — New→Step(Complete)→Seal
-          # is the happy path.
-          {:keep_state, %{data | pending: nil, buf: <<>>}}
+          # is the happy path. keep_state does not cancel event timers, so the
+          # stall timer is cancelled explicitly here.
+          {:keep_state, %{data | pending: nil, buf: <<>>},
+           [{{:timeout, :bridge_stall}, :cancel}]}
         end
 
       # Sealed: <<handle::le-64, status::8, dlen::le-16, digest::dlen, wire?>

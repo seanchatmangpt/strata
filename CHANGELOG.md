@@ -1,6 +1,6 @@
 # Changelog
 
-## 26.10.11 — 2026-10-11 (release, tag v26.10.11 @ 12fc104)
+## 26.10.11 — 2026-10-11 (release, tag v26.10.11 @ e0e7f19)
 
 - Merger cohort: temprun bridge, BEAM agent cohort, sagas, receipt
   store, live courts — stratus 306/0 (1ac493d).

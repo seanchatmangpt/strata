@@ -16,3 +16,4 @@ N15|EXECUTED-GREEN|court re-executed this run|6|0|0|test result: ok. 6 passed; 0
 N16|EXECUTED-GREEN|court re-executed this run|4|0|0|test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
 N17|EXECUTED-GREEN|court re-executed this run|7|0|0|test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
 N18|EXECUTED-GREEN|court re-executed this run|3|0|1|test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.51s
+N19|EXECUTED-GREEN|court re-executed this run (same-host-2-run scope; 3-env mandate NOT-RUN)|-|-|24|live rerun green

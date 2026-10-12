@@ -1,4 +1,4 @@
-ML-DSA-65 signature. Subject: DOSSIER.md body sha256 0ad741e556359d24a8313b79c4b206dc3afd267db28f1be17982553659dc6d11
+ML-DSA-65 signature. Subject: DOSSIER.md body sha256 256332662f664c521b8fccc89915db47378122c600e4ca4491b95aaeadfcf8c5
 Seed: demonstration seed sha256("strata-nato-n20-dossier")[:64] (NOT a production key).
 Payload: parent=digest(32B) || universe=sha256("strata-nato-n20")(32B) || fuel=0
 Verify (manual): derive pubkey from seed via strata_protocol::signer::Signer::from_seed, then strata verify <pub> payload sig

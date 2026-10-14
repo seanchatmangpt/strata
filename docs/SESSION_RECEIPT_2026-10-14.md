@@ -1119,3 +1119,64 @@ Moving-HEAD window convention per addenda 11-14 applies.
 **Session falsifier** (standing, unchanged): any cited SHA failing
 `git log --no-walk` in its owning repo at replay, or session count
 drifting without a superseding addendum.
+
+## Addendum-16 — wave-14 dedupe pass vs addenda 5-15 (append-only)
+
+Addendum-15 landed at `49eb503` before this lane wrote; numbering advances
+per the read-file-first convention. Every SHA below was verified resolving
+(`git log --no-walk --oneline`) and cross-checked against addenda 5-15 by
+on-disk grep before this addendum was written. Wave-14's landing list is
+status/report-only: zero new code SHAs beyond the prior addendum's own
+receipt commit.
+
+### New this addendum — report-only findings and witness statuses
+
+| Item | SHA | Repo | Verification |
+|---|---|---|---|
+| Addendum-15 receipt commit itself (only commit after `88d5d8b` at write) | `49eb503` | strata | resolves (HEAD `49eb503`); 0 prior mentions |
+
+No other zero-prior-mention objects exist in `548a0bf..HEAD` at write.
+
+### Wave-14 findings (report-only — no subjects landed this wave)
+
+- **supervisor/pn_frame audit — findings reported, fix lane IN-FLIGHT**:
+  two findings, report-only per dispatch. (1) `:one_for_one` crash-path
+  disclosure gap — restart-intensity / crash-path behavior is not disclosed
+  at the documented surface; (2) `admit_agent` bad_phase — the phase guard
+  admits on a bad-phase path. The owning fix lane has landed no commit in
+  `548a0bf..HEAD` at write; addenda 14-15 listed this audit as IN-FLIGHT,
+  the findings themselves are first recorded here. No fix SHA exists to
+  cite — the finding pair IS this addendum's receipt for the audit lane.
+- **nfr4 idle-window spot-check: PASS under load 16** (no commit; witness
+  status over the already-receipted nfr4 subject `8adb9b6`, line 288).
+  First recorded here as a status, not a new object.
+- **ocel_xml audit, reactor-final audit, graphlaw health check — still
+  IN-FLIGHT** (carried unchanged from addendum-15's in-flight list; no
+  findings or commits to receipt yet).
+
+### Covered by addenda 5-15 (deduped, verified resolving)
+
+- court-naming sweep `60285b2` (addendum-14 covered list).
+- record_burn ceiling `40f6155` + 4/4 witness (addendum-14 line 1021,
+  re-deduped by addendum-15).
+- receipts-hygiene doc `1c1d053` + closure `fa6a228` (addendum-14 lines
+  1027-1028, re-deduped by addendum-15).
+- receipts index `20f9329`, README counts `e344d3d`, CHANGELOG sweep
+  `545303d`, exit-code contract `ba40b42` (addenda 13-15 covered lists).
+
+### In flight at write
+
+- supervisor/pn_frame fix lane (findings above, owning lane).
+- worker.ex lifecycle SX7 F1-F4 — no worker.ex commit in `548a0bf..HEAD`
+  at write (addenda 14-15 in-flight notes stand).
+- ocel_xml audit, reactor-final audit, graphlaw health check.
+
+### Session status and totals
+
+Session range `git log --oneline 548a0bf..HEAD | wc -l` = **139** at write
+(HEAD `49eb503`); post-commit total 140 with this receipt commit.
+Moving-HEAD window convention per addenda 11-15 applies.
+
+**Session falsifier** (standing, unchanged): any cited SHA failing
+`git log --no-walk` in its owning repo at replay, or session count
+drifting without a superseding addendum.

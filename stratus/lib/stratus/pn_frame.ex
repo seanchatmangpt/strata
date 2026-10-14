@@ -11,6 +11,18 @@ defmodule Stratus.PnFrame do
 
   Decode fails closed: any input that is not exactly 16 bytes returns
   `{:error, :bad_frame}`.
+
+  Known contract notes (documented, deliberately no behavior change):
+
+    - `:bad_frame` collapses both failure classes — non-binary input and
+      wrong-size binary — into one discriminator. Zero-entropy by design:
+      callers only need frame-shaped bytes, so size detail would be unused
+      entropy on the wire surface.
+
+    - `encode/2` silently truncates values >= 2^64: the `::64-little`
+      construction keeps only the low 64 bits. Guarding would change the
+      ABI surface; this is a caller contract violation instead — callers
+      passing PN64/OCEL64 words from the law are always <= 2^64 - 1.
   """
 
   @frame_size 16

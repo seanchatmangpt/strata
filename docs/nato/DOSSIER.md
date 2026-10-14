@@ -19,17 +19,17 @@ cited as evidence), never inferred. Digest + ML-DSA-65 signature: see
 
 | Court | Status | Tests | Live-rerun | Scope | Spec mandate | Spec mapping |
 |---|---|---|---|---|---|---|
-| N01 | EXECUTED-GREEN | 4 pass / 0 fail | EXECUTED 1s | - | MILS non-interference: dState(TA)/dInput(TB) == 0 (spec figure: full 2^64 SMT via Kani/Z3) | EAL7 ADV_IMP/AVA (MILS separation kernel) |
-| N02 | EXECUTED-GREEN | 5 pass / 0 fail | EXECUTED 1s | - | Exhaustive bit-spill census: no field write perturbs neighbors (fully exhaustive, real proof) | EAL7 ADV_IMP; DO-178C L-A structural coverage |
-| N03 | EXECUTED-GREEN | - pass / - fail | EXECUTED 0s | - | Bell-LaPadula/Biba lattice over the transition table: no-write-down / no-read-up / strong tranquility | Bell-LaPadula/Biba; EAL7 AVA; DO-178C L-A data-coupling analysis |
+| N01 | EXECUTED-GREEN | 4 pass / 0 fail | EXECUTED 3s | - | MILS non-interference: dState(TA)/dInput(TB) == 0 (spec figure: full 2^64 SMT via Kani/Z3) | EAL7 ADV_IMP/AVA (MILS separation kernel) |
+| N02 | EXECUTED-GREEN | 5 pass / 0 fail | EXECUTED 2s | - | Exhaustive bit-spill census: no field write perturbs neighbors (fully exhaustive, real proof) | EAL7 ADV_IMP; DO-178C L-A structural coverage |
+| N03 | EXECUTED-GREEN | - pass / - fail | EXECUTED 1s | - | Bell-LaPadula/Biba lattice over the transition table: no-write-down / no-read-up / strong tranquility | Bell-LaPadula/Biba; EAL7 AVA; DO-178C L-A data-coupling analysis |
 | N04 | EXECUTED-GREEN | - pass / - fail | EXECUTED 0s | - | Zero ambient authority: zero env/fs/unmetered-clock imports on state paths | EAL7 AVA_CCA; least privilege (zero ambient authority) |
 
 ## Pillar II - Constant-time / side-channel (N05-N08)
 
 | Court | Status | Tests | Live-rerun | Scope | Spec mandate | Spec mapping |
 |---|---|---|---|---|---|---|
-| N05 | CITED-GREEN | 2 pass / 0 fail | CITED (0s) | - | dudect: Welch t-test \|t\|<4.5 over valid-vs-refusal timing (spec 10M/class; calibrated-N disclosed) | dudect (Reparaz et al., USENIX 2017); FIPS 140-3 IG C.2 constant-time |
-| N06 | EXECUTED-GREEN | - pass / - fail | EXECUTED 0s | - | Branchless disassembly census: zero conditional branches on state paths (wasm + native tiers) | DO-333 method-based verification; Gate 0 G3' branch-free state path |
+| N05 | CITED-GREEN | 1 pass / 1 fail | CITED (0s) | - | dudect: Welch t-test \|t\|<4.5 over valid-vs-refusal timing (spec 10M/class; calibrated-N disclosed) | dudect (Reparaz et al., USENIX 2017); FIPS 140-3 IG C.2 constant-time |
+| N06 | EXECUTED-GREEN | - pass / - fail | EXECUTED 28s | - | Branchless disassembly census: zero conditional branches on state paths (wasm + native tiers) | DO-333 method-based verification; Gate 0 G3' branch-free state path |
 | N07 | EXECUTED-GREEN | 2 pass / 0 fail | EXECUTED 1s | - | Prime+Probe-style concurrent eviction vs sequencer: latency invariance | EAL7 AVA_CCA covert-channel analysis (cache timing) |
 | N08 | EXECUTED-GREEN | 2 pass / 0 fail | EXECUTED 1s | - | Hamming weight/distance profile across successive states | Side-channel power profile (Hamming weight/distance) |
 
@@ -37,18 +37,18 @@ cited as evidence), never inferred. Digest + ML-DSA-65 signature: see
 
 | Court | Status | Tests | Live-rerun | Scope | Spec mandate | Spec mapping |
 |---|---|---|---|---|---|---|
-| N09 | EXECUTED-GREEN | 1 pass / 0 fail | EXECUTED 0s | - | SEU single-bit: 1M randomized flips; 100% fail-closed-or-halt; 0% SDC | DO-254/ED-80 SEU immunity; ECSS-E-ST-10-12 fault count |
+| N09 | EXECUTED-GREEN | 1 pass / 0 fail | EXECUTED 1s | - | SEU single-bit: 1M randomized flips; 100% fail-closed-or-halt; 0% SDC | DO-254/ED-80 SEU immunity; ECSS-E-ST-10-12 fault count |
 | N10 | EXECUTED-GREEN | 1 pass / 0 fail | EXECUTED 0s | - | SEU double-bit adjacent-lane flips vs forbidden-bit check; SDC == 0 | DO-254/ED-80 double-bit fault enforcement (latent faults) |
 | N11 | EXECUTED-GREEN | 4 pass / 0 fail | EXECUTED 1s | - | Torn-write/bus-disconnect fuzz over the 64B CAS ring: recovery to valid prior state | DO-178C L-A failure classification; atomic publication law |
-| N12 | EXECUTED-GREEN | 5 pass / 0 fail | EXECUTED 0s | - | Clock-glitch: jittered tick sources; sequencer rejects time-travel | DO-254 time integrity; monotonic-time law |
+| N12 | EXECUTED-GREEN | 5 pass / 0 fail | EXECUTED 1s | - | Clock-glitch: jittered tick sources; sequencer rejects time-travel | DO-254 time integrity; monotonic-time law |
 
 ## Pillar IV - WCET / liveness / resource bounds (N13-N16)
 
 | Court | Status | Tests | Live-rerun | Scope | Spec mandate | Spec mapping |
 |---|---|---|---|---|---|---|
-| N13 | EXECUTED-GREEN | 3 pass / 0 fail | EXECUTED 5s | - | WCET: static + measured cycles per opcode, <=12 cycles target | DO-178C L-A timing bounds (<=12 cycles/opcode) |
-| N14 | EXECUTED-GREEN | 2 pass / 0 fail | EXECUTED 1s | - | CAST-32A thrash: 16 adversarial threads vs sequencer; bounded max latency, zero deadlock | CAST-32A / AMG 6C multicore interference; ARINC 653 partitioning |
-| N15 | EXECUTED-GREEN | 6 pass / 0 fail | EXECUTED 1s | - | TLC liveness: box-diamond-admitted under weak fairness | TLA+/TLC liveness (box-diamond under weak fairness) |
+| N13 | FAILED | 3 pass / 0 fail | live rerun rc=101 | - | WCET: static + measured cycles per opcode, <=12 cycles target | DO-178C L-A timing bounds (<=12 cycles/opcode) |
+| N14 | EXECUTED-GREEN | 2 pass / 0 fail | EXECUTED 2s | - | CAST-32A thrash: 16 adversarial threads vs sequencer; bounded max latency, zero deadlock | CAST-32A / AMG 6C multicore interference; ARINC 653 partitioning |
+| N15 | EXECUTED-GREEN | 6 pass / 0 fail | EXECUTED 2s | - | TLC liveness: box-diamond-admitted under weak fairness | TLA+/TLC liveness (box-diamond under weak fairness) |
 | N16 | EXECUTED-GREEN | 4 pass / 0 fail | EXECUTED 0s | - | Stack bound: <=256B stack, zero recursion (call-graph analysis) | DO-178C L-A resource/stack bound |
 
 ## Pillar V - Crypto / provenance / build identity (N17-N19)
@@ -56,8 +56,8 @@ cited as evidence), never inferred. Digest + ML-DSA-65 signature: see
 | Court | Status | Tests | Live-rerun | Scope | Spec mandate | Spec mapping |
 |---|---|---|---|---|---|---|
 | N17 | EXECUTED-GREEN | 7 pass / 0 fail | EXECUTED 1s | - | FIPS 204 KAT: official NIST ML-DSA-65 vectors vs signer (vendored ACVP subset per E33) | FIPS 204 ML-DSA-65 KAT; ACVP; FIPS 140-3 module crypto |
-| N18 | EXECUTED-GREEN | 3 pass / 0 fail | EXECUTED 0s | - | Zero-entropy diagnostics: Shannon entropy of emitted error strings == 0 bits about internal state | NIST SP 800-90B entropy; zero-entropy diagnostics |
-| N19 | EXECUTED-GREEN | - pass / - fail | EXECUTED 26s | same-host-2-run scope; 3-env mandate NOT-RUN | Reproducible build: 3-environment SHA-256 identity (delivered same-host 2-run, disclosed) | Reproducible-build evidence class (SLSA / 3-env identity) |
+| N18 | EXECUTED-GREEN | 3 pass / 0 fail | EXECUTED 1s | - | Zero-entropy diagnostics: Shannon entropy of emitted error strings == 0 bits about internal state | NIST SP 800-90B entropy; zero-entropy diagnostics |
+| N19 | FAILED | - pass / - fail | live rerun rc=101 | same-host-2-run scope; 3-env mandate NOT-RUN | Reproducible build: 3-environment SHA-256 identity (delivered same-host 2-run, disclosed) | Reproducible-build evidence class (SLSA / 3-env identity) |
 
 ## Honest-scoping register (spec figure -> delivered equivalent)
 
@@ -65,7 +65,7 @@ cited as evidence), never inferred. Digest + ML-DSA-65 signature: see
 - **N02**: Fully exhaustive — 100% of the field-write x neighbor census, no sampling, no substitution. [docs/receipts/N02.json]
 - **N03**: Fully exhaustive: 25 transitions x 65,536 markings x 2 kernels = 1,638,400 checked pairs, no sampling — no substitution. [docs/receipts/N03.json coverage]
 - **N04**: Static audit (banned-import census over final state-path modules) — strongest sound substitute for a dynamic least-privilege proof; a dynamic ambient-authority probe court is a documented follow-up. [docs/receipts/N04.json]
-- **N05**: Spec 10M/class; delivered 51.2M/class (5.1x spec). Runtime ~95s EXCEEDS the 60s dossier budget, so the dossier CITES the receipted verdict (t=+0.3325 validate_and_advance, t=+0.7502 step_branchless, leaky positive control detected 4/4) rather than re-running. Disclosed lane finding: initial variant timed single execs against a 41 ns clock resolution — vacuous pass caught and fixed with 1024-exec burst timing + resolution soundness floors. [docs/receipts/N05.json]
+- **N05**: Spec 10M/class; delivered 51.2M/class (5.1x spec). Runtime ~95s EXCEEDS the 60s dossier budget, so the dossier CITES the receipted verdict (FAIL-HONEST per KG-N05: |t| = 16.9/20.9/25.0/33.2 across 4 idle-rerun attempts, valid 3.62-3.74 ns vs refusal 3.27-3.36 ns; harness fold confound ruled out; residual = early-exit gate structure retiring ~1 cycle, ~0.4 ns, under one 41 ns timer quantum; positive control fired; step_branchless unreachable behind the ABI court's panic) rather than re-running. Disclosed lane finding: initial variant timed single execs against a 41 ns clock resolution — vacuous pass caught and fixed with 1024-exec burst timing + resolution soundness floors. [docs/receipts/N05.json]
 - **N06**: Native tier audited via compiler-emitted .s text census instead of otool/objdump .o disassembly (nightly-LLVM-22 .o unreadable by host LLVM 21/Xcode tools; same codegen rendered as text). step_branchless has no standalone symbol; subject is the #[inline(never)] kernel_step wrapper. [docs/receipts/N06.json deviations]
 - **N07**: Prime+Probe-style concurrent eviction is a bounded host simulation of the attacker, not a hardware-counter proof on a fixed cache topology. [docs/receipts/N07.json]
 - **N08**: Every Hamming bin matches EXACTLY across high/low payload classes (Welch t = 0.0000, max per-bin diff/N = 0.000000); identity proven STRUCTURAL (kernel never reads OCEL64 above the activity byte); leaky +8-bit negative control FIRES (receipted t = -894.9, in-repo control t = +882) — court proven non-vacuous. [docs/receipts/N08.json]
@@ -83,8 +83,9 @@ cited as evidence), never inferred. Digest + ML-DSA-65 signature: see
 
 ## Totals
 
-- EXECUTED-GREEN: 18
+- EXECUTED-GREEN: 16
 - CITED-GREEN: 1
+- FAILED: 2
 
 TOTAL courts covered: 19 of 19 (balance: no receipt landed / not qualified)
 

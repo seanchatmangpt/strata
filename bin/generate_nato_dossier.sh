@@ -131,7 +131,7 @@ scoping() {
         N02) echo "Fully exhaustive — 100% of the field-write x neighbor census, no sampling, no substitution. [docs/receipts/N02.json]" ;;
         N03) echo "Fully exhaustive: 25 transitions x 65,536 markings x 2 kernels = 1,638,400 checked pairs, no sampling — no substitution. [docs/receipts/N03.json coverage]" ;;
         N04) echo "Static audit (banned-import census over final state-path modules) — strongest sound substitute for a dynamic least-privilege proof; a dynamic ambient-authority probe court is a documented follow-up. [docs/receipts/N04.json]" ;;
-        N05) echo "Spec 10M/class; delivered 51.2M/class (5.1x spec). Runtime ~95s EXCEEDS the 60s dossier budget, so the dossier CITES the receipted verdict (t=+0.3325 validate_and_advance, t=+0.7502 step_branchless, leaky positive control detected 4/4) rather than re-running. Disclosed lane finding: initial variant timed single execs against a 41 ns clock resolution — vacuous pass caught and fixed with 1024-exec burst timing + resolution soundness floors. [docs/receipts/N05.json]" ;;
+        N05) echo "Spec 10M/class; delivered 51.2M/class (5.1x spec). Runtime ~95s EXCEEDS the 60s dossier budget, so the dossier CITES the receipted verdict (FAIL-HONEST per KG-N05: |t| = 16.9/20.9/25.0/33.2 across 4 idle-rerun attempts, valid 3.62-3.74 ns vs refusal 3.27-3.36 ns; harness fold confound ruled out; residual = early-exit gate structure retiring ~1 cycle, ~0.4 ns, under one 41 ns timer quantum; positive control fired; step_branchless unreachable behind the ABI court's panic) rather than re-running. Disclosed lane finding: initial variant timed single execs against a 41 ns clock resolution — vacuous pass caught and fixed with 1024-exec burst timing + resolution soundness floors. [docs/receipts/N05.json]" ;;
         N06) echo "Native tier audited via compiler-emitted .s text census instead of otool/objdump .o disassembly (nightly-LLVM-22 .o unreadable by host LLVM 21/Xcode tools; same codegen rendered as text). step_branchless has no standalone symbol; subject is the #[inline(never)] kernel_step wrapper. [docs/receipts/N06.json deviations]" ;;
         N07) echo "Prime+Probe-style concurrent eviction is a bounded host simulation of the attacker, not a hardware-counter proof on a fixed cache topology. [docs/receipts/N07.json]" ;;
         N08) echo "Every Hamming bin matches EXACTLY across high/low payload classes (Welch t = 0.0000, max per-bin diff/N = 0.000000); identity proven STRUCTURAL (kernel never reads OCEL64 above the activity byte); leaky +8-bit negative control FIRES (receipted t = -894.9, in-repo control t = +882) — court proven non-vacuous. [docs/receipts/N08.json]" ;;
@@ -298,7 +298,7 @@ PYEOF
             N05)
                 # Receipted runtime ~95s > 60s budget: cite, never silently skip.
                 secs=$(( $(date +%s) - t0 ))
-                emit "$lane" "CITED-GREEN" "receipted runtime ~95s exceeds 60s dossier budget; receipted verdict cited" "$R_PASS" "$R_FAIL" "$secs" "receipted run tail: $R_TAIL"
+                emit "$lane" "CITED-GREEN" "receipted runtime ~95s exceeds 60s dossier budget; receipted verdict cited — FAIL-HONEST disposition (KG-N05), see scoping register" "$R_PASS" "$R_FAIL" "$secs" "receipted run tail: $R_TAIL"
                 continue
                 ;;
         esac

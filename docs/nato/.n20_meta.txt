@@ -16,7 +16,7 @@ N04|scoping|Static audit (banned-import census over final state-path modules) �
 N04|scope|-
 N05|mandate|dudect: Welch t-test |t|<4.5 over valid-vs-refusal timing (spec 10M/class; calibrated-N disclosed)
 N05|specmap|dudect (Reparaz et al., USENIX 2017); FIPS 140-3 IG C.2 constant-time
-N05|scoping|Spec 10M/class; delivered 51.2M/class (5.1x spec). Runtime ~95s EXCEEDS the 60s dossier budget, so the dossier CITES the receipted verdict (t=+0.3325 validate_and_advance, t=+0.7502 step_branchless, leaky positive control detected 4/4) rather than re-running. Disclosed lane finding: initial variant timed single execs against a 41 ns clock resolution — vacuous pass caught and fixed with 1024-exec burst timing + resolution soundness floors. [docs/receipts/N05.json]
+N05|scoping|Spec 10M/class; delivered 51.2M/class (5.1x spec). Runtime ~95s EXCEEDS the 60s dossier budget, so the dossier CITES the receipted verdict (FAIL-HONEST per KG-N05: |t| = 16.9/20.9/25.0/33.2 across 4 idle-rerun attempts, valid 3.62-3.74 ns vs refusal 3.27-3.36 ns; harness fold confound ruled out; residual = early-exit gate structure retiring ~1 cycle, ~0.4 ns, under one 41 ns timer quantum; positive control fired; step_branchless unreachable behind the ABI court's panic) rather than re-running. Disclosed lane finding: initial variant timed single execs against a 41 ns clock resolution — vacuous pass caught and fixed with 1024-exec burst timing + resolution soundness floors. [docs/receipts/N05.json]
 N05|scope|-
 N06|mandate|Branchless disassembly census: zero conditional branches on state paths (wasm + native tiers)
 N06|specmap|DO-333 method-based verification; Gate 0 G3' branch-free state path

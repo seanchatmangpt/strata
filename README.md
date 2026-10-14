@@ -8,7 +8,7 @@ SELECT/CONSTRUCT/DO separation).
 
 | Component | Standing | Evidence |
 |---|---|---|
-| `strata_protocol/` PDU/quads/receipt/refusal/signer | ALIVE | counts re-verify at use: `cargo test -p strata-protocol --no-fail-fast` (98 test binaries / 856 `#[test]` fns on disk 2026-10-13; 399/0 across 40 suites witnessed on this branch — see the PN64 row). Wire constants verified in code: 64 B header, magic `0x434C_4150`, receipt 3381 B, refusal 32 B, ML-DSA-65 signature 3309 B. Absolute ns bench gates are REPORT-ONLY since 2026-10-13 (27b6e75, scheduler-bound at the 0.41 ns floor); ratio + structural gates remain normative. |
+| `strata_protocol/` PDU/quads/receipt/refusal/signer | ALIVE | counts re-verify at use: `cargo test -p strata-protocol --no-fail-fast` (101 test binaries / 879 `#[test]` fns on disk 2026-10-14; 399/0 across 40 suites witnessed on this branch — see the PN64 row). Wire constants verified in code: 64 B header, magic `0x434C_4150`, receipt 3381 B, refusal 32 B, ML-DSA-65 signature 3309 B. Absolute ns bench gates are REPORT-ONLY since 2026-10-13 (27b6e75, scheduler-bound at the 0.41 ns floor); ratio + structural gates remain normative. |
 | `strata` CLI binary | ALIVE | `strata_protocol/src/bin/strata.rs` — verbs `pdu inspect`, `pdu verify` (full-frame KG-01 refusal surface), `sign`, `verify`, `receipt verify`, `cas put`, `cas get`, `query` (SPARQL SELECT over ontology.ttl, TSV out, zero-entropy typed refusals); 42 `#[test]` fns in `strata_cli_test.rs` (counted 2026-10-13); golden query court `query_golden_court` 4/0. |
 | `stratus/` release build | ALIVE | `MIX_ENV=prod mix release stratus` works (`docs/RELEASE.md`, incl. stale-config recovery note). |
 | `temprun/` fuel/clock/coords/conformance/git/receipt | ALIVE | `cargo test -p temprun`: 55 passed, 0 failed (1 ignored) incl. conformance/git/clock module courts; wasm32 build 18,351 bytes, imports = ∅ verified byte-level (`just check-wasm-imports`). |
@@ -80,6 +80,8 @@ re-locked 2026-10-13; `ggen receipt verify` fully-bound, idempotent dry-run
 clean). Note: ggen 26.10.11's consumer side resolves `.tmpl` templates only
 — pack edits must keep a `.tmpl` companion (landed as comment-only
 README.tmpl) until ggen learns `.tera`.
+
+Receipt path convention (repo content vs run artifacts): `docs/RECEIPTS_DIRS.md`.
 
 ## Verification doctrine
 

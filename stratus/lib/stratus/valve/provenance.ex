@@ -128,7 +128,7 @@ defmodule Stratus.Valve.Provenance do
             obj_iri = Map.get(table.by_id, oid, "#{base}o_#{oid}")
 
             "  ocel:hasObject <#{obj_iri}> ;\n" <>
-              "  ocel:qualifier \"#{qual}\" ;\n"
+              "  ocel:qualifier \"#{escape_literal(qual)}\" ;\n"
           end)
 
         {:ok,
@@ -137,5 +137,26 @@ defmodule Stratus.Valve.Provenance do
            objects <>
            "  ex:tick #{ev.tick} .\n"}
     end
+  end
+
+  # Turtle STRING_LITERAL_QUOTE escaping for qualifier literals: the four
+  # mandated escapes (\\, \", \n, \r) plus \uXXXX for every other control
+  # character below 0x20 (a raw control char inside a quoted literal is a
+  # grammar violation in Turtle and silently corrupts the graph). Bytes
+  # >= 0x20 (including all UTF-8) pass through verbatim. Integer parity
+  # vectors (the only shared canonical bytes) are unaffected: digits never
+  # escape.
+  defp escape_literal(qual) do
+    qual
+    |> to_string()
+    |> String.codepoints()
+    |> Enum.map_join(fn
+      "\\" -> "\\\\"
+      "\"" -> "\\\""
+      "\n" -> "\\n"
+      "\r" -> "\\r"
+      <<c>> when c < 0x20 -> "\\u" <> String.pad_leading(Integer.to_string(c, 16), 4, "0")
+      g -> g
+    end)
   end
 end

@@ -67,6 +67,20 @@ Live defects found by the second-order sweep (routed to owning lanes):
   strata_protocol/src/pnml.rs:25-37,327-330; courts
   strata_protocol/tests/pnml_langsec_court.rs + pnml_fuzz_court.rs.
 - BEAM/Rust Turtle parity coincidental: id-source divergence (E23)
+  — CLOSED 2026-10-13: no consumer breaks. Every consumer now keys on the
+  IRI fragment, never on label/comment: ontology-queries/pn_transitions.rq
+  and strata_protocol/tests/query_golden_court.rs both use
+  STRAFTER(STR(?t), "#"); stratus/test/ronr_parity_court.exs regex-captures
+  the pn:(\w+) fragment. The pack queries that originally hit the divergence
+  (ggen-marketplace packs/strata-pn64-pack queries/places.rq + transitions.rq
+  + deadlock_candidates.rq) already tolerate it — rdfs:label is OPTIONAL with
+  the divergence documented in-file. Real-execution evidence (rdflib vs
+  ontology.ttl, 383 triples): places 16 rows (0 labeled, tolerated),
+  transitions 25 rows (0 labeled, tolerated), dao_verbs 9, deadlock 8
+  (matches documented 8-row measurement). Courts green:
+  query_golden_court 4 passed, ronr_parity_court 9 passed. Individuals
+  carrying pn:bitOffset/pn:opcode only is the convention; no normalization
+  of ontology.ttl required.
 - fielddelta varint courted but unwired — NFR-3 stays GAP though fix exists (E28)
   — CLOSED-at-implementation 2026-10-13: `pack_quads_varint_delta`/
   `unpack_quads_varint_delta` + SPV1 packed-blob emit landed in

@@ -182,16 +182,19 @@ defmodule Stratus.Valve.DefaultArena do
     end
   end
 
-  defp malformed(tmpdir, output) do
+  # n18 zero-entropy refusal logging: the log line is a fixed string — no
+  # frame-derived or wrapper-stdout-derived content (output is discarded).
+  # Refusal classification is the typed error atom only.
+  defp malformed(tmpdir, _output) do
     require Logger
-    Logger.warning("temprun_arena: malformed frame rejected by wrapper: #{inspect(output)}")
+    Logger.warning("temprun_arena: malformed frame rejected by wrapper")
     _ = tmpdir
     {:error, :malformed_frame}
   end
 
-  defp arena_failure(tmpdir, output) do
+  defp arena_failure(tmpdir, _output) do
     require Logger
-    Logger.warning("temprun_arena: wrapper failure: #{inspect(output)}")
+    Logger.warning("temprun_arena: wrapper failure")
     _ = tmpdir
     {:error, :arena_failure}
   end

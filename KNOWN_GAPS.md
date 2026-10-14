@@ -77,7 +77,16 @@ FR/NFR test files. Companions: `docs/COURT_ADJUDICATIONS.md` (ledger),
   kept; Phase A re-adjudicated to the ambiguity bound (lawful outcomes =
   1000/1000 at p≈2%, or refuse-at-k+1 with the fail-closed trio).
   ESCALATED STRUCTURAL FINDING: the guest universe digest binds only
-  (tree_entries, parent, message) — nonce and payload do not enter
+  (tree_entries, parent, message) — enumerated 2026-10-14
+  (receipt/git audit): absent from the preimage are lineage, policy,
+  clock, observed, candidate_mask, lease_mask (every other ArenaInput
+  field). Consequence: two frames with identical tree/parent/message but
+  different policy or clock produce byte-identical receipts — an
+  admitted receipt does not attest its decision inputs, and ParentLedger
+  cannot distinguish them. A nonce-only extension is UNSOUND (breaks
+  zero-entropy determinism unless input-derived, at which point it is a
+  frame hash); the sound fix extends `assemble`'s signature and is a
+  digest-definition wire-law change — nonce and payload do not enter
   `git::assemble`'s digest preimage, so after a register freeze on a
   colliding successor every subsequent frame replays the identical colliding
   digest. Remediation (bind nonce + frame hash into the preimage) is a

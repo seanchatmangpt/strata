@@ -27,11 +27,23 @@
 //!
 //! # Deviation (documented)
 //!
-//! `0x93` carries the ERRC2 G2 spec masks verbatim
-//! (`pre: DELEGATED|DELEGATION_PENDING, post: DELEGATED`); because `pre`
-//! does not include `MEMBER_ACTIVE`, firing it clears the pending bit while
-//! `MEMBER_ACTIVE` survives via the token-retention law
-//! `m' = (m ^ W-) | W+` (from `0x0828`: `(0x0828 ^ 0x0808) | 0x0008 = 0x0028`).
+//! `0x93` carries the ERRC2 G2 consumer-leg masks
+//! (`pre: DELEGATED|DELEGATION_PENDING, post: DELEGATED`) WIDENED for
+//! closure totality (defect-fix lane, policy_admission court): under the
+//! pnabi law (`(m & W-) == W-` to enable, `m' = (m ^ W-) | W+`), the
+//! verbatim masks orphanize the pending place whenever UNDELEGATE `0x91`
+//! fires between CHAIN_DELEGATE and ACK — `0x0828 -> 0x91 -> 0x0820` no
+//! longer matches `pre 0x0808` and `0x0800` is stuck forever. Fix: `pre`
+//! is relaxed to `0x0800` (`DELEGATION_PENDING` alone) and `post` to
+//! `0x0000`. W- carries the pending bit, so the XOR law drains it from
+//! ANY pending marking (`0x0828 -> 0x0028`: `DELEGATED` survives in the
+//! marking; `0x0820 -> 0x0020`: you cannot ack a delegation you already
+//! undelegated — the pending token is consumed and the member simply
+//! remains `MEMBER_ACTIVE`). `0x91`'s row cannot take the fix: the first
+//! 13 entries are byte-identical to `dao_transitions::DAO` (asserted), and
+//! post masks only OR bits under `m' = (m ^ W-) | W+` — they cannot clear.
+//! Totality: every marking `m` with `m & 0x0800 != 0` enables `0x93`, so
+//! no reachable pending state is stuck.
 
 use crate::dao_transitions::{self, DaoTransition};
 
@@ -43,8 +55,11 @@ pub const VERB_CHAIN_DELEGATE: u8 = 0x92;
 
 /// Ack-delegation (verb `0x93`, AdoptDelegation-style closure): the pending
 /// delegation is acknowledged and `DELEGATED` is (re)confirmed — the consumer
-/// leg of the closure. Pre `0x0808` = `DELEGATED|DELEGATION_PENDING`,
-/// post `0x0008` = `DELEGATED`.
+/// leg of the closure. Pre `0x0800` = `DELEGATION_PENDING`, post `0x0000`:
+/// W- carries the pending bit, so the XOR law drains it from any pending
+/// marking — `DELEGATED` survives when present (`0x0828 -> 0x0028`) and is
+/// simply absent after a prior undelegate (`0x0820 -> 0x0020`). See the
+/// module-level deviation note for the closure-totality rationale.
 pub const VERB_ACK_DELEGATION: u8 = 0x93;
 
 /// Extended DAO transition table: dao_transitions' 13 verbs plus 2 new verbs
@@ -79,8 +94,8 @@ pub const DAO_FULL: [DaoTransition; 15] = [
     DaoTransition {
         verb: VERB_ACK_DELEGATION,
         noun_scope: 0x34,
-        pre: dao_transitions::P_DELEGATED | dao_transitions::P_DELEGATION_PENDING, // 0x0808
-        post: dao_transitions::P_DELEGATED,                                        // 0x0008
+        pre: dao_transitions::P_DELEGATION_PENDING, // 0x0800
+        post: 0x0000,
     },
 ];
 
@@ -223,12 +238,48 @@ mod tests {
         // ChainDelegate 0x92: 0x0028 -> 0x0828 (DELEGATION_PENDING minted)
         let next = validate_step(next, ocel(VERB_CHAIN_DELEGATE)).unwrap();
         assert_eq!(pn64::marking(next), 0x0828);
-        // AckDelegation 0x93: 0x0828 -> (0^...) | 0x0008-cycle back to 0x0028
+        // AckDelegation 0x93: 0x0828 -> (0x0828 ^ 0x0800) | 0x0000 = 0x0028
+        // (DELEGATED survives in the marking via the XOR retention law).
         let next = validate_step(next, ocel(VERB_ACK_DELEGATION)).unwrap();
         assert_eq!(pn64::marking(next), 0x0028);
         // The closure is a cycle: 0x92 can fire again from 0x0028.
         let again = validate_step(next, ocel(VERB_CHAIN_DELEGATE)).unwrap();
         assert_eq!(pn64::marking(again), 0x0828);
+    }
+
+    #[test]
+    fn undelegate_between_delegate_and_ack_does_not_orphanize_pending() {
+        // THE defect-fix witness (policy_admission court finding): the
+        // pre-fix masks left DELEGATION_PENDING stuck at 0x0820 forever.
+        // Admit 0x96 -> 0x0020, delegate 0x90 -> 0x0028, chain 0x92 -> 0x0828.
+        let next = validate_step(pn(0, 0x96), ocel(0x96)).unwrap();
+        let next = validate_step(next, ocel(0x90)).unwrap();
+        let next = validate_step(next, ocel(VERB_CHAIN_DELEGATE)).unwrap();
+        assert_eq!(pn64::marking(next), 0x0828);
+        // Undelegate 0x91: 0x0828 -> 0x0820 (the state that used to orphanize
+        // the pending place).
+        let next = validate_step(next, ocel(0x91)).unwrap();
+        assert_eq!(pn64::marking(next), 0x0820);
+        // AckDelegation 0x93: 0x0820 -> (0x0820 ^ 0x0800) | 0x0000 = 0x0020 —
+        // the pending token is consumed; you cannot ack what you undelegated.
+        let next = validate_step(next, ocel(VERB_ACK_DELEGATION)).unwrap();
+        assert_eq!(pn64::marking(next), 0x0020);
+        // And the net is live again: re-delegate fires.
+        let next = validate_step(next, ocel(0x90)).unwrap();
+        assert_eq!(pn64::marking(next), 0x0028);
+        // Closure totality (positive control): pre is exactly 0x0800, so 0x93
+        // is enabled at EVERY marking holding the pending bit.
+        let t = lookup(VERB_ACK_DELEGATION).unwrap();
+        assert_eq!(t.pre, P_DELEGATION_PENDING);
+        assert_eq!(t.post, 0x0000);
+        for extra in [0x0000u16, 0x0008, 0x0020, 0x0028, 0x0030, 0x4000, 0x4FFF & !0x0080] {
+            let m = P_DELEGATION_PENDING | extra;
+            assert_eq!(
+                m & t.pre,
+                t.pre,
+                "0x93 must be enabled at every pending marking, failed at {m:#06x}"
+            );
+        }
     }
 
     #[test]

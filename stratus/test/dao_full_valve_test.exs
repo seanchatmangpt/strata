@@ -37,7 +37,7 @@ defmodule Stratus.Valve.DaoFullTest do
     0x77 => {@p_member_active, bor(@p_member_active, 0x0004)},
     0x92 => {bor(@p_member_active, @p_delegated),
              bor(@p_member_active, bor(@p_delegated, @p_delegation_pending))},
-    0x93 => {bor(@p_delegated, @p_delegation_pending), @p_delegated}
+    0x93 => {@p_delegation_pending, 0x0000}
   }
 
   defp ocel(verb), do: Pn64.pack_ocel(0x0100 + verb, 0x0046, 0x0055, 0x00, 0x41)
@@ -113,13 +113,37 @@ defmodule Stratus.Valve.DaoFullTest do
     {:ok, next} = DaoFull.validate_step(next, ocel(0x92))
     assert Pn64.marking(next) == 0x0828
 
-    # AckDelegation 0x93: 0x0828 -> (0x0828 ^ 0x0808) | 0x0008 = 0x0028
+    # AckDelegation 0x93: 0x0828 -> (0x0828 ^ 0x0800) | 0x0000 = 0x0028
+    # (DELEGATED survives in the marking via the XOR retention law)
     {:ok, next} = DaoFull.validate_step(next, ocel(0x93))
     assert Pn64.marking(next) == 0x0028
 
     # The closure is a cycle: 0x92 can fire again from 0x0028.
     {:ok, again} = DaoFull.validate_step(next, ocel(0x92))
     assert Pn64.marking(again) == 0x0828
+  end
+
+  test "undelegate between delegate and ack does not orphanize pending" do
+    # THE defect-fix witness (policy_admission court finding): pre-fix masks
+    # left DELEGATION_PENDING stuck at 0x0820 forever.
+    {:ok, next} = DaoFull.validate_step(pn(0, 0x96), ocel(0x96))
+    {:ok, next} = DaoFull.validate_step(next, ocel(0x90))
+    {:ok, next} = DaoFull.validate_step(next, ocel(0x92))
+    assert Pn64.marking(next) == 0x0828
+
+    # Undelegate 0x91: 0x0828 -> 0x0820 (the state that used to orphanize
+    # the pending place).
+    {:ok, next} = DaoFull.validate_step(next, ocel(0x91))
+    assert Pn64.marking(next) == 0x0820
+
+    # AckDelegation 0x93: 0x0820 -> (0x0820 ^ 0x0800) | 0x0000 = 0x0020 —
+    # the pending token is consumed; you cannot ack what you undelegated.
+    {:ok, next} = DaoFull.validate_step(next, ocel(0x93))
+    assert Pn64.marking(next) == @p_member_active
+
+    # The net is live again: re-delegate fires.
+    {:ok, next} = DaoFull.validate_step(next, ocel(0x90))
+    assert Pn64.marking(next) == 0x0028
   end
 
   test "starve laws" do

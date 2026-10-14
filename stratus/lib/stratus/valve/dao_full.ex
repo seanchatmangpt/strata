@@ -8,8 +8,19 @@ defmodule Stratus.Valve.DaoFull do
   the delegation sector and close the orphaned place `DELEGATION_PENDING
   0x0800` — previously produced by zero transitions — with a producer
   (`0x92` ChainDelegate: pre `0x0028` -> post `0x0828`) and a consumer
-  (`0x93` AckDelegation, AdoptDelegation-style closure: pre `0x0808` -> post
-  `0x0008`). No new place bit is minted; no existing bit meaning redefined.
+  (`0x93` AckDelegation: pre `0x0800` -> post `0x0000`). No new place bit is
+  minted; no existing bit meaning redefined.
+
+  `0x93` mask deviation (defect-fix lane, mirrors dao_full.rs): the ERRC2 G2
+  verbatim masks (`pre 0x0808, post 0x0008`) orphanized the pending place
+  whenever `0x91` Undelegate fired between `0x92` and `0x93` (`0x0828 ->
+  0x0820` no longer matched pre `0x0808` — pending stuck forever). Under the
+  law `(m & pre) == pre` to enable, `m' = (m ^ pre) | post`, `pre 0x0800` /
+  `post 0x0000` drains the pending bit from ANY pending marking:
+  `0x0828 -> 0x0028` (DELEGATED survives), `0x0820 -> 0x0020` (you cannot
+  ack what you undelegated). `0x91` cannot take the fix — it is pinned
+  byte-identical to the base table and post masks only OR bits.
+
   The verb/noun namespace split on `0x92`/`0x93` matches the documented
   shared opcode space (see `docs/PN64_RONR_MAP.md`).
   """
@@ -39,9 +50,11 @@ defmodule Stratus.Valve.DaoFull do
     %{verb: 0x95, pre: 0x0010, post: 0x0020},
     %{verb: 0x96, pre: 0x0000, post: 0x0020},
     %{verb: 0x97, pre: 0x0020, post: 0x4000},
-    # G2 delegation closure (dao_full.rs extension legs).
+    # G2 delegation closure (dao_full.rs extension legs). 0x93 drains the
+    # pending bit from any pending marking (defect-fix deviation — see the
+    # moduledoc); DELEGATED survives via the XOR retention law.
     %{verb: 0x92, pre: 0x0028, post: 0x0828},
-    %{verb: 0x93, pre: 0x0808, post: 0x0008}
+    %{verb: 0x93, pre: 0x0800, post: 0x0000}
   ]
 
   @verb_map Map.new(@dao_full, fn t -> {t.verb, t} end)

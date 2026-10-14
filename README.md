@@ -88,3 +88,31 @@ Receipt path convention (repo content vs run artifacts): `docs/RECEIPTS_DIRS.md`
 Chicago TDD, zero mocks, wasm Imports = empty set, constant-time refusal,
 Six Sigma process capability targets (Cp >= 2.0, Cpk >= 1.5) — see the
 status table for which targets are currently met.
+
+### CLI exit-code contract
+
+Every `strata` verb (`pdu inspect`, `pdu verify`, `sign`, `verify`,
+`receipt verify`, `cas put`, `cas get`, `query`) honors one exit-code
+contract, defined by the constants at
+`strata_protocol/src/bin/strata.rs:49-50`:
+
+| Exit | Constant | Meaning |
+|---|---|---|
+| `0` | — | success: the operation completed and its result is on stdout |
+| `1` | `EX_VERIFY_FAIL` | the input parsed but failed verification (bad signature, digest mismatch, KG-01 permutation refusal) |
+| `2` | `EX_USAGE` | bad arguments, unreadable files, or malformed input that never parsed |
+
+Examples: `strata verify <pub> <msg> <sig>` exits `0` when the signature
+verifies and `1` when it does not; `strata pdu verify corrupt.bin` exits
+`1` on a well-lengthed frame with a bad segment permutation; `strata cas
+get <dir> <not-hex-oid>` exits `2` because the oid never parsed.
+
+Discipline note (n18, zero-entropy diagnostics): a refusal never writes
+to stdout — the diagnostic goes to stderr only, so downstream consumers
+can pipe stdout through a refusal unmodified. Empty stdout on refusal is
+asserted directly by both fuzz courts,
+`strata_protocol/tests/cli_refusal_fuzz_court.rs` (every mutation of a
+valid frame refuses `EX_VERIFY_FAIL`, never exit 0, never a signal) and
+`strata_protocol/tests/sign_refusal_fuzz_court.rs` (every mutation of a
+valid sign invocation refuses `EX_USAGE` with non-empty stderr and empty
+stdout).

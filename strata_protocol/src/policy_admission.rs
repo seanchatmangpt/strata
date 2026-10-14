@@ -120,24 +120,15 @@ pub fn unsafe_predicate(
     }
 }
 
-/// Default admission over the canonical unsafe predicate.
+/// Lawful admission: BFS over the marking space; `PolicyAdmitted` iff zero
+/// path from the seed touches an unsafe state. The vacuity-court mutation
+/// twin (`skip`-one-edge variant) lives in
+/// `tests/policy_admission_court.rs` as a test-only mirror — this production
+/// surface carries no test-only parameter.
 pub fn admit_marking_reachability(
     seed: u16,
     transitions: &[DaoTransition],
     unsafe_fn: &dyn Fn(u16) -> bool,
-) -> Result<(), PolicyRefusal> {
-    admit_marking_reachability_mutated(seed, transitions, unsafe_fn, None)
-}
-
-/// Core BFS with an injectable in-memory mutation (`skip` one
-/// `(verb, from_marking)` edge). `None` is the lawful checker; `Some(_)`
-/// exists ONLY for the vacuity court — it proves the refusal is load-bearing
-/// by demonstrating that skipping the witness edge hides the unsafe path.
-pub fn admit_marking_reachability_mutated(
-    seed: u16,
-    transitions: &[DaoTransition],
-    unsafe_fn: &dyn Fn(u16) -> bool,
-    skip: Option<(u8, u16)>,
 ) -> Result<(), PolicyRefusal> {
     if unsafe_fn(seed) {
         return Err(PolicyRefusal {
@@ -154,9 +145,6 @@ pub fn admit_marking_reachability_mutated(
     while let Some(m) = queue.pop_front() {
         for t in transitions {
             if (m & t.pre) != t.pre {
-                continue;
-            }
-            if skip == Some((t.verb, m)) {
                 continue;
             }
             let next = (m ^ t.pre) | t.post;

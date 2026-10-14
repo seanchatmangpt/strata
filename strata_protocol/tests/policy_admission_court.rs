@@ -12,9 +12,68 @@
 use strata_protocol::dao_full::DAO_FULL;
 use strata_protocol::dao_transitions::DaoTransition;
 use strata_protocol::policy_admission::{
-    admit_marking_reachability, admit_marking_reachability_mutated, unsafe_predicate,
-    PolicyRefusalKind,
+    admit_marking_reachability, unsafe_predicate, PolicyRefusal, PolicyRefusalKind, StepWitness,
 };
+
+/// TEST-ONLY MIRROR of `policy_admission::admit_marking_reachability` with an
+/// injectable in-memory mutation (`skip` one `(verb, from_marking)` edge).
+/// Kept here, not in src/, so the production surface carries no test-only
+/// hook (same precedent as the frozen branched reference in pnabi parity).
+/// Drift guard: the rest of this court (witness replay against the real
+/// table, test d) fails if the mirror's BFS semantics diverge from the
+/// production checker's.
+fn admit_marking_reachability_mutated(
+    seed: u16,
+    transitions: &[DaoTransition],
+    unsafe_fn: &dyn Fn(u16) -> bool,
+    skip: Option<(u8, u16)>,
+) -> Result<(), PolicyRefusal> {
+    if unsafe_fn(seed) {
+        return Err(PolicyRefusal {
+            kind: PolicyRefusalKind::UnsafeSeed,
+            seed,
+            unsafe_marking: seed,
+            trace: Vec::new(),
+        });
+    }
+    let mut visited = vec![false; 1 << 16];
+    visited[seed as usize] = true;
+    let mut queue = std::collections::VecDeque::from([seed]);
+    let mut parent: std::collections::HashMap<u16, StepWitness> = std::collections::HashMap::new();
+    while let Some(m) = queue.pop_front() {
+        for t in transitions {
+            if (m & t.pre) != t.pre {
+                continue;
+            }
+            if skip == Some((t.verb, m)) {
+                continue;
+            }
+            let next = (m ^ t.pre) | t.post;
+            if unsafe_fn(next) {
+                let mut trace = Vec::new();
+                let mut cur = m;
+                while let Some(w) = parent.get(&cur) {
+                    trace.push(*w);
+                    cur = w.from;
+                }
+                trace.reverse();
+                trace.push(StepWitness { from: m, verb: t.verb, to: next });
+                return Err(PolicyRefusal {
+                    kind: PolicyRefusalKind::UnsafeReached,
+                    seed,
+                    unsafe_marking: next,
+                    trace,
+                });
+            }
+            if !visited[next as usize] {
+                visited[next as usize] = true;
+                parent.insert(next, StepWitness { from: m, verb: t.verb, to: next });
+                queue.push_back(next);
+            }
+        }
+    }
+    Ok(())
+}
 
 /// Independent witness replay: the refusal trace must be a TRUE path in the
 /// transition table itself — every edge an enabled firing (`(from & pre) ==

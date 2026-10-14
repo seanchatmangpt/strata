@@ -219,3 +219,14 @@ integration lives in docs/PN64_XDP_INTEGRATION.md and has no harness here).
   max 4.43 -> 3.83 -> 3.83 ns), normal run-to-run variance; recorded run is the
   last.
 - No failures in either bench; honest-gate rule not triggered this run.
+
+## Supersede note (appended 2026-10-13, hardening lane)
+
+The absolute ns gate tables above (parse <= 4 ns, write <= 4 ns, roundtrip
+<= 5 ns, composite <= 4 ns, floor probe <= 1 ns) are SUPERSEDED as normative
+gates as of 2026-10-13: absolute ns gates converted to report-only — 2-4 ns
+gates are scheduler-bound at the 0.41 ns harness floor; ratio + structural
+gates remain normative. In `benches/pnwire_slo.rs` the E48 length-refusal
+<= 5x admit-median ratio gate and the structural witness/census asserts
+remain hard asserts; the tables above stand as historical receipts, not
+current admission gates.

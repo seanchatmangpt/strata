@@ -42,3 +42,4 @@ rustc-ice-*.txt
 
 # n06 audit receipt: fresh-run timestamp stamp, churns on every test run
 docs/receipts/N06.legacy_payload.json
+docs/receipts/N04.legacy_payload.json

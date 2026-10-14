@@ -785,4 +785,29 @@ defmodule Strata.MergerAgentsTest do
       assert {:error, :semantics_unwired} = a02.execute(work2)
     end
   end
+
+  # -- Vacuity court: empty-corpus payloads refuse, never admit vacuously -------
+
+  describe "vacuity court (empty-corpus admission)" do
+    test "A06 refuses an empty consents book instead of vacuously novating" do
+      a06 = Strata.Merger.A06DerivNovation
+      assert {:error, :malformed_payload} = a06.admit(%{lease: lease("r-a06-empty", :a06), consents: []})
+
+      # Positive control (must fire): a non-empty book still admits.
+      assert {:ok, _} =
+               a06.admit(%{lease: lease("r-a06-nec", :a06), consents: [%{id: "cp1", consented?: true}]})
+    end
+
+    test "A03 refuses an empty fact list instead of vacuously admitting all-obligations-clear" do
+      a03 = Strata.Merger.A03HartianDefeasibility
+      assert {:error, :malformed_payload} = a03.admit(%{lease: lease("r-a03-empty", :a03), facts: []})
+
+      # Positive control (must fire): a non-empty fact list still admits.
+      assert {:ok, _} =
+               a03.admit(%{
+                 lease: lease("r-a03-nec", :a03),
+                 facts: [%{kind: :obligation, subject: "x", id: "ob1"}]
+               })
+    end
+  end
 end

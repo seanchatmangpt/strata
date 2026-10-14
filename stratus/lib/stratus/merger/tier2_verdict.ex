@@ -52,7 +52,9 @@ defmodule Strata.Merger.A06DerivNovation do
 
   def receipt(_), do: {:error, :malformed_payload}
 
-  defp check_payload(%{consents: consents} = payload) when is_list(consents),
+  # Vacuity guard: an empty book would make `pending == []` vacuously true
+  # and novate with zero counterparties — refused, not admitted.
+  defp check_payload(%{consents: consents} = payload) when is_list(consents) and consents != [],
     do: {:ok, payload |> Map.put(:agent, :a06) |> Map.put(:cell, :a06_deriv_novation)}
 
   defp check_payload(_), do: {:error, :malformed_payload}

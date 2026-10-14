@@ -309,7 +309,9 @@ defmodule Strata.Merger.A03HartianDefeasibility do
 
   defp valid_fact?(_), do: false
 
-  defp check_payload(%{facts: fs} = payload) when is_list(fs),
+  # Vacuity guard: an empty fact list resolves zero obligations and the
+  # receipt would admit on `Enum.all?([])` — refused, not admitted.
+  defp check_payload(%{facts: fs} = payload) when is_list(fs) and fs != [],
     do: {:ok, payload |> Map.put(:agent, :a03) |> Map.put(:cell, :a03_hartian_defeasibility)}
 
   defp check_payload(_), do: {:error, :malformed_payload}

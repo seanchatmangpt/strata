@@ -609,7 +609,7 @@ mod we_tests {
         let v = we_rules(&logged_cp);
         assert!(
             !v.any(),
-            "logged 2026-10-10 series must show no special cause, got \
+            "logged 2026-10-13 series must show no special cause, got \
              R1={} R2={} R3={} R5={}",
             v.rule1,
             v.rule2,

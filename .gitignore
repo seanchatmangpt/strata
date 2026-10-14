@@ -30,6 +30,4 @@ __pycache__/
 
 # oclnr cleanup-workflow residue + scratch courts (A175 triage)
 archive/
-cleanup-plan.json
-disk-audit.jsonocel
 stratus/test/stratus/diag_court.exs

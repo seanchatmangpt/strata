@@ -1,0 +1,6056 @@
+{
+  "eventTypes": [
+    {
+      "name": "disk_audit_started",
+      "attributes": [
+        {
+          "name": "tool",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "scan_root_started",
+      "attributes": [
+        {
+          "name": "path",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "filesystem_object_observed",
+      "attributes": [
+        {
+          "name": "path",
+          "type": "string"
+        },
+        {
+          "name": "kind",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "artifact_candidate_proposed",
+      "attributes": [
+        {
+          "name": "path",
+          "type": "string"
+        },
+        {
+          "name": "reason",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "tool_root_observed",
+      "attributes": [
+        {
+          "name": "path",
+          "type": "string"
+        },
+        {
+          "name": "category",
+          "type": "string"
+        },
+        {
+          "name": "bytes",
+          "type": "integer"
+        }
+      ]
+    }
+  ],
+  "objectTypes": [
+    {
+      "name": "disk_audit",
+      "attributes": [
+        {
+          "name": "created_at",
+          "type": "time"
+        },
+        {
+          "name": "files_seen",
+          "type": "integer"
+        },
+        {
+          "name": "dirs_seen",
+          "type": "integer"
+        },
+        {
+          "name": "bytes_seen",
+          "type": "integer"
+        },
+        {
+          "name": "projects_seen",
+          "type": "integer"
+        },
+        {
+          "name": "candidates_seen",
+          "type": "integer"
+        },
+        {
+          "name": "pruned_dirs",
+          "type": "integer"
+        },
+        {
+          "name": "errors",
+          "type": "integer"
+        }
+      ]
+    },
+    {
+      "name": "scan_root",
+      "attributes": [
+        {
+          "name": "path",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "filesystem_object",
+      "attributes": [
+        {
+          "name": "path",
+          "type": "string"
+        },
+        {
+          "name": "kind",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "artifact_candidate",
+      "attributes": [
+        {
+          "name": "path",
+          "type": "string"
+        },
+        {
+          "name": "reason",
+          "type": "string"
+        },
+        {
+          "name": "bytes",
+          "type": "integer"
+        }
+      ]
+    },
+    {
+      "name": "tool_root",
+      "attributes": [
+        {
+          "name": "path",
+          "type": "string"
+        },
+        {
+          "name": "category",
+          "type": "string"
+        },
+        {
+          "name": "bytes",
+          "type": "integer"
+        },
+        {
+          "name": "human",
+          "type": "string"
+        },
+        {
+          "name": "files",
+          "type": "integer"
+        },
+        {
+          "name": "dirs",
+          "type": "integer"
+        }
+      ]
+    }
+  ],
+  "events": [
+    {
+      "id": "event-audit-started-1791701574",
+      "type": "disk_audit_started",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "tool",
+          "value": "osx-clnr"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        }
+      ]
+    },
+    {
+      "id": "event-scan-root-started-0",
+      "type": "scan_root_started",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "scan-root-_private_tmp",
+          "qualifier": "started-root"
+        }
+      ]
+    },
+    {
+      "id": "event-fs-observed-000000",
+      "type": "filesystem_object_observed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/a2a-tck/.agents"
+        },
+        {
+          "name": "kind",
+          "value": "directory"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_a2a-tck__agents",
+          "qualifier": "observed-object"
+        }
+      ]
+    },
+    {
+      "id": "event-candidate-proposed-000000",
+      "type": "artifact_candidate_proposed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/a2a-tck/.agents"
+        },
+        {
+          "name": "reason",
+          "value": "ai agents dir"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "candidate-_private_tmp_a2a-tck__agents",
+          "qualifier": "proposed-candidate"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_a2a-tck__agents",
+          "qualifier": "targets-fs-object"
+        },
+        {
+          "objectId": "scan-root-_private_tmp",
+          "qualifier": "scan-root"
+        }
+      ]
+    },
+    {
+      "id": "event-fs-observed-000001",
+      "type": "filesystem_object_observed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/a2a-tck/.claude/tmp"
+        },
+        {
+          "name": "kind",
+          "value": "directory"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_a2a-tck__claude_tmp",
+          "qualifier": "observed-object"
+        }
+      ]
+    },
+    {
+      "id": "event-candidate-proposed-000001",
+      "type": "artifact_candidate_proposed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/a2a-tck/.claude/tmp"
+        },
+        {
+          "name": "reason",
+          "value": "claude temp artifacts"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "candidate-_private_tmp_a2a-tck__claude_tmp",
+          "qualifier": "proposed-candidate"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_a2a-tck__claude_tmp",
+          "qualifier": "targets-fs-object"
+        },
+        {
+          "objectId": "scan-root-_private_tmp",
+          "qualifier": "scan-root"
+        }
+      ]
+    },
+    {
+      "id": "event-fs-observed-000002",
+      "type": "filesystem_object_observed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/av2-verify/.claude/tmp"
+        },
+        {
+          "name": "kind",
+          "value": "directory"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_av2-verify__claude_tmp",
+          "qualifier": "observed-object"
+        }
+      ]
+    },
+    {
+      "id": "event-candidate-proposed-000002",
+      "type": "artifact_candidate_proposed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/av2-verify/.claude/tmp"
+        },
+        {
+          "name": "reason",
+          "value": "claude temp artifacts"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "candidate-_private_tmp_av2-verify__claude_tmp",
+          "qualifier": "proposed-candidate"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_av2-verify__claude_tmp",
+          "qualifier": "targets-fs-object"
+        },
+        {
+          "objectId": "scan-root-_private_tmp",
+          "qualifier": "scan-root"
+        }
+      ]
+    },
+    {
+      "id": "event-fs-observed-000003",
+      "type": "filesystem_object_observed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/court/p01/harness/target"
+        },
+        {
+          "name": "kind",
+          "value": "directory"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_court_p01_harness_target",
+          "qualifier": "observed-object"
+        }
+      ]
+    },
+    {
+      "id": "event-candidate-proposed-000003",
+      "type": "artifact_candidate_proposed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/court/p01/harness/target"
+        },
+        {
+          "name": "reason",
+          "value": "rust target"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "candidate-_private_tmp_court_p01_harness_target",
+          "qualifier": "proposed-candidate"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_court_p01_harness_target",
+          "qualifier": "targets-fs-object"
+        },
+        {
+          "objectId": "scan-root-_private_tmp",
+          "qualifier": "scan-root"
+        }
+      ]
+    },
+    {
+      "id": "event-fs-observed-000004",
+      "type": "filesystem_object_observed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/court/p02helper/target"
+        },
+        {
+          "name": "kind",
+          "value": "directory"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_court_p02helper_target",
+          "qualifier": "observed-object"
+        }
+      ]
+    },
+    {
+      "id": "event-candidate-proposed-000004",
+      "type": "artifact_candidate_proposed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/court/p02helper/target"
+        },
+        {
+          "name": "reason",
+          "value": "rust target"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "candidate-_private_tmp_court_p02helper_target",
+          "qualifier": "proposed-candidate"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_court_p02helper_target",
+          "qualifier": "targets-fs-object"
+        },
+        {
+          "objectId": "scan-root-_private_tmp",
+          "qualifier": "scan-root"
+        }
+      ]
+    },
+    {
+      "id": "event-fs-observed-000005",
+      "type": "filesystem_object_observed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/court/p10/driver/target"
+        },
+        {
+          "name": "kind",
+          "value": "directory"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_court_p10_driver_target",
+          "qualifier": "observed-object"
+        }
+      ]
+    },
+    {
+      "id": "event-candidate-proposed-000005",
+      "type": "artifact_candidate_proposed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/court/p10/driver/target"
+        },
+        {
+          "name": "reason",
+          "value": "rust target"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "candidate-_private_tmp_court_p10_driver_target",
+          "qualifier": "proposed-candidate"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_court_p10_driver_target",
+          "qualifier": "targets-fs-object"
+        },
+        {
+          "objectId": "scan-root-_private_tmp",
+          "qualifier": "scan-root"
+        }
+      ]
+    },
+    {
+      "id": "event-fs-observed-000006",
+      "type": "filesystem_object_observed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/court/p13_driver/target"
+        },
+        {
+          "name": "kind",
+          "value": "directory"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_court_p13_driver_target",
+          "qualifier": "observed-object"
+        }
+      ]
+    },
+    {
+      "id": "event-candidate-proposed-000006",
+      "type": "artifact_candidate_proposed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/court/p13_driver/target"
+        },
+        {
+          "name": "reason",
+          "value": "rust target"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "candidate-_private_tmp_court_p13_driver_target",
+          "qualifier": "proposed-candidate"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_court_p13_driver_target",
+          "qualifier": "targets-fs-object"
+        },
+        {
+          "objectId": "scan-root-_private_tmp",
+          "qualifier": "scan-root"
+        }
+      ]
+    },
+    {
+      "id": "event-fs-observed-000007",
+      "type": "filesystem_object_observed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/ctp-capsule/clap-noun-verb/.claude/tmp"
+        },
+        {
+          "name": "kind",
+          "value": "directory"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_ctp-capsule_clap-noun-verb__claude_tmp",
+          "qualifier": "observed-object"
+        }
+      ]
+    },
+    {
+      "id": "event-candidate-proposed-000007",
+      "type": "artifact_candidate_proposed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/ctp-capsule/clap-noun-verb/.claude/tmp"
+        },
+        {
+          "name": "reason",
+          "value": "claude temp artifacts"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "candidate-_private_tmp_ctp-capsule_clap-noun-verb__claude_tmp",
+          "qualifier": "proposed-candidate"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_ctp-capsule_clap-noun-verb__claude_tmp",
+          "qualifier": "targets-fs-object"
+        },
+        {
+          "objectId": "scan-root-_private_tmp",
+          "qualifier": "scan-root"
+        }
+      ]
+    },
+    {
+      "id": "event-fs-observed-000008",
+      "type": "filesystem_object_observed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/ea104-replay/.claude/tmp"
+        },
+        {
+          "name": "kind",
+          "value": "directory"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_ea104-replay__claude_tmp",
+          "qualifier": "observed-object"
+        }
+      ]
+    },
+    {
+      "id": "event-candidate-proposed-000008",
+      "type": "artifact_candidate_proposed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/ea104-replay/.claude/tmp"
+        },
+        {
+          "name": "reason",
+          "value": "claude temp artifacts"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "candidate-_private_tmp_ea104-replay__claude_tmp",
+          "qualifier": "proposed-candidate"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_ea104-replay__claude_tmp",
+          "qualifier": "targets-fs-object"
+        },
+        {
+          "objectId": "scan-root-_private_tmp",
+          "qualifier": "scan-root"
+        }
+      ]
+    },
+    {
+      "id": "event-fs-observed-000009",
+      "type": "filesystem_object_observed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/ea104-replay/.gemini/tmp"
+        },
+        {
+          "name": "kind",
+          "value": "directory"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_ea104-replay__gemini_tmp",
+          "qualifier": "observed-object"
+        }
+      ]
+    },
+    {
+      "id": "event-candidate-proposed-000009",
+      "type": "artifact_candidate_proposed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/ea104-replay/.gemini/tmp"
+        },
+        {
+          "name": "reason",
+          "value": "gemini temp artifacts"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "candidate-_private_tmp_ea104-replay__gemini_tmp",
+          "qualifier": "proposed-candidate"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_ea104-replay__gemini_tmp",
+          "qualifier": "targets-fs-object"
+        },
+        {
+          "objectId": "scan-root-_private_tmp",
+          "qualifier": "scan-root"
+        }
+      ]
+    },
+    {
+      "id": "event-fs-observed-000010",
+      "type": "filesystem_object_observed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/ea104-replay/examples/claude-code-pack-verify/.claude/tmp"
+        },
+        {
+          "name": "kind",
+          "value": "directory"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_ea104-replay_examples_claude-code-pack-verify__claude_tmp",
+          "qualifier": "observed-object"
+        }
+      ]
+    },
+    {
+      "id": "event-candidate-proposed-000010",
+      "type": "artifact_candidate_proposed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/ea104-replay/examples/claude-code-pack-verify/.claude/tmp"
+        },
+        {
+          "name": "reason",
+          "value": "claude temp artifacts"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "candidate-_private_tmp_ea104-replay_examples_claude-code-pack-verify__claude_tmp",
+          "qualifier": "proposed-candidate"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_ea104-replay_examples_claude-code-pack-verify__claude_tmp",
+          "qualifier": "targets-fs-object"
+        },
+        {
+          "objectId": "scan-root-_private_tmp",
+          "qualifier": "scan-root"
+        }
+      ]
+    },
+    {
+      "id": "event-fs-observed-000011",
+      "type": "filesystem_object_observed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/ea110-replay/.claude/tmp"
+        },
+        {
+          "name": "kind",
+          "value": "directory"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_ea110-replay__claude_tmp",
+          "qualifier": "observed-object"
+        }
+      ]
+    },
+    {
+      "id": "event-candidate-proposed-000011",
+      "type": "artifact_candidate_proposed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/ea110-replay/.claude/tmp"
+        },
+        {
+          "name": "reason",
+          "value": "claude temp artifacts"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "candidate-_private_tmp_ea110-replay__claude_tmp",
+          "qualifier": "proposed-candidate"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_ea110-replay__claude_tmp",
+          "qualifier": "targets-fs-object"
+        },
+        {
+          "objectId": "scan-root-_private_tmp",
+          "qualifier": "scan-root"
+        }
+      ]
+    },
+    {
+      "id": "event-fs-observed-000012",
+      "type": "filesystem_object_observed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/ea111-replay/.claude/tmp"
+        },
+        {
+          "name": "kind",
+          "value": "directory"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_ea111-replay__claude_tmp",
+          "qualifier": "observed-object"
+        }
+      ]
+    },
+    {
+      "id": "event-candidate-proposed-000012",
+      "type": "artifact_candidate_proposed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/ea111-replay/.claude/tmp"
+        },
+        {
+          "name": "reason",
+          "value": "claude temp artifacts"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "candidate-_private_tmp_ea111-replay__claude_tmp",
+          "qualifier": "proposed-candidate"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_ea111-replay__claude_tmp",
+          "qualifier": "targets-fs-object"
+        },
+        {
+          "objectId": "scan-root-_private_tmp",
+          "qualifier": "scan-root"
+        }
+      ]
+    },
+    {
+      "id": "event-fs-observed-000013",
+      "type": "filesystem_object_observed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/ea115-replay/.claude/tmp"
+        },
+        {
+          "name": "kind",
+          "value": "directory"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_ea115-replay__claude_tmp",
+          "qualifier": "observed-object"
+        }
+      ]
+    },
+    {
+      "id": "event-candidate-proposed-000013",
+      "type": "artifact_candidate_proposed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/ea115-replay/.claude/tmp"
+        },
+        {
+          "name": "reason",
+          "value": "claude temp artifacts"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "candidate-_private_tmp_ea115-replay__claude_tmp",
+          "qualifier": "proposed-candidate"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_ea115-replay__claude_tmp",
+          "qualifier": "targets-fs-object"
+        },
+        {
+          "objectId": "scan-root-_private_tmp",
+          "qualifier": "scan-root"
+        }
+      ]
+    },
+    {
+      "id": "event-fs-observed-000014",
+      "type": "filesystem_object_observed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/ecvec/target"
+        },
+        {
+          "name": "kind",
+          "value": "directory"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_ecvec_target",
+          "qualifier": "observed-object"
+        }
+      ]
+    },
+    {
+      "id": "event-candidate-proposed-000014",
+      "type": "artifact_candidate_proposed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/ecvec/target"
+        },
+        {
+          "name": "reason",
+          "value": "rust target"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "candidate-_private_tmp_ecvec_target",
+          "qualifier": "proposed-candidate"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_ecvec_target",
+          "qualifier": "targets-fs-object"
+        },
+        {
+          "objectId": "scan-root-_private_tmp",
+          "qualifier": "scan-root"
+        }
+      ]
+    },
+    {
+      "id": "event-fs-observed-000015",
+      "type": "filesystem_object_observed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/fcwork/t4/target"
+        },
+        {
+          "name": "kind",
+          "value": "directory"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_fcwork_t4_target",
+          "qualifier": "observed-object"
+        }
+      ]
+    },
+    {
+      "id": "event-candidate-proposed-000015",
+      "type": "artifact_candidate_proposed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/fcwork/t4/target"
+        },
+        {
+          "name": "reason",
+          "value": "rust target"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "candidate-_private_tmp_fcwork_t4_target",
+          "qualifier": "proposed-candidate"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_fcwork_t4_target",
+          "qualifier": "targets-fs-object"
+        },
+        {
+          "objectId": "scan-root-_private_tmp",
+          "qualifier": "scan-root"
+        }
+      ]
+    },
+    {
+      "id": "event-fs-observed-000016",
+      "type": "filesystem_object_observed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/fd2-headsnap/.claude/tmp"
+        },
+        {
+          "name": "kind",
+          "value": "directory"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_fd2-headsnap__claude_tmp",
+          "qualifier": "observed-object"
+        }
+      ]
+    },
+    {
+      "id": "event-candidate-proposed-000016",
+      "type": "artifact_candidate_proposed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/fd2-headsnap/.claude/tmp"
+        },
+        {
+          "name": "reason",
+          "value": "claude temp artifacts"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "candidate-_private_tmp_fd2-headsnap__claude_tmp",
+          "qualifier": "proposed-candidate"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_fd2-headsnap__claude_tmp",
+          "qualifier": "targets-fs-object"
+        },
+        {
+          "objectId": "scan-root-_private_tmp",
+          "qualifier": "scan-root"
+        }
+      ]
+    },
+    {
+      "id": "event-fs-observed-000017",
+      "type": "filesystem_object_observed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/fd5snap-13806e2/.claude/tmp"
+        },
+        {
+          "name": "kind",
+          "value": "directory"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_fd5snap-13806e2__claude_tmp",
+          "qualifier": "observed-object"
+        }
+      ]
+    },
+    {
+      "id": "event-candidate-proposed-000017",
+      "type": "artifact_candidate_proposed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/fd5snap-13806e2/.claude/tmp"
+        },
+        {
+          "name": "reason",
+          "value": "claude temp artifacts"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "candidate-_private_tmp_fd5snap-13806e2__claude_tmp",
+          "qualifier": "proposed-candidate"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_fd5snap-13806e2__claude_tmp",
+          "qualifier": "targets-fs-object"
+        },
+        {
+          "objectId": "scan-root-_private_tmp",
+          "qualifier": "scan-root"
+        }
+      ]
+    },
+    {
+      "id": "event-fs-observed-000018",
+      "type": "filesystem_object_observed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/fd6snap-57217fa/.claude/tmp"
+        },
+        {
+          "name": "kind",
+          "value": "directory"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_fd6snap-57217fa__claude_tmp",
+          "qualifier": "observed-object"
+        }
+      ]
+    },
+    {
+      "id": "event-candidate-proposed-000018",
+      "type": "artifact_candidate_proposed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/fd6snap-57217fa/.claude/tmp"
+        },
+        {
+          "name": "reason",
+          "value": "claude temp artifacts"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "candidate-_private_tmp_fd6snap-57217fa__claude_tmp",
+          "qualifier": "proposed-candidate"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_fd6snap-57217fa__claude_tmp",
+          "qualifier": "targets-fs-object"
+        },
+        {
+          "objectId": "scan-root-_private_tmp",
+          "qualifier": "scan-root"
+        }
+      ]
+    },
+    {
+      "id": "event-fs-observed-000019",
+      "type": "filesystem_object_observed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/ferro-cov120/headv/.claude/tmp"
+        },
+        {
+          "name": "kind",
+          "value": "directory"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_ferro-cov120_headv__claude_tmp",
+          "qualifier": "observed-object"
+        }
+      ]
+    },
+    {
+      "id": "event-candidate-proposed-000019",
+      "type": "artifact_candidate_proposed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/ferro-cov120/headv/.claude/tmp"
+        },
+        {
+          "name": "reason",
+          "value": "claude temp artifacts"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "candidate-_private_tmp_ferro-cov120_headv__claude_tmp",
+          "qualifier": "proposed-candidate"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_ferro-cov120_headv__claude_tmp",
+          "qualifier": "targets-fs-object"
+        },
+        {
+          "objectId": "scan-root-_private_tmp",
+          "qualifier": "scan-root"
+        }
+      ]
+    },
+    {
+      "id": "event-fs-observed-000020",
+      "type": "filesystem_object_observed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/ferro-drift/head3-snap-94868/.claude/tmp"
+        },
+        {
+          "name": "kind",
+          "value": "directory"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_ferro-drift_head3-snap-94868__claude_tmp",
+          "qualifier": "observed-object"
+        }
+      ]
+    },
+    {
+      "id": "event-candidate-proposed-000020",
+      "type": "artifact_candidate_proposed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/ferro-drift/head3-snap-94868/.claude/tmp"
+        },
+        {
+          "name": "reason",
+          "value": "claude temp artifacts"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "candidate-_private_tmp_ferro-drift_head3-snap-94868__claude_tmp",
+          "qualifier": "proposed-candidate"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_ferro-drift_head3-snap-94868__claude_tmp",
+          "qualifier": "targets-fs-object"
+        },
+        {
+          "objectId": "scan-root-_private_tmp",
+          "qualifier": "scan-root"
+        }
+      ]
+    },
+    {
+      "id": "event-fs-observed-000021",
+      "type": "filesystem_object_observed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/ferro-receipt/head-snap/.claude/tmp"
+        },
+        {
+          "name": "kind",
+          "value": "directory"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_ferro-receipt_head-snap__claude_tmp",
+          "qualifier": "observed-object"
+        }
+      ]
+    },
+    {
+      "id": "event-candidate-proposed-000021",
+      "type": "artifact_candidate_proposed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/ferro-receipt/head-snap/.claude/tmp"
+        },
+        {
+          "name": "reason",
+          "value": "claude temp artifacts"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "candidate-_private_tmp_ferro-receipt_head-snap__claude_tmp",
+          "qualifier": "proposed-candidate"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_ferro-receipt_head-snap__claude_tmp",
+          "qualifier": "targets-fs-object"
+        },
+        {
+          "objectId": "scan-root-_private_tmp",
+          "qualifier": "scan-root"
+        }
+      ]
+    },
+    {
+      "id": "event-fs-observed-000022",
+      "type": "filesystem_object_observed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/ferro-receipt/head2-snap/.claude/tmp"
+        },
+        {
+          "name": "kind",
+          "value": "directory"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_ferro-receipt_head2-snap__claude_tmp",
+          "qualifier": "observed-object"
+        }
+      ]
+    },
+    {
+      "id": "event-candidate-proposed-000022",
+      "type": "artifact_candidate_proposed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/ferro-receipt/head2-snap/.claude/tmp"
+        },
+        {
+          "name": "reason",
+          "value": "claude temp artifacts"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "candidate-_private_tmp_ferro-receipt_head2-snap__claude_tmp",
+          "qualifier": "proposed-candidate"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_ferro-receipt_head2-snap__claude_tmp",
+          "qualifier": "targets-fs-object"
+        },
+        {
+          "objectId": "scan-root-_private_tmp",
+          "qualifier": "scan-root"
+        }
+      ]
+    },
+    {
+      "id": "event-fs-observed-000023",
+      "type": "filesystem_object_observed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/ferro-receipt/head3-snap/.claude/tmp"
+        },
+        {
+          "name": "kind",
+          "value": "directory"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_ferro-receipt_head3-snap__claude_tmp",
+          "qualifier": "observed-object"
+        }
+      ]
+    },
+    {
+      "id": "event-candidate-proposed-000023",
+      "type": "artifact_candidate_proposed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/ferro-receipt/head3-snap/.claude/tmp"
+        },
+        {
+          "name": "reason",
+          "value": "claude temp artifacts"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "candidate-_private_tmp_ferro-receipt_head3-snap__claude_tmp",
+          "qualifier": "proposed-candidate"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_ferro-receipt_head3-snap__claude_tmp",
+          "qualifier": "targets-fs-object"
+        },
+        {
+          "objectId": "scan-root-_private_tmp",
+          "qualifier": "scan-root"
+        }
+      ]
+    },
+    {
+      "id": "event-fs-observed-000024",
+      "type": "filesystem_object_observed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/ferro-vp/snap/.claude/tmp"
+        },
+        {
+          "name": "kind",
+          "value": "directory"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_ferro-vp_snap__claude_tmp",
+          "qualifier": "observed-object"
+        }
+      ]
+    },
+    {
+      "id": "event-candidate-proposed-000024",
+      "type": "artifact_candidate_proposed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/ferro-vp/snap/.claude/tmp"
+        },
+        {
+          "name": "reason",
+          "value": "claude temp artifacts"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "candidate-_private_tmp_ferro-vp_snap__claude_tmp",
+          "qualifier": "proposed-candidate"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_ferro-vp_snap__claude_tmp",
+          "qualifier": "targets-fs-object"
+        },
+        {
+          "objectId": "scan-root-_private_tmp",
+          "qualifier": "scan-root"
+        }
+      ]
+    },
+    {
+      "id": "event-fs-observed-000025",
+      "type": "filesystem_object_observed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/ferro-witness145/tree/.claude/tmp"
+        },
+        {
+          "name": "kind",
+          "value": "directory"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_ferro-witness145_tree__claude_tmp",
+          "qualifier": "observed-object"
+        }
+      ]
+    },
+    {
+      "id": "event-candidate-proposed-000025",
+      "type": "artifact_candidate_proposed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/ferro-witness145/tree/.claude/tmp"
+        },
+        {
+          "name": "reason",
+          "value": "claude temp artifacts"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "candidate-_private_tmp_ferro-witness145_tree__claude_tmp",
+          "qualifier": "proposed-candidate"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_ferro-witness145_tree__claude_tmp",
+          "qualifier": "targets-fs-object"
+        },
+        {
+          "objectId": "scan-root-_private_tmp",
+          "qualifier": "scan-root"
+        }
+      ]
+    },
+    {
+      "id": "event-fs-observed-000026",
+      "type": "filesystem_object_observed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/gwm-scratch/.claude/tmp"
+        },
+        {
+          "name": "kind",
+          "value": "directory"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_gwm-scratch__claude_tmp",
+          "qualifier": "observed-object"
+        }
+      ]
+    },
+    {
+      "id": "event-candidate-proposed-000026",
+      "type": "artifact_candidate_proposed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/gwm-scratch/.claude/tmp"
+        },
+        {
+          "name": "reason",
+          "value": "claude temp artifacts"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "candidate-_private_tmp_gwm-scratch__claude_tmp",
+          "qualifier": "proposed-candidate"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_gwm-scratch__claude_tmp",
+          "qualifier": "targets-fs-object"
+        },
+        {
+          "objectId": "scan-root-_private_tmp",
+          "qualifier": "scan-root"
+        }
+      ]
+    },
+    {
+      "id": "event-fs-observed-000027",
+      "type": "filesystem_object_observed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/gwm-scratch2/.claude/tmp"
+        },
+        {
+          "name": "kind",
+          "value": "directory"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_gwm-scratch2__claude_tmp",
+          "qualifier": "observed-object"
+        }
+      ]
+    },
+    {
+      "id": "event-candidate-proposed-000027",
+      "type": "artifact_candidate_proposed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/gwm-scratch2/.claude/tmp"
+        },
+        {
+          "name": "reason",
+          "value": "claude temp artifacts"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "candidate-_private_tmp_gwm-scratch2__claude_tmp",
+          "qualifier": "proposed-candidate"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_gwm-scratch2__claude_tmp",
+          "qualifier": "targets-fs-object"
+        },
+        {
+          "objectId": "scan-root-_private_tmp",
+          "qualifier": "scan-root"
+        }
+      ]
+    },
+    {
+      "id": "event-fs-observed-000028",
+      "type": "filesystem_object_observed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/hdit/autofde-lab/.claude/tmp"
+        },
+        {
+          "name": "kind",
+          "value": "directory"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_hdit_autofde-lab__claude_tmp",
+          "qualifier": "observed-object"
+        }
+      ]
+    },
+    {
+      "id": "event-candidate-proposed-000028",
+      "type": "artifact_candidate_proposed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/hdit/autofde-lab/.claude/tmp"
+        },
+        {
+          "name": "reason",
+          "value": "claude temp artifacts"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "candidate-_private_tmp_hdit_autofde-lab__claude_tmp",
+          "qualifier": "proposed-candidate"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_hdit_autofde-lab__claude_tmp",
+          "qualifier": "targets-fs-object"
+        },
+        {
+          "objectId": "scan-root-_private_tmp",
+          "qualifier": "scan-root"
+        }
+      ]
+    },
+    {
+      "id": "event-fs-observed-000029",
+      "type": "filesystem_object_observed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/hdit/gm-feb12208/.claude/tmp"
+        },
+        {
+          "name": "kind",
+          "value": "directory"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_hdit_gm-feb12208__claude_tmp",
+          "qualifier": "observed-object"
+        }
+      ]
+    },
+    {
+      "id": "event-candidate-proposed-000029",
+      "type": "artifact_candidate_proposed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/hdit/gm-feb12208/.claude/tmp"
+        },
+        {
+          "name": "reason",
+          "value": "claude temp artifacts"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "candidate-_private_tmp_hdit_gm-feb12208__claude_tmp",
+          "qualifier": "proposed-candidate"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_hdit_gm-feb12208__claude_tmp",
+          "qualifier": "targets-fs-object"
+        },
+        {
+          "objectId": "scan-root-_private_tmp",
+          "qualifier": "scan-root"
+        }
+      ]
+    },
+    {
+      "id": "event-fs-observed-000030",
+      "type": "filesystem_object_observed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/hdit-build/pack/target"
+        },
+        {
+          "name": "kind",
+          "value": "directory"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_hdit-build_pack_target",
+          "qualifier": "observed-object"
+        }
+      ]
+    },
+    {
+      "id": "event-candidate-proposed-000030",
+      "type": "artifact_candidate_proposed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/hdit-build/pack/target"
+        },
+        {
+          "name": "reason",
+          "value": "rust target"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "candidate-_private_tmp_hdit-build_pack_target",
+          "qualifier": "proposed-candidate"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_hdit-build_pack_target",
+          "qualifier": "targets-fs-object"
+        },
+        {
+          "objectId": "scan-root-_private_tmp",
+          "qualifier": "scan-root"
+        }
+      ]
+    },
+    {
+      "id": "event-fs-observed-000031",
+      "type": "filesystem_object_observed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/lock9fd5ef148/.claude/tmp"
+        },
+        {
+          "name": "kind",
+          "value": "directory"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_lock9fd5ef148__claude_tmp",
+          "qualifier": "observed-object"
+        }
+      ]
+    },
+    {
+      "id": "event-candidate-proposed-000031",
+      "type": "artifact_candidate_proposed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/lock9fd5ef148/.claude/tmp"
+        },
+        {
+          "name": "reason",
+          "value": "claude temp artifacts"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "candidate-_private_tmp_lock9fd5ef148__claude_tmp",
+          "qualifier": "proposed-candidate"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_lock9fd5ef148__claude_tmp",
+          "qualifier": "targets-fs-object"
+        },
+        {
+          "objectId": "scan-root-_private_tmp",
+          "qualifier": "scan-root"
+        }
+      ]
+    },
+    {
+      "id": "event-fs-observed-000032",
+      "type": "filesystem_object_observed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/lockefdaed2ea/.claude/tmp"
+        },
+        {
+          "name": "kind",
+          "value": "directory"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_lockefdaed2ea__claude_tmp",
+          "qualifier": "observed-object"
+        }
+      ]
+    },
+    {
+      "id": "event-candidate-proposed-000032",
+      "type": "artifact_candidate_proposed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/lockefdaed2ea/.claude/tmp"
+        },
+        {
+          "name": "reason",
+          "value": "claude temp artifacts"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "candidate-_private_tmp_lockefdaed2ea__claude_tmp",
+          "qualifier": "proposed-candidate"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_lockefdaed2ea__claude_tmp",
+          "qualifier": "targets-fs-object"
+        },
+        {
+          "objectId": "scan-root-_private_tmp",
+          "qualifier": "scan-root"
+        }
+      ]
+    },
+    {
+      "id": "event-fs-observed-000033",
+      "type": "filesystem_object_observed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/mpbump-tree/.claude/tmp"
+        },
+        {
+          "name": "kind",
+          "value": "directory"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_mpbump-tree__claude_tmp",
+          "qualifier": "observed-object"
+        }
+      ]
+    },
+    {
+      "id": "event-candidate-proposed-000033",
+      "type": "artifact_candidate_proposed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/mpbump-tree/.claude/tmp"
+        },
+        {
+          "name": "reason",
+          "value": "claude temp artifacts"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "candidate-_private_tmp_mpbump-tree__claude_tmp",
+          "qualifier": "proposed-candidate"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_mpbump-tree__claude_tmp",
+          "qualifier": "targets-fs-object"
+        },
+        {
+          "objectId": "scan-root-_private_tmp",
+          "qualifier": "scan-root"
+        }
+      ]
+    },
+    {
+      "id": "event-fs-observed-000034",
+      "type": "filesystem_object_observed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/mu2-gate/.claude/tmp"
+        },
+        {
+          "name": "kind",
+          "value": "directory"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_mu2-gate__claude_tmp",
+          "qualifier": "observed-object"
+        }
+      ]
+    },
+    {
+      "id": "event-candidate-proposed-000034",
+      "type": "artifact_candidate_proposed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/mu2-gate/.claude/tmp"
+        },
+        {
+          "name": "reason",
+          "value": "claude temp artifacts"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "candidate-_private_tmp_mu2-gate__claude_tmp",
+          "qualifier": "proposed-candidate"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_mu2-gate__claude_tmp",
+          "qualifier": "targets-fs-object"
+        },
+        {
+          "objectId": "scan-root-_private_tmp",
+          "qualifier": "scan-root"
+        }
+      ]
+    },
+    {
+      "id": "event-fs-observed-000035",
+      "type": "filesystem_object_observed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/mu2-subject/.claude/tmp"
+        },
+        {
+          "name": "kind",
+          "value": "directory"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_mu2-subject__claude_tmp",
+          "qualifier": "observed-object"
+        }
+      ]
+    },
+    {
+      "id": "event-candidate-proposed-000035",
+      "type": "artifact_candidate_proposed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/mu2-subject/.claude/tmp"
+        },
+        {
+          "name": "reason",
+          "value": "claude temp artifacts"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "candidate-_private_tmp_mu2-subject__claude_tmp",
+          "qualifier": "proposed-candidate"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_mu2-subject__claude_tmp",
+          "qualifier": "targets-fs-object"
+        },
+        {
+          "objectId": "scan-root-_private_tmp",
+          "qualifier": "scan-root"
+        }
+      ]
+    },
+    {
+      "id": "event-fs-observed-000036",
+      "type": "filesystem_object_observed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/mu2-subject2/.claude/tmp"
+        },
+        {
+          "name": "kind",
+          "value": "directory"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_mu2-subject2__claude_tmp",
+          "qualifier": "observed-object"
+        }
+      ]
+    },
+    {
+      "id": "event-candidate-proposed-000036",
+      "type": "artifact_candidate_proposed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/mu2-subject2/.claude/tmp"
+        },
+        {
+          "name": "reason",
+          "value": "claude temp artifacts"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "candidate-_private_tmp_mu2-subject2__claude_tmp",
+          "qualifier": "proposed-candidate"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_mu2-subject2__claude_tmp",
+          "qualifier": "targets-fs-object"
+        },
+        {
+          "objectId": "scan-root-_private_tmp",
+          "qualifier": "scan-root"
+        }
+      ]
+    },
+    {
+      "id": "event-fs-observed-000037",
+      "type": "filesystem_object_observed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/p05dbg/target"
+        },
+        {
+          "name": "kind",
+          "value": "directory"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_p05dbg_target",
+          "qualifier": "observed-object"
+        }
+      ]
+    },
+    {
+      "id": "event-candidate-proposed-000037",
+      "type": "artifact_candidate_proposed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/p05dbg/target"
+        },
+        {
+          "name": "reason",
+          "value": "rust target"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "candidate-_private_tmp_p05dbg_target",
+          "qualifier": "proposed-candidate"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_p05dbg_target",
+          "qualifier": "targets-fs-object"
+        },
+        {
+          "objectId": "scan-root-_private_tmp",
+          "qualifier": "scan-root"
+        }
+      ]
+    },
+    {
+      "id": "event-fs-observed-000038",
+      "type": "filesystem_object_observed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/p18_driver/target"
+        },
+        {
+          "name": "kind",
+          "value": "directory"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_p18_driver_target",
+          "qualifier": "observed-object"
+        }
+      ]
+    },
+    {
+      "id": "event-candidate-proposed-000038",
+      "type": "artifact_candidate_proposed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/p18_driver/target"
+        },
+        {
+          "name": "reason",
+          "value": "rust target"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "candidate-_private_tmp_p18_driver_target",
+          "qualifier": "proposed-candidate"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_p18_driver_target",
+          "qualifier": "targets-fs-object"
+        },
+        {
+          "objectId": "scan-root-_private_tmp",
+          "qualifier": "scan-root"
+        }
+      ]
+    },
+    {
+      "id": "event-fs-observed-000039",
+      "type": "filesystem_object_observed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/r77base/.claude/tmp"
+        },
+        {
+          "name": "kind",
+          "value": "directory"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_r77base__claude_tmp",
+          "qualifier": "observed-object"
+        }
+      ]
+    },
+    {
+      "id": "event-candidate-proposed-000039",
+      "type": "artifact_candidate_proposed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/r77base/.claude/tmp"
+        },
+        {
+          "name": "reason",
+          "value": "claude temp artifacts"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "candidate-_private_tmp_r77base__claude_tmp",
+          "qualifier": "proposed-candidate"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_r77base__claude_tmp",
+          "qualifier": "targets-fs-object"
+        },
+        {
+          "objectId": "scan-root-_private_tmp",
+          "qualifier": "scan-root"
+        }
+      ]
+    },
+    {
+      "id": "event-fs-observed-000040",
+      "type": "filesystem_object_observed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/r77base/.gemini/tmp"
+        },
+        {
+          "name": "kind",
+          "value": "directory"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_r77base__gemini_tmp",
+          "qualifier": "observed-object"
+        }
+      ]
+    },
+    {
+      "id": "event-candidate-proposed-000040",
+      "type": "artifact_candidate_proposed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/r77base/.gemini/tmp"
+        },
+        {
+          "name": "reason",
+          "value": "gemini temp artifacts"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "candidate-_private_tmp_r77base__gemini_tmp",
+          "qualifier": "proposed-candidate"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_r77base__gemini_tmp",
+          "qualifier": "targets-fs-object"
+        },
+        {
+          "objectId": "scan-root-_private_tmp",
+          "qualifier": "scan-root"
+        }
+      ]
+    },
+    {
+      "id": "event-fs-observed-000041",
+      "type": "filesystem_object_observed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/r77base/examples/claude-code-pack-verify/.claude/tmp"
+        },
+        {
+          "name": "kind",
+          "value": "directory"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_r77base_examples_claude-code-pack-verify__claude_tmp",
+          "qualifier": "observed-object"
+        }
+      ]
+    },
+    {
+      "id": "event-candidate-proposed-000041",
+      "type": "artifact_candidate_proposed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/r77base/examples/claude-code-pack-verify/.claude/tmp"
+        },
+        {
+          "name": "reason",
+          "value": "claude temp artifacts"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "candidate-_private_tmp_r77base_examples_claude-code-pack-verify__claude_tmp",
+          "qualifier": "proposed-candidate"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_r77base_examples_claude-code-pack-verify__claude_tmp",
+          "qualifier": "targets-fs-object"
+        },
+        {
+          "objectId": "scan-root-_private_tmp",
+          "qualifier": "scan-root"
+        }
+      ]
+    },
+    {
+      "id": "event-fs-observed-000042",
+      "type": "filesystem_object_observed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/r77full/.claude/tmp"
+        },
+        {
+          "name": "kind",
+          "value": "directory"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_r77full__claude_tmp",
+          "qualifier": "observed-object"
+        }
+      ]
+    },
+    {
+      "id": "event-candidate-proposed-000042",
+      "type": "artifact_candidate_proposed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/r77full/.claude/tmp"
+        },
+        {
+          "name": "reason",
+          "value": "claude temp artifacts"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "candidate-_private_tmp_r77full__claude_tmp",
+          "qualifier": "proposed-candidate"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_r77full__claude_tmp",
+          "qualifier": "targets-fs-object"
+        },
+        {
+          "objectId": "scan-root-_private_tmp",
+          "qualifier": "scan-root"
+        }
+      ]
+    },
+    {
+      "id": "event-fs-observed-000043",
+      "type": "filesystem_object_observed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/r77full/.gemini/tmp"
+        },
+        {
+          "name": "kind",
+          "value": "directory"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_r77full__gemini_tmp",
+          "qualifier": "observed-object"
+        }
+      ]
+    },
+    {
+      "id": "event-candidate-proposed-000043",
+      "type": "artifact_candidate_proposed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/r77full/.gemini/tmp"
+        },
+        {
+          "name": "reason",
+          "value": "gemini temp artifacts"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "candidate-_private_tmp_r77full__gemini_tmp",
+          "qualifier": "proposed-candidate"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_r77full__gemini_tmp",
+          "qualifier": "targets-fs-object"
+        },
+        {
+          "objectId": "scan-root-_private_tmp",
+          "qualifier": "scan-root"
+        }
+      ]
+    },
+    {
+      "id": "event-fs-observed-000044",
+      "type": "filesystem_object_observed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/r77full/examples/claude-code-pack-verify/.claude/tmp"
+        },
+        {
+          "name": "kind",
+          "value": "directory"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_r77full_examples_claude-code-pack-verify__claude_tmp",
+          "qualifier": "observed-object"
+        }
+      ]
+    },
+    {
+      "id": "event-candidate-proposed-000044",
+      "type": "artifact_candidate_proposed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/r77full/examples/claude-code-pack-verify/.claude/tmp"
+        },
+        {
+          "name": "reason",
+          "value": "claude temp artifacts"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "candidate-_private_tmp_r77full_examples_claude-code-pack-verify__claude_tmp",
+          "qualifier": "proposed-candidate"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_r77full_examples_claude-code-pack-verify__claude_tmp",
+          "qualifier": "targets-fs-object"
+        },
+        {
+          "objectId": "scan-root-_private_tmp",
+          "qualifier": "scan-root"
+        }
+      ]
+    },
+    {
+      "id": "event-fs-observed-000045",
+      "type": "filesystem_object_observed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/r77hook/.claude/tmp"
+        },
+        {
+          "name": "kind",
+          "value": "directory"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_r77hook__claude_tmp",
+          "qualifier": "observed-object"
+        }
+      ]
+    },
+    {
+      "id": "event-candidate-proposed-000045",
+      "type": "artifact_candidate_proposed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/r77hook/.claude/tmp"
+        },
+        {
+          "name": "reason",
+          "value": "claude temp artifacts"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "candidate-_private_tmp_r77hook__claude_tmp",
+          "qualifier": "proposed-candidate"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_r77hook__claude_tmp",
+          "qualifier": "targets-fs-object"
+        },
+        {
+          "objectId": "scan-root-_private_tmp",
+          "qualifier": "scan-root"
+        }
+      ]
+    },
+    {
+      "id": "event-fs-observed-000046",
+      "type": "filesystem_object_observed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/r77hook/.gemini/tmp"
+        },
+        {
+          "name": "kind",
+          "value": "directory"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_r77hook__gemini_tmp",
+          "qualifier": "observed-object"
+        }
+      ]
+    },
+    {
+      "id": "event-candidate-proposed-000046",
+      "type": "artifact_candidate_proposed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/r77hook/.gemini/tmp"
+        },
+        {
+          "name": "reason",
+          "value": "gemini temp artifacts"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "candidate-_private_tmp_r77hook__gemini_tmp",
+          "qualifier": "proposed-candidate"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_r77hook__gemini_tmp",
+          "qualifier": "targets-fs-object"
+        },
+        {
+          "objectId": "scan-root-_private_tmp",
+          "qualifier": "scan-root"
+        }
+      ]
+    },
+    {
+      "id": "event-fs-observed-000047",
+      "type": "filesystem_object_observed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/r77hook/examples/claude-code-pack-verify/.claude/tmp"
+        },
+        {
+          "name": "kind",
+          "value": "directory"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_r77hook_examples_claude-code-pack-verify__claude_tmp",
+          "qualifier": "observed-object"
+        }
+      ]
+    },
+    {
+      "id": "event-candidate-proposed-000047",
+      "type": "artifact_candidate_proposed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/r77hook/examples/claude-code-pack-verify/.claude/tmp"
+        },
+        {
+          "name": "reason",
+          "value": "claude temp artifacts"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "candidate-_private_tmp_r77hook_examples_claude-code-pack-verify__claude_tmp",
+          "qualifier": "proposed-candidate"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_r77hook_examples_claude-code-pack-verify__claude_tmp",
+          "qualifier": "targets-fs-object"
+        },
+        {
+          "objectId": "scan-root-_private_tmp",
+          "qualifier": "scan-root"
+        }
+      ]
+    },
+    {
+      "id": "event-fs-observed-000048",
+      "type": "filesystem_object_observed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/t6_court/target"
+        },
+        {
+          "name": "kind",
+          "value": "directory"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_t6_court_target",
+          "qualifier": "observed-object"
+        }
+      ]
+    },
+    {
+      "id": "event-candidate-proposed-000048",
+      "type": "artifact_candidate_proposed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/t6_court/target"
+        },
+        {
+          "name": "reason",
+          "value": "rust target"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "candidate-_private_tmp_t6_court_target",
+          "qualifier": "proposed-candidate"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_t6_court_target",
+          "qualifier": "targets-fs-object"
+        },
+        {
+          "objectId": "scan-root-_private_tmp",
+          "qualifier": "scan-root"
+        }
+      ]
+    },
+    {
+      "id": "event-fs-observed-000049",
+      "type": "filesystem_object_observed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/tdbg/target"
+        },
+        {
+          "name": "kind",
+          "value": "directory"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_tdbg_target",
+          "qualifier": "observed-object"
+        }
+      ]
+    },
+    {
+      "id": "event-candidate-proposed-000049",
+      "type": "artifact_candidate_proposed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/tdbg/target"
+        },
+        {
+          "name": "reason",
+          "value": "rust target"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "candidate-_private_tmp_tdbg_target",
+          "qualifier": "proposed-candidate"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_tdbg_target",
+          "qualifier": "targets-fs-object"
+        },
+        {
+          "objectId": "scan-root-_private_tmp",
+          "qualifier": "scan-root"
+        }
+      ]
+    },
+    {
+      "id": "event-fs-observed-000050",
+      "type": "filesystem_object_observed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/w650p-subject/.claude/tmp"
+        },
+        {
+          "name": "kind",
+          "value": "directory"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_w650p-subject__claude_tmp",
+          "qualifier": "observed-object"
+        }
+      ]
+    },
+    {
+      "id": "event-candidate-proposed-000050",
+      "type": "artifact_candidate_proposed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/w650p-subject/.claude/tmp"
+        },
+        {
+          "name": "reason",
+          "value": "claude temp artifacts"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "candidate-_private_tmp_w650p-subject__claude_tmp",
+          "qualifier": "proposed-candidate"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_w650p-subject__claude_tmp",
+          "qualifier": "targets-fs-object"
+        },
+        {
+          "objectId": "scan-root-_private_tmp",
+          "qualifier": "scan-root"
+        }
+      ]
+    },
+    {
+      "id": "event-fs-observed-000051",
+      "type": "filesystem_object_observed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/w650q2-clean/.claude/tmp"
+        },
+        {
+          "name": "kind",
+          "value": "directory"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_w650q2-clean__claude_tmp",
+          "qualifier": "observed-object"
+        }
+      ]
+    },
+    {
+      "id": "event-candidate-proposed-000051",
+      "type": "artifact_candidate_proposed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/w650q2-clean/.claude/tmp"
+        },
+        {
+          "name": "reason",
+          "value": "claude temp artifacts"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "candidate-_private_tmp_w650q2-clean__claude_tmp",
+          "qualifier": "proposed-candidate"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_w650q2-clean__claude_tmp",
+          "qualifier": "targets-fs-object"
+        },
+        {
+          "objectId": "scan-root-_private_tmp",
+          "qualifier": "scan-root"
+        }
+      ]
+    },
+    {
+      "id": "event-fs-observed-000052",
+      "type": "filesystem_object_observed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/w746-scratch/.claude/tmp"
+        },
+        {
+          "name": "kind",
+          "value": "directory"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_w746-scratch__claude_tmp",
+          "qualifier": "observed-object"
+        }
+      ]
+    },
+    {
+      "id": "event-candidate-proposed-000052",
+      "type": "artifact_candidate_proposed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/w746-scratch/.claude/tmp"
+        },
+        {
+          "name": "reason",
+          "value": "claude temp artifacts"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "candidate-_private_tmp_w746-scratch__claude_tmp",
+          "qualifier": "proposed-candidate"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_w746-scratch__claude_tmp",
+          "qualifier": "targets-fs-object"
+        },
+        {
+          "objectId": "scan-root-_private_tmp",
+          "qualifier": "scan-root"
+        }
+      ]
+    },
+    {
+      "id": "event-fs-observed-000053",
+      "type": "filesystem_object_observed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/xaas-pw1/.claude/tmp"
+        },
+        {
+          "name": "kind",
+          "value": "directory"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_xaas-pw1__claude_tmp",
+          "qualifier": "observed-object"
+        }
+      ]
+    },
+    {
+      "id": "event-candidate-proposed-000053",
+      "type": "artifact_candidate_proposed",
+      "time": "2026-10-11T06:52:54.551688Z",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/xaas-pw1/.claude/tmp"
+        },
+        {
+          "name": "reason",
+          "value": "claude temp artifacts"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "audit-run"
+        },
+        {
+          "objectId": "candidate-_private_tmp_xaas-pw1__claude_tmp",
+          "qualifier": "proposed-candidate"
+        },
+        {
+          "objectId": "fs-obj-_private_tmp_xaas-pw1__claude_tmp",
+          "qualifier": "targets-fs-object"
+        },
+        {
+          "objectId": "scan-root-_private_tmp",
+          "qualifier": "scan-root"
+        }
+      ]
+    }
+  ],
+  "objects": [
+    {
+      "id": "audit-1791701574",
+      "type": "disk_audit",
+      "attributes": [
+        {
+          "name": "created_at",
+          "value": "2026-10-11T06:52:54.551688+00:00",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "files_seen",
+          "value": 381398,
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "dirs_seen",
+          "value": 70174,
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "bytes_seen",
+          "value": 37867565056,
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "projects_seen",
+          "value": 1111,
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "candidates_seen",
+          "value": 54,
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "pruned_dirs",
+          "value": 2208,
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "errors",
+          "value": 0,
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "scan-root-_private_tmp",
+      "type": "scan_root",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp",
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "root-of-audit"
+        }
+      ]
+    },
+    {
+      "id": "fs-obj-_private_tmp_a2a-tck__agents",
+      "type": "filesystem_object",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/a2a-tck/.agents",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "kind",
+          "value": "directory",
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "observed-in-audit"
+        }
+      ]
+    },
+    {
+      "id": "candidate-_private_tmp_a2a-tck__agents",
+      "type": "artifact_candidate",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/a2a-tck/.agents",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "reason",
+          "value": "ai agents dir",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "bytes",
+          "value": 0,
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "fs-obj-_private_tmp_a2a-tck__agents",
+          "qualifier": "corresponds-to-fs-obj"
+        }
+      ]
+    },
+    {
+      "id": "fs-obj-_private_tmp_a2a-tck__claude_tmp",
+      "type": "filesystem_object",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/a2a-tck/.claude/tmp",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "kind",
+          "value": "directory",
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "observed-in-audit"
+        }
+      ]
+    },
+    {
+      "id": "candidate-_private_tmp_a2a-tck__claude_tmp",
+      "type": "artifact_candidate",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/a2a-tck/.claude/tmp",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "reason",
+          "value": "claude temp artifacts",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "bytes",
+          "value": 0,
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "fs-obj-_private_tmp_a2a-tck__claude_tmp",
+          "qualifier": "corresponds-to-fs-obj"
+        }
+      ]
+    },
+    {
+      "id": "fs-obj-_private_tmp_av2-verify__claude_tmp",
+      "type": "filesystem_object",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/av2-verify/.claude/tmp",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "kind",
+          "value": "directory",
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "observed-in-audit"
+        }
+      ]
+    },
+    {
+      "id": "candidate-_private_tmp_av2-verify__claude_tmp",
+      "type": "artifact_candidate",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/av2-verify/.claude/tmp",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "reason",
+          "value": "claude temp artifacts",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "bytes",
+          "value": 0,
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "fs-obj-_private_tmp_av2-verify__claude_tmp",
+          "qualifier": "corresponds-to-fs-obj"
+        }
+      ]
+    },
+    {
+      "id": "fs-obj-_private_tmp_court_p01_harness_target",
+      "type": "filesystem_object",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/court/p01/harness/target",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "kind",
+          "value": "directory",
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "observed-in-audit"
+        }
+      ]
+    },
+    {
+      "id": "candidate-_private_tmp_court_p01_harness_target",
+      "type": "artifact_candidate",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/court/p01/harness/target",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "reason",
+          "value": "rust target",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "bytes",
+          "value": 84107264,
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "fs-obj-_private_tmp_court_p01_harness_target",
+          "qualifier": "corresponds-to-fs-obj"
+        }
+      ]
+    },
+    {
+      "id": "fs-obj-_private_tmp_court_p02helper_target",
+      "type": "filesystem_object",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/court/p02helper/target",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "kind",
+          "value": "directory",
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "observed-in-audit"
+        }
+      ]
+    },
+    {
+      "id": "candidate-_private_tmp_court_p02helper_target",
+      "type": "artifact_candidate",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/court/p02helper/target",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "reason",
+          "value": "rust target",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "bytes",
+          "value": 84111360,
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "fs-obj-_private_tmp_court_p02helper_target",
+          "qualifier": "corresponds-to-fs-obj"
+        }
+      ]
+    },
+    {
+      "id": "fs-obj-_private_tmp_court_p10_driver_target",
+      "type": "filesystem_object",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/court/p10/driver/target",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "kind",
+          "value": "directory",
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "observed-in-audit"
+        }
+      ]
+    },
+    {
+      "id": "candidate-_private_tmp_court_p10_driver_target",
+      "type": "artifact_candidate",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/court/p10/driver/target",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "reason",
+          "value": "rust target",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "bytes",
+          "value": 13557760,
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "fs-obj-_private_tmp_court_p10_driver_target",
+          "qualifier": "corresponds-to-fs-obj"
+        }
+      ]
+    },
+    {
+      "id": "fs-obj-_private_tmp_court_p13_driver_target",
+      "type": "filesystem_object",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/court/p13_driver/target",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "kind",
+          "value": "directory",
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "observed-in-audit"
+        }
+      ]
+    },
+    {
+      "id": "candidate-_private_tmp_court_p13_driver_target",
+      "type": "artifact_candidate",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/court/p13_driver/target",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "reason",
+          "value": "rust target",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "bytes",
+          "value": 13058048,
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "fs-obj-_private_tmp_court_p13_driver_target",
+          "qualifier": "corresponds-to-fs-obj"
+        }
+      ]
+    },
+    {
+      "id": "fs-obj-_private_tmp_ctp-capsule_clap-noun-verb__claude_tmp",
+      "type": "filesystem_object",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/ctp-capsule/clap-noun-verb/.claude/tmp",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "kind",
+          "value": "directory",
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "observed-in-audit"
+        }
+      ]
+    },
+    {
+      "id": "candidate-_private_tmp_ctp-capsule_clap-noun-verb__claude_tmp",
+      "type": "artifact_candidate",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/ctp-capsule/clap-noun-verb/.claude/tmp",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "reason",
+          "value": "claude temp artifacts",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "bytes",
+          "value": 0,
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "fs-obj-_private_tmp_ctp-capsule_clap-noun-verb__claude_tmp",
+          "qualifier": "corresponds-to-fs-obj"
+        }
+      ]
+    },
+    {
+      "id": "fs-obj-_private_tmp_ea104-replay__claude_tmp",
+      "type": "filesystem_object",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/ea104-replay/.claude/tmp",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "kind",
+          "value": "directory",
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "observed-in-audit"
+        }
+      ]
+    },
+    {
+      "id": "candidate-_private_tmp_ea104-replay__claude_tmp",
+      "type": "artifact_candidate",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/ea104-replay/.claude/tmp",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "reason",
+          "value": "claude temp artifacts",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "bytes",
+          "value": 0,
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "fs-obj-_private_tmp_ea104-replay__claude_tmp",
+          "qualifier": "corresponds-to-fs-obj"
+        }
+      ]
+    },
+    {
+      "id": "fs-obj-_private_tmp_ea104-replay__gemini_tmp",
+      "type": "filesystem_object",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/ea104-replay/.gemini/tmp",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "kind",
+          "value": "directory",
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "observed-in-audit"
+        }
+      ]
+    },
+    {
+      "id": "candidate-_private_tmp_ea104-replay__gemini_tmp",
+      "type": "artifact_candidate",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/ea104-replay/.gemini/tmp",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "reason",
+          "value": "gemini temp artifacts",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "bytes",
+          "value": 0,
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "fs-obj-_private_tmp_ea104-replay__gemini_tmp",
+          "qualifier": "corresponds-to-fs-obj"
+        }
+      ]
+    },
+    {
+      "id": "fs-obj-_private_tmp_ea104-replay_examples_claude-code-pack-verify__claude_tmp",
+      "type": "filesystem_object",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/ea104-replay/examples/claude-code-pack-verify/.claude/tmp",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "kind",
+          "value": "directory",
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "observed-in-audit"
+        }
+      ]
+    },
+    {
+      "id": "candidate-_private_tmp_ea104-replay_examples_claude-code-pack-verify__claude_tmp",
+      "type": "artifact_candidate",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/ea104-replay/examples/claude-code-pack-verify/.claude/tmp",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "reason",
+          "value": "claude temp artifacts",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "bytes",
+          "value": 0,
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "fs-obj-_private_tmp_ea104-replay_examples_claude-code-pack-verify__claude_tmp",
+          "qualifier": "corresponds-to-fs-obj"
+        }
+      ]
+    },
+    {
+      "id": "fs-obj-_private_tmp_ea110-replay__claude_tmp",
+      "type": "filesystem_object",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/ea110-replay/.claude/tmp",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "kind",
+          "value": "directory",
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "observed-in-audit"
+        }
+      ]
+    },
+    {
+      "id": "candidate-_private_tmp_ea110-replay__claude_tmp",
+      "type": "artifact_candidate",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/ea110-replay/.claude/tmp",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "reason",
+          "value": "claude temp artifacts",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "bytes",
+          "value": 0,
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "fs-obj-_private_tmp_ea110-replay__claude_tmp",
+          "qualifier": "corresponds-to-fs-obj"
+        }
+      ]
+    },
+    {
+      "id": "fs-obj-_private_tmp_ea111-replay__claude_tmp",
+      "type": "filesystem_object",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/ea111-replay/.claude/tmp",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "kind",
+          "value": "directory",
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "observed-in-audit"
+        }
+      ]
+    },
+    {
+      "id": "candidate-_private_tmp_ea111-replay__claude_tmp",
+      "type": "artifact_candidate",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/ea111-replay/.claude/tmp",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "reason",
+          "value": "claude temp artifacts",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "bytes",
+          "value": 0,
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "fs-obj-_private_tmp_ea111-replay__claude_tmp",
+          "qualifier": "corresponds-to-fs-obj"
+        }
+      ]
+    },
+    {
+      "id": "fs-obj-_private_tmp_ea115-replay__claude_tmp",
+      "type": "filesystem_object",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/ea115-replay/.claude/tmp",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "kind",
+          "value": "directory",
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "observed-in-audit"
+        }
+      ]
+    },
+    {
+      "id": "candidate-_private_tmp_ea115-replay__claude_tmp",
+      "type": "artifact_candidate",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/ea115-replay/.claude/tmp",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "reason",
+          "value": "claude temp artifacts",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "bytes",
+          "value": 0,
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "fs-obj-_private_tmp_ea115-replay__claude_tmp",
+          "qualifier": "corresponds-to-fs-obj"
+        }
+      ]
+    },
+    {
+      "id": "fs-obj-_private_tmp_ecvec_target",
+      "type": "filesystem_object",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/ecvec/target",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "kind",
+          "value": "directory",
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "observed-in-audit"
+        }
+      ]
+    },
+    {
+      "id": "candidate-_private_tmp_ecvec_target",
+      "type": "artifact_candidate",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/ecvec/target",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "reason",
+          "value": "rust target",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "bytes",
+          "value": 151977984,
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "fs-obj-_private_tmp_ecvec_target",
+          "qualifier": "corresponds-to-fs-obj"
+        }
+      ]
+    },
+    {
+      "id": "fs-obj-_private_tmp_fcwork_t4_target",
+      "type": "filesystem_object",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/fcwork/t4/target",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "kind",
+          "value": "directory",
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "observed-in-audit"
+        }
+      ]
+    },
+    {
+      "id": "candidate-_private_tmp_fcwork_t4_target",
+      "type": "artifact_candidate",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/fcwork/t4/target",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "reason",
+          "value": "rust target",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "bytes",
+          "value": 45056,
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "fs-obj-_private_tmp_fcwork_t4_target",
+          "qualifier": "corresponds-to-fs-obj"
+        }
+      ]
+    },
+    {
+      "id": "fs-obj-_private_tmp_fd2-headsnap__claude_tmp",
+      "type": "filesystem_object",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/fd2-headsnap/.claude/tmp",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "kind",
+          "value": "directory",
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "observed-in-audit"
+        }
+      ]
+    },
+    {
+      "id": "candidate-_private_tmp_fd2-headsnap__claude_tmp",
+      "type": "artifact_candidate",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/fd2-headsnap/.claude/tmp",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "reason",
+          "value": "claude temp artifacts",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "bytes",
+          "value": 0,
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "fs-obj-_private_tmp_fd2-headsnap__claude_tmp",
+          "qualifier": "corresponds-to-fs-obj"
+        }
+      ]
+    },
+    {
+      "id": "fs-obj-_private_tmp_fd5snap-13806e2__claude_tmp",
+      "type": "filesystem_object",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/fd5snap-13806e2/.claude/tmp",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "kind",
+          "value": "directory",
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "observed-in-audit"
+        }
+      ]
+    },
+    {
+      "id": "candidate-_private_tmp_fd5snap-13806e2__claude_tmp",
+      "type": "artifact_candidate",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/fd5snap-13806e2/.claude/tmp",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "reason",
+          "value": "claude temp artifacts",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "bytes",
+          "value": 0,
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "fs-obj-_private_tmp_fd5snap-13806e2__claude_tmp",
+          "qualifier": "corresponds-to-fs-obj"
+        }
+      ]
+    },
+    {
+      "id": "fs-obj-_private_tmp_fd6snap-57217fa__claude_tmp",
+      "type": "filesystem_object",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/fd6snap-57217fa/.claude/tmp",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "kind",
+          "value": "directory",
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "observed-in-audit"
+        }
+      ]
+    },
+    {
+      "id": "candidate-_private_tmp_fd6snap-57217fa__claude_tmp",
+      "type": "artifact_candidate",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/fd6snap-57217fa/.claude/tmp",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "reason",
+          "value": "claude temp artifacts",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "bytes",
+          "value": 0,
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "fs-obj-_private_tmp_fd6snap-57217fa__claude_tmp",
+          "qualifier": "corresponds-to-fs-obj"
+        }
+      ]
+    },
+    {
+      "id": "fs-obj-_private_tmp_ferro-cov120_headv__claude_tmp",
+      "type": "filesystem_object",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/ferro-cov120/headv/.claude/tmp",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "kind",
+          "value": "directory",
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "observed-in-audit"
+        }
+      ]
+    },
+    {
+      "id": "candidate-_private_tmp_ferro-cov120_headv__claude_tmp",
+      "type": "artifact_candidate",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/ferro-cov120/headv/.claude/tmp",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "reason",
+          "value": "claude temp artifacts",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "bytes",
+          "value": 0,
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "fs-obj-_private_tmp_ferro-cov120_headv__claude_tmp",
+          "qualifier": "corresponds-to-fs-obj"
+        }
+      ]
+    },
+    {
+      "id": "fs-obj-_private_tmp_ferro-drift_head3-snap-94868__claude_tmp",
+      "type": "filesystem_object",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/ferro-drift/head3-snap-94868/.claude/tmp",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "kind",
+          "value": "directory",
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "observed-in-audit"
+        }
+      ]
+    },
+    {
+      "id": "candidate-_private_tmp_ferro-drift_head3-snap-94868__claude_tmp",
+      "type": "artifact_candidate",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/ferro-drift/head3-snap-94868/.claude/tmp",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "reason",
+          "value": "claude temp artifacts",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "bytes",
+          "value": 0,
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "fs-obj-_private_tmp_ferro-drift_head3-snap-94868__claude_tmp",
+          "qualifier": "corresponds-to-fs-obj"
+        }
+      ]
+    },
+    {
+      "id": "fs-obj-_private_tmp_ferro-receipt_head-snap__claude_tmp",
+      "type": "filesystem_object",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/ferro-receipt/head-snap/.claude/tmp",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "kind",
+          "value": "directory",
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "observed-in-audit"
+        }
+      ]
+    },
+    {
+      "id": "candidate-_private_tmp_ferro-receipt_head-snap__claude_tmp",
+      "type": "artifact_candidate",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/ferro-receipt/head-snap/.claude/tmp",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "reason",
+          "value": "claude temp artifacts",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "bytes",
+          "value": 0,
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "fs-obj-_private_tmp_ferro-receipt_head-snap__claude_tmp",
+          "qualifier": "corresponds-to-fs-obj"
+        }
+      ]
+    },
+    {
+      "id": "fs-obj-_private_tmp_ferro-receipt_head2-snap__claude_tmp",
+      "type": "filesystem_object",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/ferro-receipt/head2-snap/.claude/tmp",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "kind",
+          "value": "directory",
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "observed-in-audit"
+        }
+      ]
+    },
+    {
+      "id": "candidate-_private_tmp_ferro-receipt_head2-snap__claude_tmp",
+      "type": "artifact_candidate",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/ferro-receipt/head2-snap/.claude/tmp",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "reason",
+          "value": "claude temp artifacts",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "bytes",
+          "value": 0,
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "fs-obj-_private_tmp_ferro-receipt_head2-snap__claude_tmp",
+          "qualifier": "corresponds-to-fs-obj"
+        }
+      ]
+    },
+    {
+      "id": "fs-obj-_private_tmp_ferro-receipt_head3-snap__claude_tmp",
+      "type": "filesystem_object",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/ferro-receipt/head3-snap/.claude/tmp",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "kind",
+          "value": "directory",
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "observed-in-audit"
+        }
+      ]
+    },
+    {
+      "id": "candidate-_private_tmp_ferro-receipt_head3-snap__claude_tmp",
+      "type": "artifact_candidate",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/ferro-receipt/head3-snap/.claude/tmp",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "reason",
+          "value": "claude temp artifacts",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "bytes",
+          "value": 0,
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "fs-obj-_private_tmp_ferro-receipt_head3-snap__claude_tmp",
+          "qualifier": "corresponds-to-fs-obj"
+        }
+      ]
+    },
+    {
+      "id": "fs-obj-_private_tmp_ferro-vp_snap__claude_tmp",
+      "type": "filesystem_object",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/ferro-vp/snap/.claude/tmp",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "kind",
+          "value": "directory",
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "observed-in-audit"
+        }
+      ]
+    },
+    {
+      "id": "candidate-_private_tmp_ferro-vp_snap__claude_tmp",
+      "type": "artifact_candidate",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/ferro-vp/snap/.claude/tmp",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "reason",
+          "value": "claude temp artifacts",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "bytes",
+          "value": 0,
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "fs-obj-_private_tmp_ferro-vp_snap__claude_tmp",
+          "qualifier": "corresponds-to-fs-obj"
+        }
+      ]
+    },
+    {
+      "id": "fs-obj-_private_tmp_ferro-witness145_tree__claude_tmp",
+      "type": "filesystem_object",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/ferro-witness145/tree/.claude/tmp",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "kind",
+          "value": "directory",
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "observed-in-audit"
+        }
+      ]
+    },
+    {
+      "id": "candidate-_private_tmp_ferro-witness145_tree__claude_tmp",
+      "type": "artifact_candidate",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/ferro-witness145/tree/.claude/tmp",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "reason",
+          "value": "claude temp artifacts",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "bytes",
+          "value": 0,
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "fs-obj-_private_tmp_ferro-witness145_tree__claude_tmp",
+          "qualifier": "corresponds-to-fs-obj"
+        }
+      ]
+    },
+    {
+      "id": "fs-obj-_private_tmp_gwm-scratch__claude_tmp",
+      "type": "filesystem_object",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/gwm-scratch/.claude/tmp",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "kind",
+          "value": "directory",
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "observed-in-audit"
+        }
+      ]
+    },
+    {
+      "id": "candidate-_private_tmp_gwm-scratch__claude_tmp",
+      "type": "artifact_candidate",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/gwm-scratch/.claude/tmp",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "reason",
+          "value": "claude temp artifacts",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "bytes",
+          "value": 0,
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "fs-obj-_private_tmp_gwm-scratch__claude_tmp",
+          "qualifier": "corresponds-to-fs-obj"
+        }
+      ]
+    },
+    {
+      "id": "fs-obj-_private_tmp_gwm-scratch2__claude_tmp",
+      "type": "filesystem_object",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/gwm-scratch2/.claude/tmp",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "kind",
+          "value": "directory",
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "observed-in-audit"
+        }
+      ]
+    },
+    {
+      "id": "candidate-_private_tmp_gwm-scratch2__claude_tmp",
+      "type": "artifact_candidate",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/gwm-scratch2/.claude/tmp",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "reason",
+          "value": "claude temp artifacts",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "bytes",
+          "value": 0,
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "fs-obj-_private_tmp_gwm-scratch2__claude_tmp",
+          "qualifier": "corresponds-to-fs-obj"
+        }
+      ]
+    },
+    {
+      "id": "fs-obj-_private_tmp_hdit_autofde-lab__claude_tmp",
+      "type": "filesystem_object",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/hdit/autofde-lab/.claude/tmp",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "kind",
+          "value": "directory",
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "observed-in-audit"
+        }
+      ]
+    },
+    {
+      "id": "candidate-_private_tmp_hdit_autofde-lab__claude_tmp",
+      "type": "artifact_candidate",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/hdit/autofde-lab/.claude/tmp",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "reason",
+          "value": "claude temp artifacts",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "bytes",
+          "value": 0,
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "fs-obj-_private_tmp_hdit_autofde-lab__claude_tmp",
+          "qualifier": "corresponds-to-fs-obj"
+        }
+      ]
+    },
+    {
+      "id": "fs-obj-_private_tmp_hdit_gm-feb12208__claude_tmp",
+      "type": "filesystem_object",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/hdit/gm-feb12208/.claude/tmp",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "kind",
+          "value": "directory",
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "observed-in-audit"
+        }
+      ]
+    },
+    {
+      "id": "candidate-_private_tmp_hdit_gm-feb12208__claude_tmp",
+      "type": "artifact_candidate",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/hdit/gm-feb12208/.claude/tmp",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "reason",
+          "value": "claude temp artifacts",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "bytes",
+          "value": 0,
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "fs-obj-_private_tmp_hdit_gm-feb12208__claude_tmp",
+          "qualifier": "corresponds-to-fs-obj"
+        }
+      ]
+    },
+    {
+      "id": "fs-obj-_private_tmp_hdit-build_pack_target",
+      "type": "filesystem_object",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/hdit-build/pack/target",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "kind",
+          "value": "directory",
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "observed-in-audit"
+        }
+      ]
+    },
+    {
+      "id": "candidate-_private_tmp_hdit-build_pack_target",
+      "type": "artifact_candidate",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/hdit-build/pack/target",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "reason",
+          "value": "rust target",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "bytes",
+          "value": 278564864,
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "fs-obj-_private_tmp_hdit-build_pack_target",
+          "qualifier": "corresponds-to-fs-obj"
+        }
+      ]
+    },
+    {
+      "id": "fs-obj-_private_tmp_lock9fd5ef148__claude_tmp",
+      "type": "filesystem_object",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/lock9fd5ef148/.claude/tmp",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "kind",
+          "value": "directory",
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "observed-in-audit"
+        }
+      ]
+    },
+    {
+      "id": "candidate-_private_tmp_lock9fd5ef148__claude_tmp",
+      "type": "artifact_candidate",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/lock9fd5ef148/.claude/tmp",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "reason",
+          "value": "claude temp artifacts",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "bytes",
+          "value": 0,
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "fs-obj-_private_tmp_lock9fd5ef148__claude_tmp",
+          "qualifier": "corresponds-to-fs-obj"
+        }
+      ]
+    },
+    {
+      "id": "fs-obj-_private_tmp_lockefdaed2ea__claude_tmp",
+      "type": "filesystem_object",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/lockefdaed2ea/.claude/tmp",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "kind",
+          "value": "directory",
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "observed-in-audit"
+        }
+      ]
+    },
+    {
+      "id": "candidate-_private_tmp_lockefdaed2ea__claude_tmp",
+      "type": "artifact_candidate",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/lockefdaed2ea/.claude/tmp",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "reason",
+          "value": "claude temp artifacts",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "bytes",
+          "value": 0,
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "fs-obj-_private_tmp_lockefdaed2ea__claude_tmp",
+          "qualifier": "corresponds-to-fs-obj"
+        }
+      ]
+    },
+    {
+      "id": "fs-obj-_private_tmp_mpbump-tree__claude_tmp",
+      "type": "filesystem_object",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/mpbump-tree/.claude/tmp",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "kind",
+          "value": "directory",
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "observed-in-audit"
+        }
+      ]
+    },
+    {
+      "id": "candidate-_private_tmp_mpbump-tree__claude_tmp",
+      "type": "artifact_candidate",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/mpbump-tree/.claude/tmp",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "reason",
+          "value": "claude temp artifacts",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "bytes",
+          "value": 0,
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "fs-obj-_private_tmp_mpbump-tree__claude_tmp",
+          "qualifier": "corresponds-to-fs-obj"
+        }
+      ]
+    },
+    {
+      "id": "fs-obj-_private_tmp_mu2-gate__claude_tmp",
+      "type": "filesystem_object",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/mu2-gate/.claude/tmp",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "kind",
+          "value": "directory",
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "observed-in-audit"
+        }
+      ]
+    },
+    {
+      "id": "candidate-_private_tmp_mu2-gate__claude_tmp",
+      "type": "artifact_candidate",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/mu2-gate/.claude/tmp",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "reason",
+          "value": "claude temp artifacts",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "bytes",
+          "value": 0,
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "fs-obj-_private_tmp_mu2-gate__claude_tmp",
+          "qualifier": "corresponds-to-fs-obj"
+        }
+      ]
+    },
+    {
+      "id": "fs-obj-_private_tmp_mu2-subject__claude_tmp",
+      "type": "filesystem_object",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/mu2-subject/.claude/tmp",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "kind",
+          "value": "directory",
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "observed-in-audit"
+        }
+      ]
+    },
+    {
+      "id": "candidate-_private_tmp_mu2-subject__claude_tmp",
+      "type": "artifact_candidate",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/mu2-subject/.claude/tmp",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "reason",
+          "value": "claude temp artifacts",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "bytes",
+          "value": 0,
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "fs-obj-_private_tmp_mu2-subject__claude_tmp",
+          "qualifier": "corresponds-to-fs-obj"
+        }
+      ]
+    },
+    {
+      "id": "fs-obj-_private_tmp_mu2-subject2__claude_tmp",
+      "type": "filesystem_object",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/mu2-subject2/.claude/tmp",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "kind",
+          "value": "directory",
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "observed-in-audit"
+        }
+      ]
+    },
+    {
+      "id": "candidate-_private_tmp_mu2-subject2__claude_tmp",
+      "type": "artifact_candidate",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/mu2-subject2/.claude/tmp",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "reason",
+          "value": "claude temp artifacts",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "bytes",
+          "value": 0,
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "fs-obj-_private_tmp_mu2-subject2__claude_tmp",
+          "qualifier": "corresponds-to-fs-obj"
+        }
+      ]
+    },
+    {
+      "id": "fs-obj-_private_tmp_p05dbg_target",
+      "type": "filesystem_object",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/p05dbg/target",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "kind",
+          "value": "directory",
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "observed-in-audit"
+        }
+      ]
+    },
+    {
+      "id": "candidate-_private_tmp_p05dbg_target",
+      "type": "artifact_candidate",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/p05dbg/target",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "reason",
+          "value": "rust target",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "bytes",
+          "value": 20074496,
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "fs-obj-_private_tmp_p05dbg_target",
+          "qualifier": "corresponds-to-fs-obj"
+        }
+      ]
+    },
+    {
+      "id": "fs-obj-_private_tmp_p18_driver_target",
+      "type": "filesystem_object",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/p18_driver/target",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "kind",
+          "value": "directory",
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "observed-in-audit"
+        }
+      ]
+    },
+    {
+      "id": "candidate-_private_tmp_p18_driver_target",
+      "type": "artifact_candidate",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/p18_driver/target",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "reason",
+          "value": "rust target",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "bytes",
+          "value": 168452096,
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "fs-obj-_private_tmp_p18_driver_target",
+          "qualifier": "corresponds-to-fs-obj"
+        }
+      ]
+    },
+    {
+      "id": "fs-obj-_private_tmp_r77base__claude_tmp",
+      "type": "filesystem_object",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/r77base/.claude/tmp",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "kind",
+          "value": "directory",
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "observed-in-audit"
+        }
+      ]
+    },
+    {
+      "id": "candidate-_private_tmp_r77base__claude_tmp",
+      "type": "artifact_candidate",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/r77base/.claude/tmp",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "reason",
+          "value": "claude temp artifacts",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "bytes",
+          "value": 0,
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "fs-obj-_private_tmp_r77base__claude_tmp",
+          "qualifier": "corresponds-to-fs-obj"
+        }
+      ]
+    },
+    {
+      "id": "fs-obj-_private_tmp_r77base__gemini_tmp",
+      "type": "filesystem_object",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/r77base/.gemini/tmp",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "kind",
+          "value": "directory",
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "observed-in-audit"
+        }
+      ]
+    },
+    {
+      "id": "candidate-_private_tmp_r77base__gemini_tmp",
+      "type": "artifact_candidate",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/r77base/.gemini/tmp",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "reason",
+          "value": "gemini temp artifacts",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "bytes",
+          "value": 0,
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "fs-obj-_private_tmp_r77base__gemini_tmp",
+          "qualifier": "corresponds-to-fs-obj"
+        }
+      ]
+    },
+    {
+      "id": "fs-obj-_private_tmp_r77base_examples_claude-code-pack-verify__claude_tmp",
+      "type": "filesystem_object",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/r77base/examples/claude-code-pack-verify/.claude/tmp",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "kind",
+          "value": "directory",
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "observed-in-audit"
+        }
+      ]
+    },
+    {
+      "id": "candidate-_private_tmp_r77base_examples_claude-code-pack-verify__claude_tmp",
+      "type": "artifact_candidate",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/r77base/examples/claude-code-pack-verify/.claude/tmp",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "reason",
+          "value": "claude temp artifacts",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "bytes",
+          "value": 0,
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "fs-obj-_private_tmp_r77base_examples_claude-code-pack-verify__claude_tmp",
+          "qualifier": "corresponds-to-fs-obj"
+        }
+      ]
+    },
+    {
+      "id": "fs-obj-_private_tmp_r77full__claude_tmp",
+      "type": "filesystem_object",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/r77full/.claude/tmp",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "kind",
+          "value": "directory",
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "observed-in-audit"
+        }
+      ]
+    },
+    {
+      "id": "candidate-_private_tmp_r77full__claude_tmp",
+      "type": "artifact_candidate",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/r77full/.claude/tmp",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "reason",
+          "value": "claude temp artifacts",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "bytes",
+          "value": 0,
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "fs-obj-_private_tmp_r77full__claude_tmp",
+          "qualifier": "corresponds-to-fs-obj"
+        }
+      ]
+    },
+    {
+      "id": "fs-obj-_private_tmp_r77full__gemini_tmp",
+      "type": "filesystem_object",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/r77full/.gemini/tmp",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "kind",
+          "value": "directory",
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "observed-in-audit"
+        }
+      ]
+    },
+    {
+      "id": "candidate-_private_tmp_r77full__gemini_tmp",
+      "type": "artifact_candidate",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/r77full/.gemini/tmp",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "reason",
+          "value": "gemini temp artifacts",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "bytes",
+          "value": 0,
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "fs-obj-_private_tmp_r77full__gemini_tmp",
+          "qualifier": "corresponds-to-fs-obj"
+        }
+      ]
+    },
+    {
+      "id": "fs-obj-_private_tmp_r77full_examples_claude-code-pack-verify__claude_tmp",
+      "type": "filesystem_object",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/r77full/examples/claude-code-pack-verify/.claude/tmp",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "kind",
+          "value": "directory",
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "observed-in-audit"
+        }
+      ]
+    },
+    {
+      "id": "candidate-_private_tmp_r77full_examples_claude-code-pack-verify__claude_tmp",
+      "type": "artifact_candidate",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/r77full/examples/claude-code-pack-verify/.claude/tmp",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "reason",
+          "value": "claude temp artifacts",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "bytes",
+          "value": 0,
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "fs-obj-_private_tmp_r77full_examples_claude-code-pack-verify__claude_tmp",
+          "qualifier": "corresponds-to-fs-obj"
+        }
+      ]
+    },
+    {
+      "id": "fs-obj-_private_tmp_r77hook__claude_tmp",
+      "type": "filesystem_object",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/r77hook/.claude/tmp",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "kind",
+          "value": "directory",
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "observed-in-audit"
+        }
+      ]
+    },
+    {
+      "id": "candidate-_private_tmp_r77hook__claude_tmp",
+      "type": "artifact_candidate",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/r77hook/.claude/tmp",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "reason",
+          "value": "claude temp artifacts",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "bytes",
+          "value": 0,
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "fs-obj-_private_tmp_r77hook__claude_tmp",
+          "qualifier": "corresponds-to-fs-obj"
+        }
+      ]
+    },
+    {
+      "id": "fs-obj-_private_tmp_r77hook__gemini_tmp",
+      "type": "filesystem_object",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/r77hook/.gemini/tmp",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "kind",
+          "value": "directory",
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "observed-in-audit"
+        }
+      ]
+    },
+    {
+      "id": "candidate-_private_tmp_r77hook__gemini_tmp",
+      "type": "artifact_candidate",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/r77hook/.gemini/tmp",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "reason",
+          "value": "gemini temp artifacts",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "bytes",
+          "value": 0,
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "fs-obj-_private_tmp_r77hook__gemini_tmp",
+          "qualifier": "corresponds-to-fs-obj"
+        }
+      ]
+    },
+    {
+      "id": "fs-obj-_private_tmp_r77hook_examples_claude-code-pack-verify__claude_tmp",
+      "type": "filesystem_object",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/r77hook/examples/claude-code-pack-verify/.claude/tmp",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "kind",
+          "value": "directory",
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "observed-in-audit"
+        }
+      ]
+    },
+    {
+      "id": "candidate-_private_tmp_r77hook_examples_claude-code-pack-verify__claude_tmp",
+      "type": "artifact_candidate",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/r77hook/examples/claude-code-pack-verify/.claude/tmp",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "reason",
+          "value": "claude temp artifacts",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "bytes",
+          "value": 0,
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "fs-obj-_private_tmp_r77hook_examples_claude-code-pack-verify__claude_tmp",
+          "qualifier": "corresponds-to-fs-obj"
+        }
+      ]
+    },
+    {
+      "id": "fs-obj-_private_tmp_t6_court_target",
+      "type": "filesystem_object",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/t6_court/target",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "kind",
+          "value": "directory",
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "observed-in-audit"
+        }
+      ]
+    },
+    {
+      "id": "candidate-_private_tmp_t6_court_target",
+      "type": "artifact_candidate",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/t6_court/target",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "reason",
+          "value": "rust target",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "bytes",
+          "value": 115949568,
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "fs-obj-_private_tmp_t6_court_target",
+          "qualifier": "corresponds-to-fs-obj"
+        }
+      ]
+    },
+    {
+      "id": "fs-obj-_private_tmp_tdbg_target",
+      "type": "filesystem_object",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/tdbg/target",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "kind",
+          "value": "directory",
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "observed-in-audit"
+        }
+      ]
+    },
+    {
+      "id": "candidate-_private_tmp_tdbg_target",
+      "type": "artifact_candidate",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/tdbg/target",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "reason",
+          "value": "rust target",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "bytes",
+          "value": 19480576,
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "fs-obj-_private_tmp_tdbg_target",
+          "qualifier": "corresponds-to-fs-obj"
+        }
+      ]
+    },
+    {
+      "id": "fs-obj-_private_tmp_w650p-subject__claude_tmp",
+      "type": "filesystem_object",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/w650p-subject/.claude/tmp",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "kind",
+          "value": "directory",
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "observed-in-audit"
+        }
+      ]
+    },
+    {
+      "id": "candidate-_private_tmp_w650p-subject__claude_tmp",
+      "type": "artifact_candidate",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/w650p-subject/.claude/tmp",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "reason",
+          "value": "claude temp artifacts",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "bytes",
+          "value": 0,
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "fs-obj-_private_tmp_w650p-subject__claude_tmp",
+          "qualifier": "corresponds-to-fs-obj"
+        }
+      ]
+    },
+    {
+      "id": "fs-obj-_private_tmp_w650q2-clean__claude_tmp",
+      "type": "filesystem_object",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/w650q2-clean/.claude/tmp",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "kind",
+          "value": "directory",
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "observed-in-audit"
+        }
+      ]
+    },
+    {
+      "id": "candidate-_private_tmp_w650q2-clean__claude_tmp",
+      "type": "artifact_candidate",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/w650q2-clean/.claude/tmp",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "reason",
+          "value": "claude temp artifacts",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "bytes",
+          "value": 0,
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "fs-obj-_private_tmp_w650q2-clean__claude_tmp",
+          "qualifier": "corresponds-to-fs-obj"
+        }
+      ]
+    },
+    {
+      "id": "fs-obj-_private_tmp_w746-scratch__claude_tmp",
+      "type": "filesystem_object",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/w746-scratch/.claude/tmp",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "kind",
+          "value": "directory",
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "observed-in-audit"
+        }
+      ]
+    },
+    {
+      "id": "candidate-_private_tmp_w746-scratch__claude_tmp",
+      "type": "artifact_candidate",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/w746-scratch/.claude/tmp",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "reason",
+          "value": "claude temp artifacts",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "bytes",
+          "value": 0,
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "fs-obj-_private_tmp_w746-scratch__claude_tmp",
+          "qualifier": "corresponds-to-fs-obj"
+        }
+      ]
+    },
+    {
+      "id": "fs-obj-_private_tmp_xaas-pw1__claude_tmp",
+      "type": "filesystem_object",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/xaas-pw1/.claude/tmp",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "kind",
+          "value": "directory",
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "audit-1791701574",
+          "qualifier": "observed-in-audit"
+        }
+      ]
+    },
+    {
+      "id": "candidate-_private_tmp_xaas-pw1__claude_tmp",
+      "type": "artifact_candidate",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "/private/tmp/xaas-pw1/.claude/tmp",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "reason",
+          "value": "claude temp artifacts",
+          "time": "2026-10-11T06:52:54.551688Z"
+        },
+        {
+          "name": "bytes",
+          "value": 0,
+          "time": "2026-10-11T06:52:54.551688Z"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "fs-obj-_private_tmp_xaas-pw1__claude_tmp",
+          "qualifier": "corresponds-to-fs-obj"
+        }
+      ]
+    }
+  ]
+}

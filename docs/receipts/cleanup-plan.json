@@ -1,0 +1,96 @@
+{
+  "version": 1,
+  "created_unix": 1791701580,
+  "roots": [
+    "/private/tmp"
+  ],
+  "deps": false,
+  "aggressive": true,
+  "items": [
+    {
+      "path": "/private/tmp/hdit-build/pack/target",
+      "kind": "dir",
+      "reason": "rust target",
+      "bytes": 278564864,
+      "reversibility": "reversible"
+    },
+    {
+      "path": "/private/tmp/p18_driver/target",
+      "kind": "dir",
+      "reason": "rust target",
+      "bytes": 168452096,
+      "reversibility": "reversible"
+    },
+    {
+      "path": "/private/tmp/ecvec/target",
+      "kind": "dir",
+      "reason": "rust target",
+      "bytes": 151977984,
+      "reversibility": "reversible"
+    },
+    {
+      "path": "/private/tmp/t6_court/target",
+      "kind": "dir",
+      "reason": "rust target",
+      "bytes": 115949568,
+      "reversibility": "reversible"
+    },
+    {
+      "path": "/private/tmp/court/p02helper/target",
+      "kind": "dir",
+      "reason": "rust target",
+      "bytes": 84111360,
+      "reversibility": "reversible"
+    },
+    {
+      "path": "/private/tmp/court/p01/harness/target",
+      "kind": "dir",
+      "reason": "rust target",
+      "bytes": 84107264,
+      "reversibility": "reversible"
+    },
+    {
+      "path": "/private/tmp/p05dbg/target",
+      "kind": "dir",
+      "reason": "rust target",
+      "bytes": 20074496,
+      "reversibility": "reversible"
+    },
+    {
+      "path": "/private/tmp/tdbg/target",
+      "kind": "dir",
+      "reason": "rust target",
+      "bytes": 19480576,
+      "reversibility": "reversible"
+    },
+    {
+      "path": "/private/tmp/court/p10/driver/target",
+      "kind": "dir",
+      "reason": "rust target",
+      "bytes": 13557760,
+      "reversibility": "reversible"
+    },
+    {
+      "path": "/private/tmp/court/p13_driver/target",
+      "kind": "dir",
+      "reason": "rust target",
+      "bytes": 13058048,
+      "reversibility": "reversible"
+    },
+    {
+      "path": "/private/tmp/fcwork/t4/target",
+      "kind": "dir",
+      "reason": "rust target",
+      "bytes": 45056,
+      "reversibility": "reversible"
+    }
+  ],
+  "tool_roots": [],
+  "approval": {
+    "approver": "Sean Chatman (coordinator)",
+    "approval_reason": "Disk 100% full (126 MiB free) blocking a 20-lane build fan-out; all 11 items are stale rust target dirs under /private/tmp older than 4 hours, classified reversible (cargo rebuilds them).",
+    "approved_at_unix": 1791701619,
+    "plan_hash": "ee3f69f928f59ad772d3424d7aa20590e6d03c7ecba4013fd2e6b74b12f817ce",
+    "hmac_signature": "2d0e7db42606cea1a8fa652ecefb2792588efef0302cb2fdc3170e1cd095ce63"
+  }
+}

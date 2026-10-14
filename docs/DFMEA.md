@@ -163,6 +163,40 @@ Verification commands are given per row; run from repo root `/Users/sac/strata`.
 - **Scores (judgment, 2026-10-14)**: S 7, O 3, D 8 (pre D 8 — the swapped
   harness could not detect the swapped filter). RPN pre 168 → post 42.
 
+## F-10. A06 novation effective with zero counterparties (empty-corpus vacuity)
+
+- **Failure mode**: an empty consents book in `A06DerivNovation` made
+  `pending == []` vacuously true; novation executed with zero counterparties
+  and the tier2 receipt admitted.
+- **Detection**: vacuity court — audit lane MX11 (vibration 2026-10-14) fed an
+  empty consents list; the all-clear receipt exposed the fail-open.
+- **Remediation (landed)**: commit `f0b7c1b` — `check_payload` requires a
+  non-empty consents list (`:malformed_payload` otherwise). Court:
+  `stratus/test/strata_merger_agents_test.exs`, vacuity describe, both
+  empty-corpus refusals asserted with positive controls that must fire (per
+  repo clause: every court needs a vacuity sweep with a firing positive
+  control).
+- **Verify**: `cd stratus && mix test test/strata_merger_agents_test.exs`
+- **Scores (judgment, 2026-10-14)**: S 8, O 4, D 8 (pre D 8 — no positive
+  control covered the empty book; the all-clear was self-consistent). RPN pre
+  256 → post 64.
+
+## F-11. A03 admission vacuous all-clear on empty facts (empty-corpus vacuity)
+
+- **Failure mode**: an empty fact list in `A03HartianDefeasibility` resolved
+  zero obligations and the receipt admitted via `Enum.all?([])` — the same
+  empty-corpus vacuity class as F-10.
+- **Detection**: vacuity court — same audit lane MX11 sweep; empty fact list
+  produced an admitting receipt.
+- **Remediation (landed)**: commit `f0b7c1b` — `check_payload` requires a
+  non-empty facts list (`:malformed_payload` otherwise). Court: same vacuity
+  describe with firing positive controls, per the repo clause "every court
+  needs a vacuity sweep with a firing positive control"
+  (`stratus/test/strata_merger_agents_test.exs`).
+- **Verify**: `cd stratus && mix test test/strata_merger_agents_test.exs`
+- **Scores (judgment, 2026-10-14)**: S 8, O 4, D 8 (pre D 8 — `Enum.all?([])`
+  is exactly the undetectable all-clear). RPN pre 256 → post 64.
+
 ---
 
 ## Summary
@@ -178,6 +212,8 @@ Verification commands are given per row; run from repo root `/Users/sac/strata`.
 | F-7 | CLI silent truncation (p01) | 120 | 45 | **Partially remediated / accepted gap** |
 | F-8 | merge_join below-baseline false-accept | 256 | 64 | Remediated + court (dc8dd7d, found by vibration 2026-10-13) |
 | F-9 | xdp pn_filter byte-swapped-domain checks | 168 | 42 | Remediated + differential court (cc529eb, found by vibration 2026-10-14) |
+| F-10 | A06 novation with zero counterparties (empty-corpus vacuity) | 256 | 64 | Remediated + vacuity court (f0b7c1b, found by vibration 2026-10-14) |
+| F-11 | A03 admission vacuous all-clear on empty facts | 256 | 64 | Remediated + vacuity court (f0b7c1b, found by vibration 2026-10-14) |
 
 All RPN values are dated engineering judgments (2026-10-10), not measured
 field data. See Also: `docs/COURT_ADJUDICATIONS.md`.

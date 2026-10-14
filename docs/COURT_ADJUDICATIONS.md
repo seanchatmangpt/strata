@@ -90,6 +90,17 @@ pre-fix "5/5 PASS" host vectors were self-consistent only in the swapped
 domain — the harness pre-swapped its frames to mirror the filter's bug
 (mock-laundered court), so the pass carried zero bits about the real wire.
 
+## Vibration-Wave Defect Series (2026-10-14, index)
+
+The 2026-10-13/14 audit-vibration waves over the canonical checkout surfaced
+the full defect series: F-8 merge_join below-baseline false-accept
+(dc8dd7d), F-9 xdp pn_filter byte-order (cc529eb), the F-10/F-11 fail-open
+empty-corpus pair in A06/A03 (f0b7c1b), the sagas sealed-guard, tier3_leaf,
+the framing pair, the default_arena crash path, tick Display, the n18 leak,
+the abi overflow, and the POWL panic. This row is a dated summary; the
+per-defect receipts and standing live in the session receipt,
+`docs/SESSION_RECEIPT_2026-10-14.md` (index of record).
+
 ## FR/NFR Court Status
 
 | Item | Verdict | Note |

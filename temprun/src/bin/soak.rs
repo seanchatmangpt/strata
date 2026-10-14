@@ -594,6 +594,43 @@ mod we_tests {
         assert!(!we_rules(&[1.0]).any());
     }
 
+    /// Cross-invocation history check: the Cp series embedded here is the
+    /// most recent dated table in docs/SOAK_LOG.md (2026-10-13 23:58 PDT,
+    /// receipts-refresh lane, 10 fresh sequential runs), copied verbatim at
+    /// authoring time — not parsed at runtime. The same WE rules must reach
+    /// the same verdict the log recorded: no special cause (all 10 runs
+    /// PASS; the wide Cp spread is MAD-robust tail noise, not a pattern).
+    #[test]
+    fn history_matches_logged_soak_verdict_2026_10_13() {
+        // Cp column, docs/SOAK_LOG.md, table "2026-10-13 23:58 PDT" (runs 1-10).
+        let logged_cp: [f64; 10] = [
+            5.195, 5.399, 8.440, 6.424, 8.993, 8.979, 6.424, 5.867, 6.136, 6.130,
+        ];
+        let v = we_rules(&logged_cp);
+        assert!(
+            !v.any(),
+            "logged 2026-10-10 series must show no special cause, got \
+             R1={} R2={} R3={} R5={}",
+            v.rule1,
+            v.rule2,
+            v.rule3,
+            v.rule5
+        );
+        // No single run may sit beyond R1's 3-sigma bound (the quiet
+        // verdict hinges on the whole spread being ordinary variation).
+        let mean: f64 = logged_cp.iter().sum::<f64>() / logged_cp.len() as f64;
+        let sigma = (logged_cp
+            .iter()
+            .map(|&x| { let d = x - mean; d * d })
+            .sum::<f64>()
+            / (logged_cp.len() - 1) as f64)
+            .sqrt();
+        for (i, &x) in logged_cp.iter().enumerate() {
+            let z = (x - mean).abs() / sigma;
+            assert!(z <= 3.0, "run {} Cp z-score {z} must be within 3 sigma", i + 1);
+        }
+    }
+
     #[test]
     fn batch_cp_matches_run_level_estimator_on_uniform_batch() {
         // Same median+MAD*1.4826 sigma: for a batch where MAD*1.4826 == s,

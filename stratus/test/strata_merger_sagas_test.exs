@@ -16,9 +16,13 @@ defmodule Strata.MergerSagasTest do
 
   alias Strata.Merger.Reactor.{
     AntitrustPlan,
+    CapitalAdequacy,
     DossierCompiler,
     NovationSaga,
-    SettlementExecutor
+    SettlementExecutor,
+    StatutoryMerger,
+    SyndicateVoting,
+    TreasuryRebalance
   }
 
   alias Stratus.Valve.ReceiptStore
@@ -373,6 +377,45 @@ defmodule Strata.MergerSagasTest do
           assert Map.has_key?(table, step), "#{inspect(mod)}: #{step} has no compensation"
           assert is_atom(table[step])
         end
+      end
+    end
+  end
+
+  # -- 6. SEALED is terminal: no re-admit (idempotency) -------------------------------
+
+  describe "sealed saga refuses re-admit (idempotency law)" do
+    test "every reactor saga is terminal at :sealed — re-admit refuses :sealed, no double-apply" do
+      # No bridge, no step bin: every bridge-gated step refuses its honest
+      # atom, sealing each saga (success or compensated refusal both seal).
+      Application.delete_env(:stratus, :merger)
+      System.delete_env("STRATUS_TEMPRUN_STEP_BIN")
+
+      for {mod, seal_outcome} <-
+            [
+              {AntitrustPlan, {:error, :invariant_violated}},
+              {CapitalAdequacy, {:ok, :seals}},
+              {DossierCompiler, {:error, :dossier_host_side}},
+              {NovationSaga, {:ok, :seals}},
+              {SettlementExecutor, {:error, :bridge_down}},
+              {StatutoryMerger, {:ok, :seals}},
+              {SyndicateVoting, {:error, :bridge_down}},
+              {TreasuryRebalance, {:error, :bridge_down}}
+            ] do
+        name = mod |> Module.split() |> List.last() |> String.to_atom()
+        saga = start_saga(mod)
+        run_id = "mx11-sealed-" <> Atom.to_string(name)
+
+        assert :ok = apply(mod, :admit, [saga, lease(run_id), Strata.Merger.LeaseLedger])
+
+        case seal_outcome do
+          {:ok, :seals} -> assert {:ok, _} = apply(mod, :seal, [saga])
+          {:error, atom} -> assert {:error, ^atom} = apply(mod, :seal, [saga])
+        end
+
+        # SEALED is terminal: re-admit (fresh lease, fresh slot) must refuse
+        # fail-closed — a re-admitted saga would resume with stale `done`
+        # state and (SettlementExecutor) re-mint the CTRT wire.
+        assert {:error, :sealed} = apply(mod, :admit, [saga, lease(run_id <> "-again"), Strata.Merger.LeaseLedger])
       end
     end
   end

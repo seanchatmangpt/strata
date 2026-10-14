@@ -136,6 +136,12 @@ defmodule Strata.Merger.Reactor.TreasuryRebalance do
 
   # -- Admit / load -------------------------------------------------------------
 
+  # SEALED is terminal: a sealed saga never re-admits — a new transition
+  # starts a NEW saga (fresh lease, fresh slot); re-admit would resurrect
+  # stale `done` state (idempotency, E-M20).
+  def handle_call({:admit, _lease, _ledger}, _from, %{state: :sealed} = s),
+    do: {:reply, {:error, :sealed}, s}
+
   @impl true
   def handle_call({:admit, lease, ledger}, _from, s) when is_map(lease) do
     case Strata.Merger.Lease.verify(lease, @agent_id, ledger) do

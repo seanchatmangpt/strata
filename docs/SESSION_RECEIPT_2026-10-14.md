@@ -542,6 +542,9 @@ addendum-3/4/5/6 (which covered through f553334 / 3979ba0 / 68906b2 / 2d07251).
   sign_refusal_fuzz_court.rs); none staged by this lane.
 
 Falsifier for addendum-7: any SHA above failing
-`git log --oneline --no-walk` at replay time, or the commit count drifting
-from 107 without a superseding addendum (106 at write time; +1 = this
-addendum-7 receipt commit, `f9e6d6f`).
+`git log --oneline --no-walk` at replay time; or any commit in
+`548a0bf..HEAD` after the root-src deletion (`7dc9576`) that is NOT a
+docs/receipt commit (`git log --oneline 7dc9576..HEAD` = receipt commits
+only). Content-commit count at addendum-7 time: 106 (105 content + the
+addendum-6 receipt); receipt commits after 7dc9576 are additive by
+convention, per the addendum-5/6 pattern.

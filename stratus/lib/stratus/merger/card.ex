@@ -117,8 +117,20 @@ defmodule Strata.Merger.Card do
     end
   end
 
-  defp skills(_module, tier) when tier in [1, 2, 3, 4] do
-    base = [
+  # Never-diverge law: a skill is advertised only if the module actually
+  # implements the served callback (`function_exported?/3` over the compiled
+  # module). A module missing `receipt/1` must NOT advertise receipt.
+  defp skills(module, tier) when tier in [1, 2, 3, 4] do
+    base =
+      [
+        {:admit, :admit, 1, "Admit", "Verify Φ_lease and admit the cell payload (Strata.Merger.MergerAgent.admit/1).", ["merger", "admission"]},
+        {:execute, :execute, 1, "Execute", "Execute the admitted cell work (Strata.Merger.MergerAgent.execute/1).", ["merger", "execution"]},
+        {:receipt, :receipt, 1, "Receipt", "Mint the settlement map (Strata.Merger.MergerAgent.receipt/1).", ["merger", "settlement"]}
+      ]
+      |> Enum.filter(fn {_id, f, a, _n, _d, _t} -> function_exported?(module, f, a) end)
+      |> Enum.map(fn {id, _f, _a, name, desc, tags} ->
+        %{id: id, name: name, description: desc, tags: tags}
+      end)
       %{
         id: "admit",
         name: "Admit",
@@ -156,11 +168,13 @@ defmodule Strata.Merger.Card do
     end
   end
 
+  # No transition-history store exists in Stratus yet — advertising it would
+  # fabricate a capability. Flip to true only when a real history store lands.
   defp capabilities(_tier) do
     %{
       streaming: false,
       push_notifications: false,
-      state_transition_history: true,
+      state_transition_history: false,
       extended_agent_card: false
     }
   end

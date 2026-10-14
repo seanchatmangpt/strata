@@ -189,7 +189,15 @@ defmodule Strata.Merger.A02N3RuleEngine do
      %{
        lease_digest: lease_digest(result),
        result_digest: :crypto.hash(:sha256, :erlang.term_to_binary(inferences)),
-       refusal: nil
+       # G7 wiring hazard: when the real graphlaw N3 engine lands, execute/1
+       # may return {:ok, inferences} carrying partial results (erred rules)
+       # in inferences[:errors]. Fail-closed at the receipt boundary: any
+       # non-empty error list settles :not_admitted, never clean.
+       refusal:
+         if(is_map(inferences) and inferences[:errors] in [nil, []],
+           do: nil,
+           else: :not_admitted
+         )
      }}
   end
 

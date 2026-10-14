@@ -18,9 +18,13 @@
  *
  * Checks (all in the true LE register domain — the wire is little-endian
  * and the BPF target loads LE words natively, so no byte swap anywhere):
- *   1. Precondition:  pn_mask & pn_pre == pn_pre  (all required bits set)
+ *   1. Precondition:  (m & pre) == pre  with m = pn[15:0],
+ *                     pre = pn[31:16] — the SAME predicate as the BEAM
+ *                     valve's `Stratus.Valve.Pn64.enabled?/1` and the Rust
+ *                     `pnabi` enablement law, on the same bits of the same
+ *                     word carried in the frame.
  *   2. Conformance:   (ocel & 0xFF) == ((pn >> 48) & 0xFF)
- *                     activity/tid nibble agreement between ocel and pn
+ *                     activity/tid byte agreement between ocel and pn
  *
  * Both checks are combined into a single "bad bits" scalar and folded to a
  * verdict with the (x | -x) >> 63 trick — zero conditional branches on the
@@ -39,9 +43,6 @@ typedef long long      __s64;
 
 /* Opaque kernel struct; we only deref its first two pointer fields. */
 struct xdp_md;
-
-/* Compile-time precondition mask (see bottom of file). */
-static inline __u64 pn_pre_mask(void);
 
 SEC("xdp")
 int pn_filter(struct xdp_md *ctx)
@@ -62,10 +63,13 @@ int pn_filter(struct xdp_md *ctx)
 	__u64 pn   = *(__u64 *)(data + 0);
 	__u64 ocel = *(__u64 *)(data + 8);
 
-	/* Branchless precondition: m & pre == pre.
-	 * bad_pre = ((m & pre) ^ pre) — 0 iff all precondition bits present. */
-	__u64 pre_mask = pn_pre_mask();
-	__u64 bad_pre  = (pn & pre_mask) ^ pre_mask;
+	/* Branchless precondition: (m & pre) == pre — the valve's enablement
+	 * law, evaluated on the frame's own fields (m = pn[15:0],
+	 * pre = pn[31:16]). bad_pre = ((m & pre) ^ pre) — 0 iff all
+	 * precondition places hold tokens. */
+	__u64 m       = pn & 0xFFFFULL;
+	__u64 pre     = (pn >> 16) & 0xFFFFULL;
+	__u64 bad_pre = (m & pre) ^ pre;
 
 	/* Activity/tid conformance: (ocel & 0xFF) == ((pn >> 48) & 0xFF). */
 	__u64 bad_tid = ((ocel & 0xFF) ^ ((pn >> 48) & 0xFF));
@@ -78,19 +82,6 @@ int pn_filter(struct xdp_md *ctx)
 	__u64 sign = (bad | -bad) >> 63;
 
 	return XDP_PASS - (int)sign;
-}
-
-/* Compile-time precondition bits (Strata PN64 ingress policy).
- * Kept as a constant-foldable function so clang embeds the mask as an
- * immediate; change here to retighten the gate. */
-static inline __u64 pn_pre_mask(void)
-{
-	/* Required pn header bit: the ingress-enabled flag (bit 0, true LE
-	 * domain). The old "version tag bit 62" clause was an artifact of the
-	 * byte-swapped register model — no pn word in the golden vector set
-	 * (V01-V15, docs/PN64_VECTORS.md) has bit 62 set, so requiring it
-	 * dropped every conformant frame. */
-	return 0x0000000000000001ULL;
 }
 
 char _license[] SEC("license") = "GPL";

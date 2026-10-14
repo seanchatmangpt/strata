@@ -29,13 +29,14 @@ pn   [63:56] flags byte      ocel [63:56] monotonic tick delta
 
 ## Checks
 
-1. **Precondition**: `pn_mask & pn == pn_mask` — all required header bits set.
-   Current mask: `0x0000000000000001` (ingress-enabled flag, bit 0 of the
-   marking field), embedded as an immediate in `pn_pre_mask()`. The earlier
-   `0x4000000000000001` ("version tag bit 62 + ingress flag bit 0") was an
-   artifact of the byte-swapped register model: no pn word in the golden
-   vector set (V01–V15, `docs/PN64_VECTORS.md`) has bit 62 set, so requiring
-   it dropped every conformant frame.
+1. **Precondition**: `(m & pre) == pre` with `m = pn[15:0]`,
+   `pre = pn[31:16]` — the SAME predicate as the BEAM valve's
+   `Stratus.Valve.Pn64.enabled?/1` and the Rust `pnabi` enablement law,
+   evaluated on the frame's own fields. Earlier masks ("version tag bit 62",
+   then a bit-0 "ingress-enabled flag") were artifacts: the bit-0 mask was a
+   *second* precondition law with no counterpart in the valve or the Rust
+   ABI, and dropped conformant frames whose transition does not use place 0
+   (e.g. V02: `m=0x0002, pre=0x0002` — valve submits, old filter dropped).
 2. **Conformance**: `(ocel & 0xFF) == ((pn >> 48) & 0xFF)` — activity/tid byte
    agreement between the OCEL word and the pn header (law step 1, the same
    predicate as the Elixir valve's `:malformed` check).
@@ -67,13 +68,13 @@ return), leaving >3x headroom.
 3. **Host logic test + differential court** (`scripts/xdp_host_vectors.sh`,
    macOS-runnable): strips only the ELF-only `SEC` attribute and GPL license
    symbol, compiles the unmodified filter body into a host main, and runs
-   5 verdict vectors through it — the V01/V07/V08 golden pairs reused
-   literally from `docs/PN64_VECTORS.md` (staged as real LE frames, no
-   pre-swap), plus all-zero and minimal-pass. For V01/V07/V08 the harness
+   7 verdict vectors through it — the V01/V02/V03/V07/V08 golden pairs
+   reused literally from `docs/PN64_VECTORS.md` (staged as real LE frames,
+   no pre-swap), plus all-zero and minimal-pass. For all 7 the harness
    additionally asserts agreement with the Elixir valve's pass/drop verdict
-   (`Stratus.Valve.Pn64.validate_and_advance/3`: V01 `submit` -> PASS, V07
-   `err:01` malformed -> DROP, V08 `err:02` token starvation -> DROP).
-   Green = `5/5 PASS` + `DIFFERENTIAL 3/3 OK`.
+   (`Stratus.Valve.Pn64.validate_and_advance/3`: V01/V02/V03/all-zero/
+   minimal `submit` -> PASS, V07 `err:01` malformed -> DROP, V08 `err:02`
+   token starvation -> DROP). Green = `7/7 PASS` + `DIFFERENTIAL 7/7 OK`.
 4. **Valve differential court** (`stratus/test/xdp_pn_filter_differential_test.exs`):
    drives the real `Stratus.Valve.Pn64.validate_and_advance/3` on the same
    V01/V07/V08 golden pairs and asserts the valve's verdict (`{:ok, _}` vs

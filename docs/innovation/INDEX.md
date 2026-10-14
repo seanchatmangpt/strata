@@ -296,6 +296,28 @@ committed; each needs operator scope decision.
   `cargo test -p temprun` green except pre-existing fr7
   constant-time timing flake (green on rerun). Cross-invocation history
   (SOAK_LOG.md table as series input) remains future SPC-lane work.
+- pending-token authentication (widen-ack consequence audit, G2) — CANDIDATE,
+  operator adjudication required: the widened 0x93 (pre `0x0800` alone,
+  commits `33f6705`/`0dba165`) makes ack-from-never-delegated wire-reachable
+  on both tiers (Rust `strata_protocol/src/dao_full.rs` VERB_ACK_DELEGATION;
+  Elixir `stratus/lib/stratus/valve/dao_full.ex` 0x93 leg) — a hostile frame
+  carrying marking `0x0800` + verb `0x93` fabricates an
+  acknowledged-delegation event with zero delegation history, and
+  `policy_admission.rs` pins `0x0800`-under-DAO_FULL as safe/MUST-admit.
+  Fix shapes: provenance/ingest-level rule (pending must be produced in the
+  same frame lineage) or marking-level consumability — both break the pinned
+  totality design ("every m & 0x0800 != 0 enables 0x93"), hence the ask.
+  Falsifier: a hostile 0x0800+0x93 frame is refused with a typed
+  provenance/consumability error without breaking the pinned closure courts.
+- policy_admission G2 branch inertness (widen-ack consequence audit) —
+  CANDIDATE: under DAO_FULL the table-level `0x0800`-unconsumed check
+  (policy_admission.rs:113-115) can never fire (0x93 is always present, so
+  the branch is dead), and the module has zero production callers (court
+  `policy_admission_court.rs` only) — operator to pick: marking-level unsafe
+  predicate or explicit delisting as audit-surface-only. Falsifier: a
+  mutation making the G2 branch fire (or a consumer importing the module)
+  under the pinned DAO_FULL table is witnessed by a court.
+
 - ingress-drop observability (seam-audit lane) — CANDIDATE, needs operator
   decision: SLO vs observability. The XDP `pn_filter.c` deliberately carries
   no BPF maps (an SLO feature: zero per-packet shared-state cost), so

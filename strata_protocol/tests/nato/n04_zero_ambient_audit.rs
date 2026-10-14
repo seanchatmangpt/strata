@@ -345,6 +345,15 @@ fn flush_receipt(extra_status: Option<&str>) {
             None => json,
         };
         let out = receipt_target(&repo_root().join("docs/receipts/N04.json"));
+        // Sidecar payload: strip the `lane` field so gate_receipts/gen_ledger
+        // treat the redirect target as out-of-domain (not a lane receipt).
+        let json = if out.extension().and_then(|e| e.to_str()) == Some("json")
+            && out.file_stem().and_then(|s| s.to_str()).map(|s| s.ends_with(".legacy_payload")) == Some(true)
+        {
+            json.replace("\"lane\":\"N04\",", "")
+        } else {
+            json
+        };
         if let Some(parent) = out.parent() {
             std::fs::create_dir_all(parent).unwrap();
         }

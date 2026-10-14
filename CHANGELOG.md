@@ -67,6 +67,21 @@
   example; `insa_sync_shape_court`; query verb; E48 refusal-timing
   closed on both surfaces (pnwire length-refusal ratio 0.20× gate PASS;
   BEAM valve per-class ≤5× PASS).
+- Gemini hourly-brief ecosystem intake: 3 candidates recorded in
+  `docs/innovation/INDEX.md` (2026-10-13).
+- E28 SPV1 packed path wired into production cold write (opt-in):
+  `cas.rs`/`wormhole.rs` + `nfr3_storage_density_test.rs`.
+- Gate consensus tier wired into `master_gate.sh` + CI: new
+  `scripts/shacl_project.py` SHACL projection + generated
+  `ontology_schema.{json,d.ts}`; `consensus_surface.txt` updated.
+- Western Electric run rules (1/2/3/5) over in-invocation soak Cp
+  series (`temprun/src/bin/soak.rs`, SPC-QA; disclosed in-invocation
+  scope).
+- Telemetry-surface temprun worker `:busy` refusals +
+  `temprun_port_backpressure_test.exs`.
+- Saga-telemetry court `stratus/test/stratus_saga_telemetry_test.exs`
+  (3 tests, per-event witness counts > 0 anti-vacuity) closing the dead
+  `[:stratus, :merger, :saga, *]` telemetry surface.
 
 ### Changed
 
@@ -130,6 +145,30 @@
   payloads preserved).
 - Justfile: `VERSION` derived from the `VERSION` file; new
   `test-stratus-full` recipe.
+- `ontology_check.sh --rust` cross-check extended to `dao_full.rs` +
+  must-fire self-test.
+- E02 extended-verb equivalence court added to `net_consistency_court`
+  + E10/E02 INDEX receipts.
+- `merge_join` below-baseline false-accept fixed; sortedness
+  precondition pinned (`temprun/src/conformance.rs`); adjudication
+  recorded in `COURT_ADJUDICATIONS.md`/`DFMEA.md`/`PRD.md`.
+- `monotonic_tick_court` court2 made deterministic across hosts.
+- NFR4: load-invariant doubling-scaling gate; 5 ms absolute bound →
+  50 ms smoke bound.
+- `pnwire_slo` absolute-ns gates → report-only; `ct_jitter_court`
+  timing leg → report-only (structural census remains the sole gate).
+- Merger sagas refuse re-admit once SEALED (idempotency law) across all
+  8 merger reactor sagas.
+- Tier3 leaf classifies failed leaf results as `:saga_abort`
+  (fail-closed) via new `consensus/ordering.rs` classification +
+  `tick.rs` wiring.
+- Receipt writer guard: never downgrades a LANE_RECEIPT v2/LANDED
+  payload (fail-safe, `n06_branchless_disasm`/`n04` guards).
+- Docs trains: coverage-gap sweep findings landed (ABI, docs index,
+  matrix, README); CI.md reconciled with collapsed ci.yml; stale counts
+  reconciled; N05 chain refreshed to KG-N05 FAIL-HONEST disposition;
+  verify-first receipts pass (L156 owner-tag fix, M16 count corrected);
+  shared valve reset around `pdu_layout_test` ingestion.
 
 ## 26.10.11 — 2026-10-11 (release, tag v26.10.11 @ e0e7f19)
 

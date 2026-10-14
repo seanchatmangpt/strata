@@ -67,7 +67,7 @@ FR/NFR test files. Companions: `docs/COURT_ADJUDICATIONS.md` (ledger),
 - **Evidence**: `stratus/test/probes/p14_zero_heap_test.sh` — VERDICT 0,
   exit 0 (twice, deterministic); witness frame 92, fail-closed trio holds
   (register frozen, CAS empty). New court
-  `temprun/tests/receipt_stream_ambiguity_test.rs` 5/5 GREEN (injected
+  `temprun/tests/receipt_stream_ambiguity_test.rs` 5/5 GREEN (2026-10-13; injected
   byte0=0x02 positive control, chained 1000-link stream refusing at link 92
   with no post-freeze silent admit, 10^6-draw tail pin [990, 9900],
   byte-identical replay, 256-value fail-closed sweep). Builder bug fixed
@@ -181,7 +181,7 @@ FR/NFR test files. Companions: `docs/COURT_ADJUDICATIONS.md` (ledger),
   (`Stratus.Valve.DataLayer`, `can?(:create) → false` — no-DO-authority
   enforced at the LAYER), 1 policy module (`Stratus.Resources.Refusals`),
   1 domain. Courts `stratus/test/stratus/resources/*_test.exs` 13/0;
-  full suite 341/0 (20 excluded); deps-tree receipt
+  full suite 341/0 (20 excluded; re-witnessed 2026-10-13); deps-tree receipt
   `docs/receipts/fr4-ash-deps-tree.txt` (`mix deps.tree | grep -c ash` = 1).
   AshR2RML remains scoped out (its moduledoc: not a data layer).
 
@@ -315,7 +315,7 @@ FR/NFR test files. Companions: `docs/COURT_ADJUDICATIONS.md` (ledger),
   setrlimit(RLIMIT_AS) returns EINVAL — measured**; ceiling compiled in only
   where honored), CPU 600 s, NOFILE 64, CORE 0, `_exit(78)` on failure;
   minimal-env scrub lives in the shim's execve (this OTP rejects `{:env, _}`
-  on spawn ports). Court 5/0 ×3 consecutive (flipped falsifier, vacuity
+  on spawn ports). Court 5/0 ×3 consecutive (2026-10-13; flipped falsifier, vacuity
   drain arm, SIGUSR1 unblock, shim env/rlimit probe, mailbox bound);
   default suite 341/0, full-tag 346/0.
 - **Disposition**: FIXED 2026-10-13 — driver queue bounded + typed `:busy`

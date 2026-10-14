@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## Unreleased (as of 2026-10-14)
 
 ### Added
 
@@ -219,7 +219,7 @@ record; see docs/nato/DOSSIER.md for the N-court ledger.
   tests, 3 failures (pre-existing; this lane introduced no edits).
   Superseded count — current is 306 tests, 0 failures (README).
 - CLI: `pn table` and `pn rehydrate --xml --tsv` verbs
-  (`strata_cli_test`: 42 passed, 0 failed).
+  (`strata_cli_test`: 42 passed, 0 failed via `cargo test -p strata-protocol --test strata_cli_test`).
 
 ### Fixed
 
@@ -237,7 +237,7 @@ record; see docs/nato/DOSSIER.md for the N-court ledger.
 - Probe-route pnml courts converted to registered-module cargo gates
   (pnml trio now runs as ordinary `cargo test` targets, not probes).
 
-### Verification
+### Verification (2026-10-11)
 
 - Wave-2 receipts (docs/pn64_LANES.md): protocol lib 86/0 (L52);
   stratus full mix 173/0 (L86); Elixir fuzz 50k cases zero

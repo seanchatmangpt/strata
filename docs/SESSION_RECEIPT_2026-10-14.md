@@ -634,3 +634,59 @@ Falsifier for addendum-8: any SHA cited above failing
 `git log --oneline --no-walk` at replay time, or the commit count drifting
 from 110 minus 1 (this addendum's own receipt) without a superseding
 addendum.
+
+---
+
+## Addendum-9 (FINAL) — release-train landing, in-flight lanes, closeout (append-only)
+
+Append-only, final addendum for this session. **Dedupe**: every wave-8 SHA
+except one was already recorded in addendum-8 (dedupe verified by re-reading
+addendum-8 this session) — dao widen-ack cohort `33f6705`/`0dba165` +
+witnesses, court-naming sweep `60285b2`, DFMEA F-10/F-11 + vibration index
+`f553334`, idmap/rehydrate `3979ba0`, n17 domain-sep `68906b2`, pn64
+Rust-mirror `2d07251`, pn_frame 15-vector `bbf1c58`, ltl/invariants
+conservation `b02a8e1`, sagas positivity `6213662`, telemetry crash-path +
+fuel metadata `76bffdc`, policy_admission isolation `52e6274`. All re-verified
+via `git log --no-walk --oneline` this session.
+
+**New landing recorded here**: `docs/RELEASE_TRAIN_v26.10.12.md` landed as
+`d018014` ("release-train v26.10.12 wind-down checklist + clippy green") —
+`--no-walk` verified.
+
+### In-flight lanes — IN-FLIGHT, not landed (carried to the release train)
+
+- A02/card lane: merger card A02 receipt court + card claim/enforcement gap —
+  IN-FLIGHT (owning lane).
+- LeaseLedger-design lane: `docs/innovation/LEDGER_DURABILITY_DESIGN.md` —
+  IN-FLIGHT (design stage).
+- worker-lifecycle lane — IN-FLIGHT (owning lane).
+- semantics-surfaces lane — IN-FLIGHT (owning lane).
+
+None carries a landing SHA or court receipt yet. Falsifier: any of these
+recorded FIXED/landed in a later addendum without a landing SHA + court
+receipt.
+
+### Valuation verdict (reaffirmed at closeout)
+
+Defect-lattice discovery rate halved vs the addendum-5 peak; the loop winds
+into the release train per `RELEASE_TRAIN_v26.10.12.md` (§2 frozen-subject
+gate, ladder OPEN). Per addendum-8's series standing: 12+ fixed defects with
+courts; index of record `docs/COURT_ADJUDICATIONS.md`.
+
+### Cross-repo blocker (unchanged)
+
+graphlaw 26.10.12 SHACL-recursion (stack overflow) BLOCKER remains routed to
+the graphlaw owner; strata stays pinned until an owner fix receipt lands.
+Falsifier: a graphlaw pin bump in strata without that fix receipt first.
+
+### Totals at addendum-9 time
+
+- Session range: `git log --oneline 548a0bf..HEAD | wc -l` = **110** commits
+  (unchanged from addendum-8's figure; no content commits landed between
+  addendum-8's write and this addendum — only this lane's receipt commits are
+  additive by convention per addendum-5/6/7/8).
+
+**Session falsifier**: any SHA cited in this receipt failing
+`git log --oneline --no-walk` at replay time, or the session commit count
+drifting from the figure above minus receipt commits, without a superseding
+addendum. This is the final addendum for the 2026-10-14 session.

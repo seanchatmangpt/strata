@@ -131,25 +131,6 @@ defmodule Strata.Merger.Card do
       |> Enum.map(fn {id, _f, _a, name, desc, tags} ->
         %{id: id, name: name, description: desc, tags: tags}
       end)
-      %{
-        id: "admit",
-        name: "Admit",
-        description: "Verify Φ_lease and admit the cell payload (Strata.Merger.MergerAgent.admit/1).",
-        tags: ["merger", "admission"]
-      },
-      %{
-        id: "execute",
-        name: "Execute",
-        description: "Execute the admitted cell work (Strata.Merger.MergerAgent.execute/1).",
-        tags: ["merger", "execution"]
-      },
-      %{
-        id: "receipt",
-        name: "Receipt",
-        description: "Mint the settlement map (Strata.Merger.MergerAgent.receipt/1).",
-        tags: ["merger", "settlement"]
-      }
-    ]
 
     if tier == 3 do
       base ++

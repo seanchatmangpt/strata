@@ -147,10 +147,16 @@ defmodule Strata.MergerSagasTest do
     end
 
     test "dossier compiler: :dossier_host_side unwinds clap-chain then chapter lane (LIFO)" do
+      record = build_ctrts_record()
+      subject = String.duplicate("cd", 16)
+
+      assert {:ok, chapter_id} =
+               ReceiptStore.store(record, %{court: "chapter", digest: subject, steps: 2, outcome: :pass})
+
       saga = start_saga(DossierCompiler)
 
       assert :ok = DossierCompiler.admit(saga, lease("lifo-dossier"), Strata.Merger.LeaseLedger)
-      assert :ok = DossierCompiler.load(saga, %{chapters: []})
+      assert :ok = DossierCompiler.load(saga, %{chapters: [chapter_id]})
 
       assert {:error, :dossier_host_side} = DossierCompiler.seal(saga)
 
@@ -390,6 +396,19 @@ defmodule Strata.MergerSagasTest do
       Application.delete_env(:stratus, :merger)
       System.delete_env("STRATUS_TEMPRUN_STEP_BIN")
 
+      # Sagas with F-11 vacuous-empty gates need their minimal honest
+      # artifacts loaded: NovationSaga refuses :consent_empty and
+      # DossierCompiler refuses :dossier_empty on zero artifacts.
+      record = build_ctrts_record()
+
+      assert {:ok, chapter_id} =
+               ReceiptStore.store(record, %{court: "chapter", digest: String.duplicate("ee", 16), steps: 1, outcome: :pass})
+
+      minimal_artifacts = %{
+        NovationSaga => %{consents: ["c1"]},
+        DossierCompiler => %{chapters: [chapter_id]}
+      }
+
       for {mod, seal_outcome} <-
             [
               {AntitrustPlan, {:error, :invariant_violated}},
@@ -406,6 +425,11 @@ defmodule Strata.MergerSagasTest do
         run_id = "mx11-sealed-" <> Atom.to_string(name)
 
         assert :ok = apply(mod, :admit, [saga, lease(run_id), Strata.Merger.LeaseLedger])
+
+        case Map.fetch(minimal_artifacts, mod) do
+          {:ok, arts} -> assert :ok = apply(mod, :load, [saga, arts])
+          :error -> :ok
+        end
 
         case seal_outcome do
           {:ok, :seals} -> assert {:ok, _} = apply(mod, :seal, [saga])
@@ -457,6 +481,75 @@ defmodule Strata.MergerSagasTest do
       # the whole sweep runs and the saga seals clean — NOT
       # :invariant_violated.
       assert {:ok, %{refusal: nil}} = TreasuryRebalance.seal(saga)
+      refute_received {:mx11_compensation, _}
+    end
+  end
+
+  # -- 7. F-11 vacuous-empty gates (adversarial audit lane) -----------------------------
+
+  describe "F-11 vacuous-empty gates" do
+    test "novation: zero consents is a vacuous verify — refuses :consent_empty with full LIFO unwind" do
+      saga = start_saga(NovationSaga)
+      assert :ok = NovationSaga.admit(saga, lease("f11-consent-empty"), Strata.Merger.LeaseLedger)
+      assert :ok = NovationSaga.load(saga, %{consents: []})
+
+      assert {:error, :consent_empty} = NovationSaga.seal(saga)
+
+      # Only schedule_ingest completed; consent_verification itself is the
+      # refusing step and is never compensated.
+      assert compensations() == [:schedule_lane_release]
+      assert NovationSaga.journal(saga) == []
+      assert NovationSaga.tracked(saga) == %{}
+    end
+
+    test "novation: a non-list consents artifact refuses fail-closed at the first invariant check" do
+      saga = start_saga(NovationSaga)
+      assert :ok = NovationSaga.admit(saga, lease("f11-consent-type"), Strata.Merger.LeaseLedger)
+      assert :ok = NovationSaga.load(saga, %{consents: "c1, c2, definitely-a-string"})
+
+      # :consent_singleton is checked after EVERY step, so the non-list
+      # artifact trips it at schedule_ingest — before consent_verification's
+      # typed :consent_empty gate is even reached. Fail-closed either way.
+      assert {:error, :invariant_violated} = NovationSaga.seal(saga)
+      assert compensations() == [:schedule_lane_release]
+      assert NovationSaga.tracked(saga) == %{}
+    end
+
+    test "dossier: zero chapters is a vacuous compile — refuses :dossier_empty with full LIFO unwind" do
+      saga = start_saga(DossierCompiler)
+      assert :ok = DossierCompiler.admit(saga, lease("f11-dossier-empty"), Strata.Merger.LeaseLedger)
+      assert :ok = DossierCompiler.load(saga, %{chapters: []})
+
+      assert {:error, :dossier_empty} = DossierCompiler.seal(saga)
+
+      # chapter_ingest is the refusing step — nothing completed, nothing
+      # compensated; the saga seals with an empty compensation trace.
+      refute_received {:mx11_compensation, _}
+      assert DossierCompiler.journal(saga) == []
+      assert DossierCompiler.tracked(saga) == %{}
+    end
+
+    test "capital adequacy: a low CET1 ratio fires the floor at the first invariant check (positive control)" do
+      saga = start_saga(CapitalAdequacy)
+      assert :ok = CapitalAdequacy.admit(saga, lease("f11-cet1-breach"), Strata.Merger.LeaseLedger)
+      assert :ok = CapitalAdequacy.load(saga, %{cet1_ratio: 0.10})
+
+      assert {:error, :invariant_violated} = CapitalAdequacy.seal(saga)
+
+      # Invariants are checked after EVERY step, so the preloaded breach
+      # fires at buffer_ingest's check — the first invariant check.
+      assert compensations() == [:buffer_lane_release]
+      assert CapitalAdequacy.journal(saga) == []
+      assert CapitalAdequacy.tracked(saga) == %{}
+    end
+
+    test "capital adequacy: ratios exactly at the floors pass (boundary control, not an off-by-one)" do
+      saga = start_saga(CapitalAdequacy)
+      assert :ok = CapitalAdequacy.admit(saga, lease("f11-cet1-boundary"), Strata.Merger.LeaseLedger)
+      assert :ok = CapitalAdequacy.load(saga, %{cet1_ratio: 0.125, lcr_ratio: 1.28, netting_efficiency: 0.921})
+
+      assert {:ok, settlement} = CapitalAdequacy.seal(saga)
+      assert settlement.refusal == nil
       refute_received {:mx11_compensation, _}
     end
   end

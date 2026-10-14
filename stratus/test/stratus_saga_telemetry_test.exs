@@ -101,6 +101,8 @@ defmodule Stratus.SagaTelemetryTest do
   test "happy path admits, steps, seals, and accepts a counter-mandate" do
     saga = start_saga(NovationSaga)
     assert :ok = NovationSaga.admit(saga, lease("happy"), Strata.Merger.LeaseLedger)
+    # :consent_empty gate — a novation verifies over at least one consent.
+    assert :ok = NovationSaga.load(saga, %{consents: ["c1"]})
     assert {:ok, _settlement} = NovationSaga.seal(saga)
     assert {:ok, :counter_mandate_test} = NovationSaga.counter_mandate(saga, :counter_mandate_test)
 

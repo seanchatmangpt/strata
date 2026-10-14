@@ -40,6 +40,8 @@ defmodule Strata.Merger.Reactor.DossierCompiler do
     `chapter_ingest` loads each chapter bundle through
     `Stratus.Valve.ReceiptStore.load/1` (352-byte CTRT store-level gate);
     anything short/long/mis-magicked refuses fail-closed.
+  - `:dossier_empty` — a `chapters` artifact of `[]` is a vacuous empty
+    (F-11 law): a dossier over zero chapters refuses at `chapter_ingest`.
   - Chain hashes here are SHA-256 surrogates over the exact record bytes
     (same disclosed-surrogate discipline as `Strata.Merger.Lease.digest/1`);
     the normative BLAKE3 parent chaining is minted CTT-side.
@@ -75,6 +77,7 @@ defmodule Strata.Merger.Reactor.DossierCompiler do
         [
           :saga_step_unknown,
           :dossier_host_side,
+          :dossier_empty,
           :chapter_receipt_invalid,
           # ReceiptStore load/1 pass-throughs (fixed store vocabulary).
           :bad_record,
@@ -294,20 +297,27 @@ defmodule Strata.Merger.Reactor.DossierCompiler do
   # -- Step bodies --------------------------------------------------------------------
 
   # Load every chapter bundle through the landed store gate (352-byte CTRT).
+  # Fail-closed on the vacuous empty: a dossier over ZERO chapters is not a
+  # dossier — refuse :dossier_empty (F-11 law; in refusals/0).
   defp run_step(:chapter_ingest, s) do
-    chapters = Map.get(s.artifacts, :chapters, [])
+    chapters = Map.get(s.artifacts, :chapters)
 
-    if is_list(chapters) do
-      case load_chapters(chapters) do
-        {:ok, _records} ->
-          {:ok,
-           :crypto.hash(:sha256, :erlang.term_to_binary({:chapter_ingest, chapters, s.lease_digest}))}
+    cond do
+      is_list(chapters) and chapters != [] ->
+        case load_chapters(chapters) do
+          {:ok, _records} ->
+            {:ok,
+             :crypto.hash(:sha256, :erlang.term_to_binary({:chapter_ingest, chapters, s.lease_digest}))}
 
-        {:error, _} = e ->
-          e
-      end
-    else
-      {:error, :chapter_receipt_invalid}
+          {:error, _} = e ->
+            e
+        end
+
+      is_list(chapters) ->
+        {:error, :dossier_empty}
+
+      true ->
+        {:error, :chapter_receipt_invalid}
     end
   end
 

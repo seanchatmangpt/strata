@@ -29,6 +29,9 @@ defmodule Strata.Merger.Reactor.NovationSaga do
 
   - `:model_not_available` — `merger/models/phase4.pn64` does not exist
     in-repo (Wave-1 deliverable); no net binding occurs.
+  - `:consent_empty` — consent verification over zero consents (or a
+    non-list `consents` artifact) is a vacuous empty (F-11 law): refuse
+    fail-closed at `consent_verification`.
   """
 
   @behaviour Strata.Merger.Saga
@@ -56,7 +59,8 @@ defmodule Strata.Merger.Reactor.NovationSaga do
 
   @doc "Extended zero-entropy refusal vocabulary (behaviour atoms + lane atoms)."
   @spec refusals() :: [atom()]
-  def refusals, do: Strata.Merger.Saga.refusals() ++ [:saga_step_unknown, :model_not_available]
+  def refusals,
+    do: Strata.Merger.Saga.refusals() ++ [:saga_step_unknown, :model_not_available, :consent_empty]
 
   # -- GenServer runtime -------------------------------------------------------
   # E-M20 §2: state lives only in the GenServer state map, so a crash is an
@@ -269,9 +273,17 @@ defmodule Strata.Merger.Reactor.NovationSaga do
 
   # -- Step bodies (pure BEAM) -------------------------------------------------------
 
+  # Fail-closed on vacuous empties: consent verification over zero consents
+  # (or a non-list artifact) refuses — a novation with no consent record is
+  # not verifiable, it is empty (F-11 law; :consent_empty is in refusals/0).
   defp run_step(:consent_verification, s) do
-    consents = Map.get(s.artifacts, :consents, [])
-    {:ok, :crypto.hash(:sha256, :erlang.term_to_binary({:consent_verification, consents, s.lease_digest}))}
+    consents = Map.get(s.artifacts, :consents)
+
+    if is_list(consents) and consents != [] do
+      {:ok, :crypto.hash(:sha256, :erlang.term_to_binary({:consent_verification, consents, s.lease_digest}))}
+    else
+      {:error, :consent_empty}
+    end
   end
 
   defp run_step(step, s) when is_atom(step) do

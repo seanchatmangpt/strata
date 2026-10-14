@@ -26,7 +26,7 @@ the `"<type> <len>\0"` header and length, and fails closed with
 `Error::Invalid` on any deviation. `verify_object(oid, data)` re-inflates and
 re-hashes; mismatch is a typed failure, never a warning.
 
-## Snapshot ledger: `CasSnapshotLedger` (cas.rs:253–330)
+## Snapshot ledger: `CasSnapshotLedger` (cas.rs:279 (impl :283; line numbers as of 2026-10-13))
 
 Commit-binding snapshot records (`CasSnapshotRecord`:
 `start_epoch, end_epoch, commit_hex, quad_range`), append-only, kept sorted

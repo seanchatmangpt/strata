@@ -11,21 +11,21 @@
   ],
   "verification": {
     "command": "bash bin/generate_nato_dossier.sh",
-    "output_digest": "sha256:dcfc820ef11a5ac767550f1d39ddbf0b8d681c8e43d0eecfa7b765ced22f7997",
+    "output_digest": "sha256:f6666b8cbebf61f476e75670bd80ad6fa28b3911c2bf6e5cdc0f8d9e5c792bbc",
     "exit": 0,
     "run_tail": "N20 receipt: FAILED ({\"EXECUTED-GREEN\": 16, \"CITED-GREEN\": 1, \"FAILED\": 2}); dossier: docs/nato/DOSSIER.md; digest: dcfc820ef11a5ac767550f1d39ddbf0b8d681c8e43d0eecfa7b765ced22f7997; signature: docs/nato/DOSSIER.sha256.sig (status OK)",
-    "tests_passed": 16,
-    "tests_failed": 2
+    "tests_passed": 17,
+    "tests_failed": 1
   },
   "court": "dossier_generator",
   "deviations": [
     {
       "kind": "SCOPE_NOTE",
-      "note": "Receipt-shape normalization 2026-10-13: the generator's v1 off-shape writer (emit_n20_receipt) clobbered this receipt with keys court/sections only; normalized back to LANE_RECEIPT v2 at integration with both prior payloads preserved in legacy — history preserved, nothing deleted. The prior 2026-10-12 receipt cited per_lane_statuses.N05 = 'CITED-GREEN' (18 EXECUTED-GREEN / 1 CITED-GREEN, dossier 8d0c02167e3cee24...) against the stale GREEN N05 verdict (t=+0.3325 / t=+0.7502, 2 passed 0 failed); that N05 citation is superseded by the KG-N05 FAIL-HONEST disposition (|t| = 16.9/20.9/25.0/33.2, valid 3.62-3.74 ns vs refusal 3.27-3.36 ns, residual early-exit gate structure ~1 cycle, positive control fired, step_branchless unreachable)."
+      "note": "Receipt-shape normalization 2026-10-13: the generator's v1 off-shape writer (emit_n20_receipt) clobbered this receipt with keys court/sections only; normalized back to LANE_RECEIPT v2 at integration with both prior payloads preserved in legacy \u2014 history preserved, nothing deleted. The prior 2026-10-12 receipt cited per_lane_statuses.N05 = 'CITED-GREEN' (18 EXECUTED-GREEN / 1 CITED-GREEN, dossier 8d0c02167e3cee24...) against the stale GREEN N05 verdict (t=+0.3325 / t=+0.7502, 2 passed 0 failed); that N05 citation is superseded by the KG-N05 FAIL-HONEST disposition (|t| = 16.9/20.9/25.0/33.2, valid 3.62-3.74 ns vs refusal 3.27-3.36 ns, residual early-exit gate structure ~1 cycle, positive control fired, step_branchless unreachable)."
     },
     {
       "kind": "HONEST_MISS",
-      "note": "N05 is recorded CITED-GREEN (receipted verdict cited; receipt runtime ~95 s exceeds the generator's 60 s budget) — the cited verdict is the KG-N05 FAIL-HONEST disposition, not a green constant-time result: the dudect court is RED on validate_and_advance with an adjudicated ~1-cycle early-exit residual channel. The 'GREEN' suffix denotes citation standing only; see docs/receipts/N05.json and KNOWN_GAPS KG-N05."
+      "note": "N05 is recorded CITED-GREEN (receipted verdict cited; receipt runtime ~95 s exceeds the generator's 60 s budget) \u2014 the cited verdict is the KG-N05 FAIL-HONEST disposition, not a green constant-time result: the dudect court is RED on validate_and_advance with an adjudicated ~1-cycle early-exit residual channel. The 'GREEN' suffix denotes citation standing only; see docs/receipts/N05.json and KNOWN_GAPS KG-N05."
     },
     {
       "kind": "HONEST_MISS",
@@ -33,7 +33,7 @@
     },
     {
       "kind": "HONEST_MISS",
-      "note": "N19 live rerun FAILED (rc=101): 'error: package ID specification `pn_kernel` did not match any packages' — temprun/pn_kernel is excluded from the workspace (root Cargo.toml:4), so the generator's N19 identity run cannot resolve the package at HEAD. Structural, pre-existing on this branch, not caused by the N05/N20 refresh. Recorded honestly as FAILED in the dossier table."
+      "note": "N19 live rerun FAILED (rc=101): 'error: package ID specification `pn_kernel` did not match any packages' \u2014 temprun/pn_kernel is excluded from the workspace (root Cargo.toml:4), so the generator's N19 identity run cannot resolve the package at HEAD. Structural, pre-existing on this branch, not caused by the N05/N20 refresh. Recorded honestly as FAILED in the dossier table."
     }
   ],
   "fix_owner": "N20",
@@ -111,6 +111,41 @@
         },
         "dossier_path": "docs/nato/DOSSIER.md",
         "dossier_sha256": "dcfc820ef11a5ac767550f1d39ddbf0b8d681c8e43d0eecfa7b765ced22f7997"
+      }
+    },
+    "generator_refresh_f6666b8c": {
+      "lane": "N20",
+      "court": "dossier_generator",
+      "status": "FAILED",
+      "sections": {
+        "totals": {
+          "EXECUTED-GREEN": 17,
+          "CITED-GREEN": 1,
+          "FAILED": 1
+        },
+        "per_lane_statuses": {
+          "N01": "EXECUTED-GREEN",
+          "N02": "EXECUTED-GREEN",
+          "N03": "EXECUTED-GREEN",
+          "N04": "EXECUTED-GREEN",
+          "N05": "CITED-GREEN",
+          "N06": "EXECUTED-GREEN",
+          "N07": "EXECUTED-GREEN",
+          "N08": "EXECUTED-GREEN",
+          "N09": "EXECUTED-GREEN",
+          "N10": "EXECUTED-GREEN",
+          "N11": "EXECUTED-GREEN",
+          "N12": "EXECUTED-GREEN",
+          "N13": "EXECUTED-GREEN",
+          "N14": "EXECUTED-GREEN",
+          "N15": "EXECUTED-GREEN",
+          "N16": "EXECUTED-GREEN",
+          "N17": "EXECUTED-GREEN",
+          "N18": "EXECUTED-GREEN",
+          "N19": "FAILED"
+        },
+        "dossier_path": "docs/nato/DOSSIER.md",
+        "dossier_sha256": "f6666b8cbebf61f476e75670bd80ad6fa28b3911c2bf6e5cdc0f8d9e5c792bbc"
       }
     }
   }

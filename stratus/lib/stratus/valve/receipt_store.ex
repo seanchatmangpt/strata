@@ -21,7 +21,7 @@ defmodule Stratus.Valve.ReceiptStore do
     `load/1` refuses short/long/mis-magicked files with the same atom.
 
   Store layout: one sealed receipt per pair of files under the storage
-  root (`priv/receipts/` by default):
+  root (`priv/receipts (transport-only; see docs/RECEIPTS_DIRS.md)/` by default):
 
       <court>-<digest16>.bin   the raw 352-byte wire record
       <court>-<digest16>.json  JSON metadata sidecar: court id, subject

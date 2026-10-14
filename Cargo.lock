@@ -1284,6 +1284,7 @@ dependencies = [
  "bcinr-powl",
  "blake3",
  "serde_json",
+ "strata-protocol",
  "wasmi",
  "zeroize",
 ]

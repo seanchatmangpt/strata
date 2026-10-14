@@ -30,8 +30,8 @@ fn disagreements(mutant_status: Option<u8>) -> Vec<u8> {
     for b0 in 0u8..=255 {
         let mut d = [0u8; 32];
         d[0] = b0;
-        for i in 1..32 {
-            d[i] = i as u8;
+        for (i, slot) in d.iter_mut().enumerate().skip(1) {
+            *slot = i as u8;
         }
         for refused in [false, true] {
             let got = seal(refused, &d);

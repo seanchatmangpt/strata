@@ -9,21 +9,24 @@
 //!
 //! DISCLOSED ADAPTATION: `HwTick` exposes no public raw-value constructor
 //! (checked: only `now`, `mono_checked`, `as_nanos` are public), so the
-//! synthetic-unsorted-vector court is adjudicated over REAL clock samples:
-//! the refusal path is exercised on the observed equal-pair class (the
-//! strict law refuses `next == prev`, fail closed), and the typed-error +
-//! zero-entropy surface is asserted on a real `TickError` obtained from
-//! `mono_checked`. The backwards-pair class of the synthetic census remains
-//! UNEXERCISABLE from an external test until L158 lands a public raw
-//! constructor (e.g. `HwTick::from_raw(u64)`); this court exercises every
-//! path reachable without touching another lane's owned file.
+//! corpus is built from REAL clock samples ARRANGED into the three pair
+//! classes — forward (natural order), equal (`mono_checked(t, t)`) and
+//! backwards (`mono_checked(later, earlier)`, two real samples passed in
+//! descending arrangement). Equal/backwards-pair existence is thus a
+//! property of the corpus construction, not of host clock resolution
+//! (deterministic on any host). The strict law's refusal path and the
+//! typed-error + zero-entropy surface are asserted on REAL `TickError`s
+//! returned by the real subject over this corpus. The earlier
+//! host-resolution side-observation (does THIS host's clock return equal
+//! readings within N samples) is retained as an `#[ignore]`d experiment
+//! with disclosure.
 //!
 //! Courts:
 //! 1. 100k-sample real-clock monotonicity sweep (equality documented —
 //!    pinned by court 4's doc tripwire).
-//! 2. Regression refusal: typed `TickError`, zero entropy, on the
-//!    externally-reachable refusal class (equal pairs over a sampled
-//!    sequence, admitted prefix + refused suffix shape).
+//! 2. Regression refusal: typed `TickError`, zero entropy, over a
+//!    real-sample corpus arranged into forward / equal / backwards pair
+//!    classes (refusal path deterministic on any host).
 //! 3. Ordering-key composition — HwTick as the dominant key of
 //!    `ordering::total_order_key` yields prefix-stable order over appended
 //!    batches.
@@ -87,27 +90,27 @@ fn court1_100k_real_clock_samples_never_regress() {
 
 // ── Court 2 ──────────────────────────────────────────────────────────────────
 
-/// Court 2: regression refusal over a sampled sequence with an admixed
-/// unsorted suffix. The externally-reachable refusal class is `next == prev`
-/// (equal pairs) — the strict law refuses it, fail closed, with the typed
-/// `TickError::Regression { prev, next }` carrying only the offending pair
-/// (zero diagnostic entropy). The backwards-pair class is L158-coordination
-/// (see module header); this court proves the law refuses every pair it can
-/// observe and admits every strictly-forward pair.
+/// Court 2: regression refusal over a REAL-sample corpus ARRANGED into the
+/// three pair classes. Equal pairs are constructed as `mono_checked(t, t)`
+/// and backwards pairs as `mono_checked(later, earlier)` — both from real
+/// clock readings, so refusal-path exercise is deterministic on any host
+/// (the prior version required the host clock to happen to return equal
+/// readings and failed under load/resolution drift). The strict law must
+/// refuse exactly the (equal ∪ backwards) class, fail closed, with the
+/// typed `TickError::Regression { prev, next }` carrying only the offending
+/// pair (zero diagnostic entropy), and admit every strictly-forward pair.
 #[test]
 fn court2_unsorted_vector_refused_with_typed_regression() {
-    // Real samples: an admitted (strictly-deduplicated, forward) prefix,
-    // then the "unsorted" shape — a repeat of an earlier sample. Because
-    // real samples are non-decreasing, the only externally-constructible
-    // inversion is the equal pair, which the strict law must refuse.
     const N: usize = 20_000;
     let (samples, _) = sample_sequence(N);
 
-    // Ground truth computed independently: count refusals/admissions under
-    // the strict law, expecting refusal exactly on equal pairs.
+    // Corpus = adjacent real pairs (forward class), each real sample paired
+    // with itself (equal class), and consecutive real samples in descending
+    // arrangement (backwards class). All values are real clock readings.
     let mut refusals = 0usize;
     let mut admissions = 0usize;
-    let mut typed_ok = 0usize;
+    let mut equals_seen = 0usize;
+    let mut backwards_seen = 0usize;
     for w in samples.windows(2) {
         match HwTick::mono_checked(w[0], w[1]) {
             Ok(admitted) => {
@@ -115,9 +118,11 @@ fn court2_unsorted_vector_refused_with_typed_regression() {
                 admissions += 1;
             }
             Err(e) => {
-                // Refusal must be EXACTLY the equal-pair class here (real
-                // samples cannot go backwards; anything else means the
-                // subject diverged from its own clock law).
+                // Real samples are non-decreasing, so a natural-order
+                // refusal must be EXACTLY the equal-pair class; a true
+                // regression would mean the subject diverged from its
+                // own clock law.
+                assert_eq!(w[0], w[1], "natural-order real pair regressed: {e:?}");
                 assert_eq!(
                     e,
                     TickError::Regression {
@@ -126,32 +131,81 @@ fn court2_unsorted_vector_refused_with_typed_regression() {
                     },
                     "refused pair must be exactly the observed (prev, next)"
                 );
-                assert_eq!(w[0], w[1], "only equal pairs are refusable on a real clock");
-                typed_ok += 1;
+                equals_seen += 1;
                 refusals += 1;
             }
         }
     }
-    assert_eq!(admissions + refusals, N - 1, "every adjacent pair adjudicated");
-    // The refusal path was actually exercised (L158's own unit tests observe
-    // equal pairs on this host; if none occurred in 20k samples, the host's
-    // clock resolution advanced every read and this court self-reports it).
+    for t in &samples {
+        // Equal class: must refuse, typed error exactly the pair.
+        match HwTick::mono_checked(*t, *t) {
+            Err(TickError::Regression { prev, next }) => {
+                assert_eq!((prev, next), (t.as_nanos(), t.as_nanos()));
+                equals_seen += 1;
+                refusals += 1;
+            }
+            Ok(_) => panic!("equal pair admitted — strict law broken"),
+        }
+        if t.as_nanos() > samples[0].as_nanos() {
+            // Backwards class: real later sample as `prev`, real first
+            // sample as `next`.
+            match HwTick::mono_checked(*t, samples[0]) {
+                Err(e @ TickError::Regression { .. }) => {
+                    assert_eq!(
+                        e,
+                        TickError::Regression {
+                            prev: t.as_nanos(),
+                            next: samples[0].as_nanos(),
+                        },
+                        "refused pair must be exactly the arranged (prev, next)"
+                    );
+                    backwards_seen += 1;
+                    refusals += 1;
+                }
+                Ok(_) => panic!("backwards pair admitted — strict law broken"),
+            }
+        }
+    }
+    // The refusal path is exercised by construction on any host.
+    assert!(equals_seen > 0, "corpus construction bug: no equal pairs");
     assert!(
-        typed_ok > 0,
-        "no equal pair observed in {N} samples — refusal path unexercised on this host; \
-         rerun or lower the law under L158 coordination"
+        backwards_seen > 0,
+        "corpus construction bug: no backwards pairs (clock never advanced in {N} samples)"
     );
+    assert_eq!(
+        admissions + refusals,
+        (N - 1) + N + backwards_seen,
+        "every corpus pair adjudicated exactly once"
+    );
+
     // Zero-entropy Display: states the class and the pair, nothing more.
-    // Obtained from a real refusal, not a synthesized value.
-    let (s, _) = sample_sequence(10_000);
-    let real_err = s
-        .windows(2)
-        .find_map(|w| HwTick::mono_checked(w[0], w[1]).err())
-        .expect("equal pair must recur within 10k samples on this host");
+    // Obtained from a real refusal (guaranteed by the corpus), not a
+    // synthesized value.
+    let real_err = HwTick::mono_checked(samples[N - 1], samples[0]).expect_err(
+        "descending real pair must refuse (clock advanced over the corpus)",
+    );
     let d = format!("{real_err}");
     assert!(d.contains("regression"), "Display must name the law class");
     assert!(!d.contains("src/") && !d.contains(".rs") && !d.contains("panic"),
         "zero-entropy: no file/path/panic diagnostics in Display");
+}
+
+/// DISCLOSED SIDE-EXPERIMENT (host-resolution observation, `#[ignore]`d):
+/// the observation the prior court2 hard-required — whether THIS host's
+/// clock actually returns equal consecutive readings within N samples — is
+/// a property of the host, not of the law, so it is split out here. Run
+/// with `cargo test -p strata-protocol --test monotonic_tick_court --
+/// --ignored`. Failure here means the host's clock resolution advances on
+/// every read; it is informational for L158, not a law violation.
+#[test]
+#[ignore = "host clock-resolution observation: informational, not a law test"]
+fn side_experiment_host_clock_returns_equal_pairs_within_20k_samples() {
+    let (_samples, equals) = sample_sequence(20_000);
+    assert!(
+        equals > 0,
+        "no equal consecutive pair observed in 20_000 real samples — \
+         this host's clock resolution advances per read"
+    );
 }
 
 // ── Court 3 ──────────────────────────────────────────────────────────────────

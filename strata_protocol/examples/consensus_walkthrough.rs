@@ -50,14 +50,15 @@ fn transcript() -> String {
     // Frame i (0..10): producer i % 2, tick from that producer's Sequence
     // (producer 0 seeded at 0, producer 1 seeded at 5 -> ticks 0..=9, all
     // distinct). Token walks a single-bit place chain: place i -> place i+1.
-    let mut producers: Vec<(usize, Sequence, Vec<(u64, u64)>)> = vec![
+    type ProducerLog = Vec<(u64, u64)>;
+    let mut producers: Vec<(usize, Sequence, ProducerLog)> = vec![
         (0, Sequence::starting_at(0), Vec::new()),
         (1, Sequence::starting_at(PER_PRODUCER), Vec::new()),
     ];
     for i in 0..TOTAL {
         let p = (i % 2) as usize;
         let (pid, seq, plan) = &mut producers[p];
-        let tick = seq.next();
+        let tick = seq.next_tick();
         // The token chain is indexed by TICK, not by frame index: the frame
         // carrying tick t consumes place t and produces place t+1. Since the
         // drain is re-ordered by tick before admission, the walk is place

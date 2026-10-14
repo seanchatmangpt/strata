@@ -20,6 +20,8 @@
 //!                                 (header opcode/pre/post, rows ordered by
 //!                                 opcode; same shape as the pn_transitions.rq
 //!                                 ontology projection for graph↔code diffing)
+//!   query <file.rq> --graph <ttl> run a SPARQL SELECT over an RDF graph,
+//!                                 print TSV (header + rows); fail-closed
 
 // The path-included signer module carries items (Seal, generate, ...) this
 // binary never calls; that is inclusion of the whole lane, not dead code.
@@ -36,7 +38,6 @@ mod signer;
 
 // signer.rs is path-included, so its `crate::receipt` paths must resolve at
 // this bin root too; re-export the lib's receipt module here.
-use strata_protocol::receipt;
 
 use signer::{AttestedPayload, Signer, PAYLOAD_LEN, PUBLIC_KEY_LEN, SEED_LEN, SIGNATURE_LEN};
 
@@ -108,9 +109,10 @@ fn main() -> ExitCode {
         Some("receipt") => cmd_receipt(&args[1..]),
         Some("cas") => cmd_cas(&args[1..]),
         Some("pn") => cmd_pn(&args[1..]),
+        Some("query") => cmd_query(&args[1..]),
         _ => fail(
             EX_USAGE,
-            "usage: strata <pdu inspect|pdu verify|sign|verify|receipt verify|cas put|cas get|pn step|pn replay|pn rehydrate> ...",
+            "usage: strata <pdu inspect|pdu verify|sign|verify|receipt verify|cas put|cas get|pn step|pn replay|pn rehydrate|query> ...",
         ),
     }
 }
@@ -171,6 +173,118 @@ fn pn_table(args: &[String]) -> ExitCode {
         println!("{op}\t{pre}\t{post}");
     }
     ExitCode::SUCCESS
+}
+
+/// `query <file.rq> --graph <ttl>` — run a SPARQL SELECT against an RDF
+/// graph file and print the result as TSV (header row = variable names,
+/// then one row per solution, terms in canonical form: IRIs as `<iri>`,
+/// literals as their lexical value, blank nodes as `_:label`). The query
+/// text may carry `#` comments (as `pn_transitions.rq` does); oxigraph's
+/// parser strips them. Fail-closed: unreadable files, parse errors, or a
+/// non-SELECT result form exit 1 with a stderr message and no stdout.
+fn cmd_query(args: &[String]) -> ExitCode {
+    // Exact arg shape, like every other verb in this bin:
+    // `query <file.rq> --graph <file.ttl>` — anything else is a usage refusal.
+    if args.len() != 3 || args[1] != "--graph" || args[0].starts_with("--") {
+        return fail(
+            EX_USAGE,
+            "usage: strata query <file.rq> --graph <file.ttl>",
+        );
+    }
+    let query_path = &args[0];
+    let graph_path = &args[2];
+    match run_query(query_path, graph_path) {
+        Ok(tsv) => {
+            print!("{tsv}");
+            ExitCode::SUCCESS
+        }
+        Err(e) => fail(EX_VERIFY_FAIL, &e),
+    }
+}
+
+/// Load `graph_path` into an in-memory store, evaluate the SPARQL query in
+/// `query_path`, and render a SELECT result as TSV. Refuse (typed Err, no
+/// partial output) on unreadable input, Turtle parse failure, SPARQL syntax
+/// error, evaluation error, or a non-SELECT result form.
+///
+/// Zero-entropy diagnostics (N18): every refusal is a FIXED constant string —
+/// a typed refusal class, no path, no OS-error text, no IO-derived content.
+/// Operator-usable identification is the fixed `query: refused` header; the
+/// detail is deliberately kept out of stderr (a data-dependent string is a
+/// timing/content side channel).
+fn run_query(query_path: &str, graph_path: &str) -> Result<String, String> {
+    use oxigraph::io::{RdfFormat, RdfParser};
+    use oxigraph::sparql::{QueryResults, SparqlEvaluator};
+    use oxigraph::store::Store;
+
+    // Constant refusal classes (N18 zero-entropy diagnostics).
+    const E_READ_GRAPH: &str = "query: refused: cannot read graph";
+    const E_READ_QUERY: &str = "query: refused: cannot read query";
+    const E_TURTLE: &str = "query: refused: malformed turtle";
+    const E_STORE: &str = "query: store refused";
+    const E_SPARQL: &str = "query: refused: malformed sparql";
+    const E_EVAL: &str = "query: eval refused";
+    const E_NON_SELECT: &str = "query: non-select refused";
+
+    let graph_bytes =
+        std::fs::read(graph_path).map_err(|_| E_READ_GRAPH.to_string())?;
+    let query_text = {
+        let b = std::fs::read(query_path).map_err(|_| E_READ_QUERY.to_string())?;
+        String::from_utf8(b).map_err(|_| E_SPARQL.to_string())?
+    };
+
+    let store = Store::new().map_err(|_| E_STORE.to_string())?;
+    for quad in RdfParser::from_format(RdfFormat::Turtle).for_reader(&graph_bytes[..]) {
+        let quad = quad.map_err(|_| E_TURTLE.to_string())?;
+        store.insert(quad.as_ref()).map_err(|_| E_STORE.to_string())?;
+    }
+
+    let prepared = SparqlEvaluator::new()
+        .parse_query(&query_text)
+        .map_err(|_| E_SPARQL.to_string())?;
+    let results = prepared
+        .on_store(&store)
+        .execute()
+        .map_err(|_| E_EVAL.to_string())?;
+
+    let solutions = match results {
+        QueryResults::Solutions(s) => s,
+        _ => return Err(E_NON_SELECT.to_string()),
+    };
+    let vars: Vec<_> = solutions.variables().to_vec();
+    let mut out = String::new();
+    for (i, v) in vars.iter().enumerate() {
+        if i > 0 {
+            out.push('\t');
+        }
+        out.push_str(v.as_str());
+    }
+    out.push('\n');
+    for sol in solutions {
+        let sol = sol.map_err(|_| E_EVAL.to_string())?;
+        for (i, v) in vars.iter().enumerate() {
+            if i > 0 {
+                out.push('\t');
+            }
+            if let Some(term) = sol.get(v) {
+                use oxigraph::model::Term;
+                match term {
+                    Term::NamedNode(n) => {
+                        out.push('<');
+                        out.push_str(n.as_str());
+                        out.push('>');
+                    }
+                    Term::BlankNode(b) => {
+                        out.push_str("_:");
+                        out.push_str(b.as_str());
+                    }
+                    Term::Literal(l) => out.push_str(l.value()),
+                }
+            }
+        }
+        out.push('\n');
+    }
+    Ok(out)
 }
 
 fn flag_value<'a>(args: &'a [String], name: &str) -> Result<Option<&'a str>, String> {

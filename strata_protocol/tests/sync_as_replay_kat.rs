@@ -5,7 +5,8 @@
 //! `logchain::chain_head` computes over the fixture entries must equal the
 //! value insa-proof folds over identical bytes (asserted on the insa side
 //! in `insa-proof/tests/sync_as_replay.rs`). One chaining law, two repos,
-//! one verdict.
+//! one verdict. Drift meta-court over these sources:
+//! `insa_sync_shape_court.rs`.
 
 use strata_protocol::logchain::{chain_head, verify_from, GENESIS};
 use strata_protocol::logsink::LogEntry;

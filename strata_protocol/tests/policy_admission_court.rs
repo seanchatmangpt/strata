@@ -1,4 +1,6 @@
 //! Policy-admission court (graphlaw::policy pattern, Gemini-brief lane #1).
+// VACUITY: mutation-twin (`admit_marking_reachability_mutated` — test c is the
+// positive control that must fire).
 //!
 //! (a) safe seed admits with an empty witness;
 //! (b) a seed whose transitions can reach a reserved bit refuses WITH the

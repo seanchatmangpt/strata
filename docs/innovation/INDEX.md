@@ -263,10 +263,24 @@ committed; each needs operator scope decision.
   shape surface to typed consumers (Pydantic/TS) with a
   SchemaCoverageReport. Falsifier: a compiled consumer model diverges
   from ontology.ttl without the coverage report refusing.
-- graphlaw::policy unsafe-state reachability admission — model strata's
-  PN invariant-mask law (pnabi) as an unsafe_states reachability
-  Problem. Falsifier: a marking sequence reaching an unsafe place
-  passes admission.
+- graphlaw::policy unsafe-state reachability admission — LANDED
+  2026-10-14 as `strata_protocol/src/policy_admission.rs`
+  (pattern source: graphlaw `src/policy.rs` v26.10.13 Problem/
+  PolicyRefused contract; graphlaw itself not dependency-reachable —
+  not on crates.io, sibling checkout outside this workspace). BFS over
+  16-bit markings from a seed via `pn64::fire`; unsafe = reserved bits
+  `0x0080|0x0200|0x8000` + `0x0800`-when-unconsumed (G2 orphan law,
+  table-level). Court `strata_protocol/tests/policy_admission_court.rs`:
+  safe seed admits empty witness; reserved-bit path refuses with the
+  exact step witness; vacuity control (skip one BFS edge in-memory →
+  path hidden → verdict flips; off-witness skip still refuses). Falsifier
+  (unsafe sequence passes admission) exercised by the vacuity control.
+  Surfaced defect FIXED (defect-fix lane, 2026-10-14): the marking-level
+  stuck-pending state 0x0028 →0x92→ 0x0828 →0x91 UNDELEGATE→ 0x0820 (where
+  0x93 pre 0x0808 no longer consumed DELEGATION_PENDING) is drained by
+  widening 0x93 to pre 0x0800 / post 0x0000 — the XOR law now drains the
+  pending bit from any pending marking; witness 0x0820 →0x93→ 0x0020 is a
+  court-pinned positive control on both language tiers.
 - purrdf demand paging (CountingDemandProvider) — candidate backing for
   the query verb's graph materialization on large corpora. Falsifier:
   demand paging changes query results vs eager load on the

@@ -4,6 +4,7 @@
 //! (2) `strip_preamble` on raw-CLAP input returned `buf[16..]`, silently
 //! corrupting a valid legacy frame. Zero-entropy `Error::Invalid` throughout.
 
+// VACUITY: EXEMPT — dual mutant-killed semantics court over real bytes (perm-mismatch refusal + raw passthrough byte-identity); mutants asserted killed in-test
 use strata_protocol::framing::{frame_parse, frame_wrap, strip_preamble};
 use strata_protocol::{Error, PduHeader};
 

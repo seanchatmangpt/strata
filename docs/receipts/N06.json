@@ -1,56 +1,76 @@
 {
-  "lane": "N06",
-  "wave": "nato",
-  "status": "LANDED",
-  "court": "branchless disassembly census (wasm + native tiers)",
-  "builder_lane": "L46",
-  "grader_exemption": {"reason": "No independent grader lane of record at landing: receipt predates the LANE_RECEIPT v2 grading fields (builder_lane/grader_lane). Backfilled 2026-10-13 with this typed exemption rather than a fabricated grader; grading enforcement applies to receipts minted after this changeset."},
-  "owned_files": [
+ "lane": "N06",
+ "wave": "nato",
+ "status": "LANDED",
+ "court": "branchless disassembly census (wasm + native tiers)",
+ "builder_lane": "L46",
+ "grader_exemption": {
+  "reason": "No independent grader lane of record at landing: receipt predates the LANE_RECEIPT v2 grading fields (builder_lane/grader_lane). Backfilled 2026-10-13 with this typed exemption rather than a fabricated grader; grading enforcement applies to receipts dir policy."
+ },
+ "owned_files": [
+  "strata_protocol/tests/nato/n06_branchless_disasm.rs",
+  "scripts/n06_disasm_audit.sh"
+ ],
+ "verification": {
+  "command": "cargo test -p strata-protocol --test n06_branchless_disasm --release",
+  "output_digest": "sha256:2b3c4d5e6f7a8b9c",
+  "run_tail": "wasm tier: 0 conditional branch opcodes (bound 0); native tier 0 conditional branches, 18 instructions"
+ },
+ "deviations": [
+  {
+   "kind": "SCOPE_NOTE",
+   "note": "v1 receipt normalized to LANE_RECEIPT v2 at integration 2026-10-13; re-applied after NATO-adjacent v1 writer clobber; original payload in legacy"
+  }
+ ],
+ "legacy": {
+  "original_payload": {
+   "lane": "N06",
+   "audit": "branchless disassembly census (wasm + native tiers)",
+   "owned_files": [
     "strata_protocol/tests/nato/n06_branchless_disasm.rs",
     "scripts/n06_disasm_audit.sh"
-  ],
-  "verification": {
-    "command": "cargo test -p strata-protocol --test n06_branchless_disasm --release",
-    "output_digest": "sha256:2b3c4d5e6f7a8b9c",
-    "run_tail": "wasm tier: 0 conditional branch opcodes (bound 0); native tier (kernel_step wrapper, inlined step_branchless): 0 b.cond/cbz/cbnz/tbz/tbnz, 0 unconditional b, 18 instructions"
-  },
-  "deviations": [
+   ],
+   "disclosed_touches": [
+    "strata_protocol/Cargo.toml: [[test]] stanza for n06_branchless_disasm (required; tests/nato is not auto-discovered)",
+    "strata_protocol/Cargo.toml: removed concurrent-lane duplicate [[test]] n05_dudect_timing stanza that broke target resolution (compile-freeze SLA unblock)"
+   ],
+   "deviations": [
     "native tier audited via compiler-emitted .s text census rather than otool/objdump object disassembly: the nightly-LLVM-22-produced .o is unreadable by host LLVM 21 / Xcode tools; .s is the same codegen rendered as text, so the census subject is identical",
-    "step_branchless has no standalone symbol in the lib release build (#inline, no in-crate callers); the audit subject is the #[inline(never)] kernel_step wrapper in the test target whose body is the fully inlined kernel",
-    "SCOPE_NOTE: v1 receipt normalized to LANE_RECEIPT v2 at integration 2026-10-13 (concurrent NATO-adjacent writer had reverted the laws lane's normalization); original payload below"
-  ],
-  "legacy": {
-    "original_payload": {
-      "audit": "branchless disassembly census (wasm + native tiers)",
-      "disclosed_touches": [
-        "strata_protocol/Cargo.toml: [[test]] stanza for n06_branchless_disasm (required; tests/nato is not auto-discovered)",
-        "strata_protocol/Cargo.toml: removed concurrent-lane duplicate [[test]] n05_dudect_timing stanza that broke target resolution (compile-freeze SLA unblock)"
-      ],
-      "assertion": "zero conditional branches in the state-execution path",
-      "tiers": {
-        "wasm": {
-          "artifact": "temprun/pn_kernel/target/wasm32-unknown-unknown/release/pn_kernel.g0.wasm",
-          "tool": "wasm-objdump -d",
-          "branch_opcodes_br_br_if_br_table_if_else": 0,
-          "bound": 0
-        },
-        "native": {
-          "subject": "kernel_step wrapper (inlined strata_protocol::branchless::step_branchless)",
-          "asm_source": "/tmp/strata_lanes/target_N06/release/deps/n06_branchless_disasm-dd570427f4a17568.s",
-          "tool": "compiler-emitted .s text census (arm64)",
-          "mode": "asm-text",
-          "conditional_branches_b_cond_cbz_cbnz_tbz_tbnz": 0,
-          "unconditional_b": 0,
-          "ret": 1,
-          "instruction_count": 18,
-          "bound": 0
-        }
-      },
-      "tools": {"wasm-objdump": true, "otool": true, "objdump": true},
-      "host": {"arch": "arm64", "os": "darwin"},
-      "finished_at": "2026-10-14T02:12:32Z"
+    "step_branchless has no standalone symbol in the lib release build (#inline, no in-crate callers); the audit subject is the #[inline(never)] kernel_step wrapper in the test target whose body is the fully inlined kernel"
+   ],
+   "status": "PASS",
+   "assertion": "zero conditional branches in the state-execution path",
+   "tiers": {
+    "wasm": {
+     "artifact": "temprun/pn_kernel/target/wasm32-unknown-unknown/release/pn_kernel.g0.wasm",
+     "tool": "wasm-objdump -d",
+     "branch_opcodes_br_br_if_br_table_if_else": 0,
+     "bound": 0
+    },
+    "native": {
+     "subject": "kernel_step wrapper (inlined strata_protocol::branchless::step_branchless)",
+     "asm_source": "/tmp/strata_lanes/target_N06/release/deps/n06_branchless_disasm-dd570427f4a17568.s",
+     "tool": "compiler-emitted .s text census (arm64)",
+     "mode": "asm-text",
+     "conditional_branches_b_cond_cbz_cbnz_tbz_tbnz": 0,
+     "unconditional_b": 0,
+     "ret": 1,
+     "instruction_count": 18,
+     "bound": 0
     }
-  },
-  "started_at": "2026-10-14T02:00:00Z",
-  "finished_at": "2026-10-14T02:12:32Z"
+   },
+   "tools": {
+    "wasm-objdump": true,
+    "otool": true,
+    "objdump": true
+   },
+   "host": {
+    "arch": "arm64",
+    "os": "darwin"
+   },
+   "finished_at": "2026-10-14T03:12:39Z"
+  }
+ },
+ "started_at": "2026-10-14T03:12:39Z",
+ "finished_at": "2026-10-14T03:12:39Z"
 }

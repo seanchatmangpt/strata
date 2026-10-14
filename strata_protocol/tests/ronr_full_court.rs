@@ -1,3 +1,4 @@
+// VACUITY: EXEMPT — exhaustive/property census court: asserts the law over the full declared corpus; no mutation-kill claim
 //! Integration court for the extended RONR verb space (lane L119, wave 2).
 //!
 //! Zero mocks: every check goes through the real crate API —
@@ -125,8 +126,8 @@ fn liveness_with_adopted_committed_terminals() {
 
     // Terminals = every reachable marking carrying ADOPTED or COMMITTED.
     let mut terminals: Vec<u16> = Vec::new();
-    for word in 0..1024usize {
-        let mut bits = set[word];
+    for (word, &bits0) in set.iter().enumerate() {
+        let mut bits = bits0;
         while bits != 0 {
             let low = bits.trailing_zeros();
             let m = ((word as u16) << 6) | (low as u16);

@@ -1,3 +1,4 @@
+// VACUITY: EXEMPT — direct law-assertion court over a fixed corpus; no mutation-kill claim
 //! RONR lifecycle end-to-end court (Lane L12).
 //!
 //! Chicago court over the real modules — `ronr`, `pn64`, `ocel64`, `pnabi`,

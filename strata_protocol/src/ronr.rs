@@ -195,12 +195,11 @@ mod tests {
         for t in RONR.iter() {
             assert!(!seen[t.opcode as usize], "duplicate opcode {:#04x}", t.opcode);
             seen[t.opcode as usize] = true;
-            assert!(t.pre <= 0xFFFF, "pre mask out of 16-bit range");
-            assert!(t.post <= 0xFFFF, "post mask out of 16-bit range");
+            // pre/post are u16: the type system carries the 16-bit-range law.
         }
         assert_eq!(RONR.len(), VERB_COUNT);
-        assert!(VERB_COUNT <= 84, "verb budget");
-        assert!(NOUN_COUNT <= 35, "noun budget");
+        const _: () = assert!(VERB_COUNT <= 84, "verb budget");
+        const _: () = assert!(NOUN_COUNT <= 35, "noun budget");
         // NOUN_COUNT matches the number of documented non-reserved bits
         // (0x0001 through 0x4000).
         assert_eq!(NOUN_COUNT, 15);

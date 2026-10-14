@@ -1,4 +1,5 @@
-//! C05 mutation-testing-the-backlog court (Lane L25).
+// VACUITY: ANTI_VACUITY_MUTANT
+// ANTI_VACUITY_MUTANT//! C05 mutation-testing-the-backlog court (Lane L25).
 //!
 //! Proves the RONR acceptance court (`ronr_court.rs`) is non-vacuous: for each
 //! of the 12 RONR transitions, apply the "revert the diff" mutation — swap the
@@ -44,9 +45,6 @@ fn ocel_for(pn: u64, tick: u8) -> u64 {
     ocel64::pack(pn64::tid(pn) as u16, 0x0001, 0x0002, 0x00, tick)
 }
 
-/// Exact markings the acceptance court asserts after each canonical verb.
-const EXPECTED: [u16; 6] = [0x0082, 0x008C, 0x0094, 0x008C, 0x00E4, 0x01C1];
-
 /// Drive the canonical lifecycle under `mutations` through the real ABI.
 /// Returns `Err(first_failure)` if any step is refused, else the full trace of
 /// intermediate markings. Acceptance (as in `ronr_court`) is the exact
@@ -67,20 +65,13 @@ fn run_lifecycle(mutations: &[Mutation]) -> Result<Vec<u16>, pnabi::PnAbiError> 
         }
         let pn = pn_for(m, op, mutations);
         tick = tick.wrapping_add(1);
-        match pnabi::validate_and_advance(pn, ocel_for(pn, tick), 0) {
-            Ok(next) => {
-                m = pn64::marking(next);
-                trace.push(m);
-            }
-            Err(e) => return Err(e),
+        {
+            let next = pnabi::validate_and_advance(pn, ocel_for(pn, tick), 0)?;
+            m = pn64::marking(next);
+            trace.push(m);
         }
     }
     Ok(trace)
-}
-
-/// Full acceptance: every intermediate marking matches the court baseline.
-fn accepted(mutations: &[Mutation]) -> bool {
-    run_lifecycle(mutations) == Ok(EXPECTED.to_vec())
 }
 
 /// The revert-the-diff mutant for one transition: (pre, post) swapped.

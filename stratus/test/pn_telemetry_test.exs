@@ -3,20 +3,14 @@ defmodule Stratus.Valve.PnTelemetryTest do
 
   alias Stratus.Valve.Pn64
   alias Stratus.Valve.PnTelemetry
+  alias Stratus.Valve.Ronr
 
   @step PnTelemetry.step_event()
   @refused PnTelemetry.refused_event()
 
-  # RONR canonical-six (tid, pre, post), same table as pn64_valve_test.exs.
-  @ronr %{
-    0x01 => {0x0081, 0x0082},
-    0x02 => {0x0002, 0x000C},
-    0x06 => {0x0024, 0x0101}
-  }
-
   defp pn_word(tid, marking) do
-    {pre, post} = Map.fetch!(@ronr, tid)
-    Pn64.pack(marking, pre, post, tid, 0x00)
+    {:ok, t} = Ronr.lookup(tid)
+    Pn64.pack(marking, t.pre, t.post, tid, 0x00)
   end
 
   defp ocel_word(tid), do: Pn64.pack_ocel(tid, 0, 0, 0, 0)

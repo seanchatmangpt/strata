@@ -1,4 +1,5 @@
-//! Mutation court M04: dispatch/ronr drift killers.
+// VACUITY: ANTI_VACUITY_MUTANT
+// ANTI_VACUITY_MUTANT//! Mutation court M04: dispatch/ronr drift killers.
 //!
 //! Five hand-built mutants of the RONR variant table (each an in-test table
 //! derived from `ronr::RONR` with a single-field flip), each driven through

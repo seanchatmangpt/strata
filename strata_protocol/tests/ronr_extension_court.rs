@@ -1,4 +1,5 @@
-//! RONR extension lifecycle court (Lane L47, wave 2).
+// VACUITY: ANTI_VACUITY_MUTANT
+// ANTI_VACUITY_MUTANT//! RONR extension lifecycle court (Lane L47, wave 2).
 //!
 //! Closes the vacuous-acceptance gap documented by `ronr_mutation_court.rs`:
 //! the six extension verbs (0x07 LayOnTable, 0x08 PostponeIndefinitely,
@@ -138,7 +139,7 @@ fn terminal_enablement_after_adjourn_is_purely_marking_gated() {
     // order}. Verbs whose pre bits survive the adjourn fire remain enabled
     // (e.g. 0x02 second, if N_STATED survived; 0x04 if N_AMENDMENT_PENDING
     // survived; 0x0C division, always).
-    let adjourn = ronr::lookup(0x0A).unwrap();
+    let _adjourn = ronr::lookup(0x0A).unwrap();
     let debatable_verbs: Vec<u8> = ronr::RONR
         .iter()
         .filter(|t| t.pre & ronr::N_DEBATABLE != 0)
@@ -228,7 +229,7 @@ fn pn_mut(m: u16, opcode: u8, mutations: &[Mutation]) -> u64 {
 /// Fire `opcode` at `m` under `mutations` through the real ABI.
 fn fire_mut(m: u16, opcode: u8, mutations: &[Mutation]) -> Result<u16, pnabi::PnAbiError> {
     let pn = pn_mut(m, opcode, mutations);
-    pnabi::validate_and_advance(pn, ocel_for(pn, 1), 0).map(|w| pn64::marking(w))
+    pnabi::validate_and_advance(pn, ocel_for(pn, 1), 0).map(pn64::marking)
 }
 
 /// Swap mutant for one transition: (pre, post) exchanged.

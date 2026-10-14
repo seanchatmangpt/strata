@@ -177,13 +177,13 @@ pub const NOUN_COUNT: usize = 16;
 /// True if `v` falls inside a defined verb sector.
 #[inline]
 pub fn is_verb(v: u8) -> bool {
-    matches!(v, 0x01..=0x3F | 0x40..=0x6F | 0x70..=0x9F | 0xA0..=0xCF)
+    matches!(v, 0x01..=0xCF)
 }
 
 /// True if `n` falls inside a defined noun sector.
 #[inline]
 pub fn is_noun(n: u8) -> bool {
-    matches!(n, 0x01..=0x2F | 0x30..=0x5F | 0x60..=0x8F | 0x90..=0xBF)
+    matches!(n, 0x01..=0xBF)
 }
 
 /// Pack a verb and noun into a `u16` action code.
@@ -300,7 +300,8 @@ mod tests {
         // Verb and noun namespaces are separate byte lanes, so cross-namespace
         // numeric overlap is by design. Within each namespace, sectors must
         // tile their ranges with no overlap and no interior gap.
-        let namespaces: [(&[(u8, u8); 4], fn(u8) -> bool); 2] = [
+        type SectorTable = [(&'static [(u8, u8); 4], fn(u8) -> bool); 2];
+        let namespaces: SectorTable = [
             (
                 &[(0x01, 0x3F), (0x40, 0x6F), (0x70, 0x9F), (0xA0, 0xCF)],
                 is_verb,

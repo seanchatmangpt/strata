@@ -196,7 +196,7 @@ mod tests {
         // The new bit is exercised by the verb that mints it.
         assert_eq!(lookup(0x0D).unwrap().post & N_COMMITTED, N_COMMITTED);
         // Noun budget still holds after the delta (16 <= 35).
-        assert!(ronr::NOUN_COUNT + 1 <= 35);
+        const _: () = assert!(ronr::NOUN_COUNT < 35, "noun budget");
     }
 
     #[test]

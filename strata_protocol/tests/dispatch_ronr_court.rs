@@ -1,3 +1,4 @@
+// VACUITY: EXEMPT — exhaustive/property census court: asserts the law over the full declared corpus; no mutation-kill claim
 //! Drift court L34 (L73 extension): `dispatch::TABLE` vs `ronr::RONR`.
 //!
 //! Two independently-addressable tables over one calculus (16-bit place-mask
@@ -5,12 +6,12 @@
 //! failure class. This court pins FULL identity:
 //!
 //! 1. Exact 12-opcode identity over the full 256-opcode sweep: `ronr ⊆
-//!    dispatch` AND `dispatch ⊆ ronr` with identical `(pre, post)` — the
+//!   dispatch` AND `dispatch ⊆ ronr` with identical `(pre, post)` — the
 //!    assigned sets are equal, so the asymmetry property is inverted (the
 //!    former seeded-subset state is retired; any change on either side flips
 //!    this court).
 //! 2. Masked-fire equivalence: for each of the 12 shared opcodes, `pnabi::
-//!    validate_and_advance` driven with dispatch's masks and ronr's masks on
+//!   validate_and_advance` driven with dispatch's masks and ronr's masks on
 //!    the same `(marking, activity)` inputs produces identical outcomes,
 //!    across all 2^popcount(pre) sub-markings of each transition's `pre`
 //!    mask, plus an exhaustive 65536-marking sweep per opcode.

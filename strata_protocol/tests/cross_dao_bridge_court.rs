@@ -1,3 +1,4 @@
+// VACUITY: EXEMPT — direct law-assertion court over a fixed corpus; no mutation-kill claim
 //! Cross-DAO shared-topology handshake court (Lane L53).
 //!
 //! Two DAOs agree on a shared interface net: the six canonical RONR

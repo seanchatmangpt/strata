@@ -1,4 +1,5 @@
-//! Mutation court M05 — DAO transition table (lane M05).
+// VACUITY: ANTI_VACUITY_MUTANT
+// ANTI_VACUITY_MUTANT//! Mutation court M05 — DAO transition table (lane M05).
 //!
 //! Five in-test mutants of the [`strata_protocol::dao_transitions::DAO`]
 //! table, each killed by assertions against the REAL admission surface
@@ -205,10 +206,9 @@ fn mutant3_caps_place3_cap1_to_2_killed_by_quota_census() {
     // test records the kill evidence: the law pin FIRES on the mutant vector
     // (and only on it).
     let law_pin = |c: u8| c <= 1;
-    assert_eq!(law_pin(caps_lawful()[3]), true, "real policy vector is in-law");
-    assert_eq!(
-        law_pin(caps_mutant[3]),
-        false,
+    assert!(law_pin(caps_lawful()[3]), "real policy vector is in-law");
+    assert!(
+        !law_pin(caps_mutant[3]),
         "KILL EVIDENCE: law pin fires on caps[3]={} (binary per-place law: 0|1 only)",
         caps_mutant[3]
     );

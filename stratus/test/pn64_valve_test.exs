@@ -2,6 +2,7 @@ defmodule Stratus.Valve.Pn64Test do
   use ExUnit.Case, async: true
 
   alias Stratus.Valve.Pn64
+  alias Stratus.Valve.Ronr
 
   # ---------------------------------------------------------------------------
   # Cross-language hex vectors.
@@ -17,25 +18,9 @@ defmodule Stratus.Valve.Pn64Test do
   # Fire law:     m' = (m ^ pre) | post
   # ---------------------------------------------------------------------------
 
-  # RONR canonical-six transition table (tid, pre, post), derived from ronr.rs:
-  @ronr %{
-    0x01 => {0x0081, 0x0082},
-    # main motion: consumes {main_motion, floor}, produces {floor, stated}
-    0x02 => {0x0002, 0x000C},
-    # second: consumes {stated}, produces {seconded, debatable}
-    0x03 => {0x0008, 0x0010},
-    # amend: consumes {debatable}, produces {amendment_pending}
-    0x04 => {0x0010, 0x0008},
-    # adopt amendment: consumes {amendment_pending}, produces {debatable}
-    0x05 => {0x0008, 0x0060},
-    # previous question: consumes {debatable}, produces {prev_q_moved, prev_q_ordered}
-    0x06 => {0x0024, 0x0101}
-    # vote adopt: consumes {seconded, prev_q_moved}, produces {main_motion, adopted}
-  }
-
   defp pn_word(tid, marking, flags \\ 0x00) do
-    {pre, post} = Map.fetch!(@ronr, tid)
-    Pn64.pack(marking, pre, post, tid, flags)
+    {:ok, t} = Ronr.lookup(tid)
+    Pn64.pack(marking, t.pre, t.post, tid, flags)
   end
 
   describe "pn64 roundtrip" do

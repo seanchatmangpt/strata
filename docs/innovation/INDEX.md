@@ -271,3 +271,14 @@ committed; each needs operator scope decision.
   the query verb's graph materialization on large corpora. Falsifier:
   demand paging changes query results vs eager load on the
   pn_transitions corpus.
+- SPC-QA pattern (Western Electric run rules on the soak Cp series)
+  — LANDED 2026-10-14, in-invocation scope: `we_rules` (R1 beyond-3σ,
+  R2 nine-same-side, R3 six-monotone, R5 two-of-3-beyond-2σ) over a
+  10-batch arrival-order Cp series in
+  temprun/src/bin/soak.rs (`--json` now carries `we_rules`; text report
+  has a WE-rules line). Courts: 11/11 green — each rule fires on a
+  constructed violating series (positive control) and stays quiet on
+  seeded-LCG IID noise (negative control, no deps). Gate:
+  `cargo test -p temprun` green except pre-existing fr7
+  constant-time timing flake (green on rerun). Cross-invocation history
+  (SOAK_LOG.md table as series input) remains future SPC-lane work.

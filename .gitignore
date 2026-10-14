@@ -36,3 +36,6 @@ stratus/test/stratus/diag_court.exs
 stratus/priv/temprun_step
 stratus/priv/temprun_rlimit_shim
 stratus/_build_lane7/
+
+# rustc ICE dumps (concurrent-cargo LTO race class)
+rustc-ice-*.txt

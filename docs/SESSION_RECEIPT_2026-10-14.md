@@ -699,3 +699,75 @@ Disclosed, not authored, by this lane; commit immutable per session rule.
 The card lane's A02 work is therefore committed (no landing SHA of its own
 beyond `66015a0`); its FIXED/court standing remains the card lane's to
 declare. Falsifier unchanged.
+
+---
+
+## Addendum-10 (FINAL-FINAL) — wave-9 landings, session saturation
+
+Append-only. Addendum-9 declared itself final; superseded by this addendum
+per the receipt-amendment rule (new landings arrived after its write).
+**Dedupe**: re-read addenda 5-9 this session; every SHA below was checked
+against them — only the "New this addendum" items are uncited.
+
+### Dedupe — already recorded in addenda 5-9 (re-verified via `git log --no-walk` this session, all resolve)
+
+idmap/rehydrate `3979ba0`; n17 domain-sep `68906b2`; pn64 mirror court
+`2d07251`; pn_frame 15-vector `bbf1c58`; ltl/invariants conservation
+`b02a8e1`; sagas positivity `6213662` (+3/3 witnesses ×2 courts); DFMEA
+F-10/F-11 + vibration index `f553334`; dao widen-ack `33f6705`/`0dba165`
+(3/3 + 7/7 witnesses); sign-fuzz court `51f9799`; release-train doc
+`d018014`; F3 XDP observability CANDIDATE `00bdbd1`; xdp pre-mask witness;
+doc_cite gate `3763015`; telemetry crash-path `76bffdc`; policy_admission
+isolation `52e6274`; root src/ deletion `7dc9576`; witness-replay court
+`d391a7b`; widen-ack consequence-audit design ask (recorded in addendum-9's
+wake; the adjudication asks themselves landed as `9eb1de5` — see below).
+
+### New this addendum
+
+- `4077911` — LeaseLedger durability design
+  (`docs/innovation/LEDGER_DURABILITY_DESIGN.md`, DETS-backed replay-on-init
+  + SIGKILL court; DESIGN ONLY, no runtime landing). Supersedes addendum-9's
+  "LeaseLedger-design lane: IN-FLIGHT" row.
+- `9eb1de5` — widen-ack consequence-audit adjudication asks recorded
+  (CANDIDATE; `docs/innovation/INDEX.md` intake). Two asks: (1) ack-from-
+  never-delegated wire-reachability on both tiers vs the pinned 0x0800
+  MUST-admit totality; (2) policy_admission G2 branch inert under DAO_FULL.
+  Operator adjudication required; no code changed.
+- A02/card: fix + witnesses landed as files carried inside the addendum-9
+  receipt commit `66015a0` (disclosed there and in `0613eeb`); no separate
+  landing SHA. FIXED/court standing remains the card lane's to declare.
+
+### Status updates vs addendum-9's in-flight list
+
+- LeaseLedger-design lane: DESIGN LANDED (`4077911`); implementation still
+  IN-FLIGHT for the release train.
+- A02/card lane: work COMMITTED (via `66015a0`); standing declaration still
+  with the owning lane.
+- worker-lifecycle, semantics-surfaces lanes: unchanged, IN-FLIGHT.
+
+### Session status
+
+**SATURATED-for-wave.** Defect-lattice discovery rate halved vs the
+addendum-5 peak (valuation verdict reaffirmed); the loop winds into the
+release train per `docs/RELEASE_TRAIN_v26.10.12.md` (landed `d018014`;
+§2 frozen-subject gate, ladder OPEN), and continues per operator mandate.
+
+Cross-repo blocker unchanged: graphlaw 26.10.12 SHACL-recursion BLOCKER
+routed to the graphlaw owner; strata stays pinned until an owner fix receipt
+lands.
+
+### Totals at addendum-10 time
+
+- Session range: `git log --oneline 548a0bf..HEAD | wc -l` = **117** commits
+  (addendum-9 recorded 110 at its writing; delta +7 = content `4077911`,
+  `9eb1de5`, cross-lane receipt `1c1d053` (receipts-directory convention,
+  landed while this addendum was in flight), plus receipt commits
+  `66015a0`, `0613eeb` and post-write receipt commits the 110 figure
+  predates — receipt commits additive by convention per addenda 5-9).
+
+**Session falsifier**: any SHA cited in this receipt failing
+`git log --oneline --no-walk` at replay time, or the session commit count
+drifting from the figure above minus receipt commits, without a superseding
+addendum. Falsifier for the two CANDIDATE asks in `9eb1de5`: adjudication
+recorded but never adjudicated by the operator while the pinned courts still
+admit.

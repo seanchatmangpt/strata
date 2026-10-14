@@ -843,6 +843,11 @@ satisfied).
 drifting from the figure above minus receipt commits, without a superseding
 addendum.
 
+**Session falsifier**: any SHA cited in this receipt failing
+`git log --oneline --no-walk` at replay time, or the session commit count
+drifting from the figure above minus receipt commits, without a superseding
+addendum.
+
 ## Addendum-12 — wave-10 landings, dedupe pass vs addenda 5-11 (append-only)
 
 Append-only. **Dedupe**: every SHA in the wave-10 item list was re-verified
@@ -892,6 +897,15 @@ halved vs the addendum-5 peak; loop continues per
   addendum-12 receipt commit → post-commit total 125). HEAD moved during
   prior lanes' writes before (`fa6a228` → `9989190` window); figures are
   as-of-write, receipt commits additive by convention per addenda 5-11.
+
+**Disclosure correction (post-commit re-read)**: the 124 figure was measured
+at HEAD `9989190`; `162885d` and `6d02a39` (n20 lane) landed between that
+measurement and this lane's receipt commit `7720c85`, putting the true
+post-commit total at 127, and concurrent lanes kept landing afterward
+(`40f6155` record_burn ceiling — the in-flight LeaseLedger design lane from
+this addendum's table, now landed; `9f1ce49` xdp scope note; further commits
+unattributed). Figures are as-of-measurement per the convention above; the
+moving-HEAD window is the same class disclosed in addendum-11.
 
 **Session falsifier**: any SHA cited in this receipt failing
 `git log --oneline --no-walk` at replay time, or the session commit count

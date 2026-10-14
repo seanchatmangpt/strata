@@ -78,13 +78,20 @@ defmodule Stratus.Valve.ProvenanceTurtleRoundtripCourtTest do
             i = Enum.find_index(preds, &(&1 == line))
             [_, _, "ocel:hasObject", obj_iri, ";"] = String.split(line, " ")
             qual_line = Enum.at(preds, i + 1)
-            [_, _, "ocel:qualifier", qual, ";"] = String.split(qual_line, " ")
+
+            # Escape-aware extraction: the emitter escapes delimiters and
+            # control chars, so naive space-splitting is not lawful here —
+            # the literal is matched as a quoted Turtle string and unescaped
+            # (inverse of the emitter's escape law, Turtle 1.1 STRING).
+            qual =
+              case Regex.run(~r/^  ocel:qualifier "((?:[^"\\]|\\.)*)" ;$/, qual_line) do
+                [_, lit] -> unescape(lit)
+                nil -> flunk("malformed qualifier line: #{inspect(qual_line)}")
+              end
 
             assert String.starts_with?(obj_iri, "<") and String.ends_with?(obj_iri, ">")
-            assert String.starts_with?(qual, "\"") and String.ends_with?(qual, "\"")
 
-            {String.trim_trailing(String.trim_leading(obj_iri, "<"), ">"),
-             String.trim_trailing(String.trim_leading(qual, "\""), "\"")}
+            {String.trim_trailing(String.trim_leading(obj_iri, "<"), ">"), unescape(qual)}
           end
 
         tick = find_pred(preds, "ex:tick", &(&1 |> String.split(" ") |> hd()))
@@ -100,6 +107,20 @@ defmodule Stratus.Valve.ProvenanceTurtleRoundtripCourtTest do
 
     %{prefix_iris: prefix_iris, events: events}
   end
+
+  # Inverse of the emitter's escape law (Provenance.escape_literal/1,
+  # Turtle 1.1 §STRING): reads back the exact logical qualifier bytes.
+  defp unescape(<<?\\, ?\\, rest::binary>>), do: "\\" <> unescape(rest)
+  defp unescape(<<?\\, ?", rest::binary>>), do: "\"" <> unescape(rest)
+  defp unescape(<<?\\, ?n, rest::binary>>), do: "\n" <> unescape(rest)
+  defp unescape(<<?\\, ?r, rest::binary>>), do: "\r" <> unescape(rest)
+
+  defp unescape(<<?\\, ?u, hex::binary-size(4), rest::binary>>) do
+    <<String.to_integer(hex, 16)::utf8>> <> unescape(rest)
+  end
+
+  defp unescape(<<c::utf8, rest::binary>>), do: <<c::utf8>> <> unescape(rest)
+  defp unescape(<<>>), do: ""
 
   defp find_pred(lines, name, f) do
     line = Enum.find(lines, &String.starts_with?(&1, "  #{name} "))
@@ -157,6 +178,44 @@ defmodule Stratus.Valve.ProvenanceTurtleRoundtripCourtTest do
 
                  {iri, to_string(qual)}
                end)
+    end)
+  end
+
+  # Hostile-qualifier corpus: Turtle delimiters, control chars, UTF-8 —
+  # anything a `term()` qualifier could smuggle into the quoted literal.
+  @hostile [
+    "quote\"inside",
+    "semi;colon",
+    "a;b;c",
+    "back\\slash",
+    "line\nbreak",
+    "cr\rreturn",
+    "\t\u0001",
+    "\"\\\n\r\t;ocel:Event ; ocel:activity <http://evil/> ;",
+    "€uro-ü",
+    ""
+  ]
+
+  test "hostile qualifiers re-parse and round-trip to the logical input" do
+    {:ok, table} =
+      Provenance.symbol_table([{7, "http://example.org/act/approve"}])
+
+    events = Enum.map(@hostile, &ev(7, [{3, &1}], 42))
+
+    assert {:ok, turtle} = Provenance.to_turtle(events, table, @base)
+    parsed = parse(turtle)
+
+    # Graph structure survived: one clean block per hostile event, no raw
+    # control bytes anywhere in the emitted Turtle.
+    assert length(parsed.events) == length(@hostile)
+    refute turtle =~ ~r/[\x00-\x09\x0B-\x1F]/, "raw control byte in emitted Turtle"
+
+    # Every qualifier round-trips: re-parsed (unescaped) == logical input.
+    Enum.zip(@hostile, parsed.events)
+    |> Enum.each(fn {qual, out_ev} ->
+      assert [{iri, ^qual}] = out_ev.objects
+      assert iri == "#{@base}o_3"
+      assert out_ev.tick == 42
     end)
   end
 

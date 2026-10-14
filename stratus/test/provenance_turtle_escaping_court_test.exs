@@ -21,6 +21,8 @@ defmodule Stratus.Valve.ProvenanceTurtleEscapingCourtTest do
     "\\",
     "a\"b",
     "a\\b",
+    ";",
+    "a;b;c",
     "\n",
     "\r\n",
     "\t",

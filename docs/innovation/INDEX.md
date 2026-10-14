@@ -36,7 +36,7 @@ ERRC_BRIEF.md. Cross-lane top-10 (leverage × cost):
    scripts/ontology_check.sh check 6 generalized from ronr.rs first-12 to the
    full tables — ronr.rs (12/12), ronr_full.rs (25/25),
    dao_transitions.rs (13/13), dao_full.rs (15/15, landed by a concurrent
-   lane on the same file, verified merged) — matched by opcode (verb value
+   lane on the same file, co-landed in commit f5345e0) — matched by opcode (verb value
    for DAO), failing with a typed diff on any mask drift. Receipt:
    `./scripts/ontology_check.sh --rust` exit 0 "50/50 opcodes
    ontology-covered, zero drift"; must-fire positive control
@@ -75,7 +75,32 @@ ERRC_BRIEF.md. Cross-lane top-10 (leverage × cost):
    S implementation (render->scratch-diff->refuse-unless-add-only).
 7. Full-table ontology reverse-sync 25+13 verbs (E10), S
 8. Court-manifest JSON verdicts → ratchet + conformance report (E13+E20), M
-9. git-notes subject-keyed receipts (E14), M
+   — OPEN, M-sized, partial capital on disk. On-disk check 2026-10-14:
+   scripts/gen_court_inventory.py exists but emits a static inventory
+   (names + module doc + vacuity signals over 4 test dirs) — it does NOT run
+   the ladder nor emit per-HEAD JSON verdicts, and no ratchet or conformance
+   report consumes anything. Adjudication ask: primitive Y's shape is
+   settled (ash_a2a ConformanceRunner: one command -> machine-readable
+   per-court verdict with totals); what needs an owner decision is the
+   consumer contract — where verdict JSON lands (artifacts/ vs
+   docs/receipts/), which thresholds the ratchet fails on (zero court-count
+   regression? per-court grade regression?), and whether gate_consensus.sh
+   (still unwired to CI) becomes the first consumer. >S effort; routed to
+   the courts-product owner.
+9. git-notes subject-keyed receipts (E14), M — OPEN, needs operator
+   decision on authority model. On-disk check 2026-10-14:
+   `git notes --ref=refs/notes/receipts list` returns empty — zero receipt
+   notes exist; PN64_RECEIPTS.md remains the hand-maintained in-tree
+   snapshot E14 R1 targets. Also note the working tree is currently a
+   shared checkout with ~15 lanes' uncommitted edits, and receipt notes are
+   per-commit — notes must attach to LANDED commits, so the work is
+   inherently sequential with the merge train. Adjudication ask: E14 R2/R3
+   (gate-log SHA column, generated receipts index) are S and unblock R1's
+   replay value — operator to sequence R2+R3 first as a same-session pair,
+   then R1 (notes ref policy: refs/notes/receipts, pushed to origin? notes
+   are not pushed by default — needs an explicit push refspec decision).
+   R4/R6 (schema validation, attestation chain) stay M/L, not adjudicated
+   here.
 10. pnwire parse_exact overload — kills the 3.2 ns panic branches (E01), S
    — CLOSED 2026-10-13: `parse` panic branch deleted — length mismatch now
    `TryFrom`-typed `Err(Error::Invalid)`, no `expect` (pnwire.rs:25-34);
@@ -144,7 +169,16 @@ Live defects found by the second-order sweep (routed to owning lanes):
   now — do not edit in-flight.
 
 Second-sweep top-10 new: per-place quota law (landed), API-shape ratchet (E31),
-wasmtime-spawn elimination (E07+E30), warp/loom interleaving court (E31),
+wasmtime-spawn elimination (E07+E30 — OPEN, M-L, cross-lane. On-disk check
+  2026-10-14: per-frame wasmtime CLI spawn still live on both the Rust and
+  BEAM sides (ERCC beam_scaling C1 / stratus_futures C2); both docs
+  converge on one work order with a byte-identical-receipt falsifier.
+  Adjudication ask: wasmex vs persistent-worker is a stratus-architecture
+  decision (wasmex pulls a NIF dep into stratus's mix.lock; a persistent
+  Port worker keeps deps flat but needs a supervisor + protocol), and the
+  receipt byte-identity court must be agreed with the E07 lane owner before
+  either side implements — not S, not single-owner), warp/loom interleaving
+court (E31),
 parse_exact overload (E01), log MAC/hash-chain (E18), git-notes receipts (E14),
 NFR-3 varint wiring (E28), ci.yml gate wiring (E27), shared test fixtures (E23/E28).
 

@@ -911,3 +911,74 @@ moving-HEAD window is the same class disclosed in addendum-11.
 `git log --oneline --no-walk` at replay time, or the session commit count
 drifting from the figure above minus receipt commits, without a superseding
 addendum.
+
+## Addendum-13 (FINAL) — wave-11 dedupe pass vs addenda 5-12 (append-only)
+
+Addendum-12 landed at `7720c85` (+ correction `ff0a370`) before this lane
+wrote; numbering advances rather than duplicating. Every wave-11 prompt SHA
+was verified with `git log --no-walk --oneline` and checked against prior
+addenda for dedupe; already-recorded items are listed as covered, not
+re-expanded.
+
+### Dedupe result — new this addendum (zero prior receipt mentions)
+
+| Item | SHA | Verification |
+|---|---|---|
+| CLI exit-code contract documented (0/1/EX_VERIFY_FAIL/2/EX_USAGE) | `ba40b42` | `git log --no-walk` resolves; 0 prior mentions |
+| Release-train notes §3: post-wave session work | `7d9c64d` | resolves; 0 prior mentions; current HEAD at write |
+
+Landed since addendum-12, observed during the sweep (in-flight lanes now
+landed, all resolve via `--no-walk`):
+
+| Item | SHA |
+|---|---|
+| Changelog sweep: Unreleased audited against HEAD + post-`d1acd56` bullets | `748b238`, `083534f` |
+| Receipt writer guard — never downgrade LANE_RECEIPT v2/LANDED | `a2bd0ba` |
+| Session rewrite train (cas/CI/DOD/README/CHANGELOG/KNOWN_GAPS/NFR3/GATE0/INDEX) | `31df5a3` |
+| pn64 receipts index (L/M/N rows with on-disk statuses) | `20f9329` |
+| README protocol test counts refreshed (101 binaries / 879 `#[test]`) | `e344d3d` |
+| n06 sidecar fresh stamps (post lane-free guard) | `30cd170` |
+
+### Covered by prior addenda (deduped, no expansion)
+
+A02 partial-admit sweep `66015a0`; LeaseLedger durability design `4077911`
+and digest-drop fix `9989190` (addendum-12); record_burn ceiling `40f6155`
+(disclosed in addendum-12; ceiling landed with court witnesses); sagas
+positivity `6213662`; valve telemetry `76bffdc`; pn64 mirror `2d07251` +
+15-vector `bbf1c58`; ltl conservation `b02a8e1`; xdp valve-law `a12d7cd` +
+differential `c2b8b09` + ledgers `9384a7c`; DFMEA F-10/F-11 `f553334`; n17
+`68906b2`; idmap/OCEL `3979ba0`; doc_cite gate `3763015`; receipts-hygiene
+`1c1d053`/`fa6a228`; RELEASE_TRAIN `d018014`; sign-fuzz `51f9799`;
+GEMINI_BRIEF `198e33e`; root src/ removal `7dc9576`; quad pin `03ada53`;
+n06/n04 sidecar ignores (`3537abb`, `86940eb`); mutation-hook isolation
+`52e6274`. worker.ex F1-F4 fixes ride the SX7 lane landing.
+
+### Unresolved / falsifier hits
+
+- **graphlaw shacl_guard `085e878` — MISSING.** Not an object in strata or
+  `~/ggen` (`git cat-file -t` refuses in both). Falsifier condition met at
+  write time; recorded as UNVERIFIED, not silently dropped.
+- **receipt-fuzz court — not landed** in `548a0bf..HEAD` (no matching
+  commit subject); sign-fuzz `51f9799` is the only fuzz court of the pair.
+
+### Defect-series standing (true final count)
+
+DFMEA carries F-1..F-11; the vibration-wave index in
+`docs/COURT_ADJUDICATIONS.md` (2026-10-14 row) names 13 distinct defects
+(F-8 `dc8dd7d`, F-9 `cc529eb`, F-10/F-11 pair `f0b7c1b`, sagas sealed-guard,
+tier3_leaf, framing pair, default_arena crash path, tick Display, n18 leak,
+abi overflow, POWL panic). With the digest-drop `9989190`, quad pin
+`03ada53`, and A02 partial-admit recorded in addendum-12, the series stands
+at **15+**, unchanged from addendum-12's figure.
+
+### Session status and totals
+
+**SATURATED-for-wave** (unchanged). Session range
+`git log --oneline 548a0bf..HEAD | wc -l` = **134** at write (HEAD
+`7d9c64d`); post-commit total 135 with this receipt commit. Moving-HEAD
+window convention per addenda 11-12 applies. GEMINI_BRIEF_ROADMAP `198e33e`
+verified resolving; doc addendum commit follows.
+
+**Session falsifier** (standing): any cited SHA failing
+`git log --oneline --no-walk` at replay, or session count drifting without
+a superseding addendum.

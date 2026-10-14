@@ -21,8 +21,10 @@ branchlessly, in one basic block:
 - **Conformance** — `bad_tid = (ocel & 0xFF) ^ ((pn >> 48) & 0xFF)`,
   byte-identical to law step 1.
 - **Enablement (precondition)** — `bad_pre = (pn & pn_pre_mask()) ^ pn_pre_mask()`
-  with mask `0x4000000000000001` (version-tag bit 62 + ingress-enabled
-  flag bit 0). This is the law's enablement predicate restricted to the
+  with mask `0x0000000000000001` (ingress-enabled flag, bit 0 of the
+  marking field). An earlier mask `0x4000000000000001` ("version-tag
+  bit 62") was an artifact of the byte-swapped register model and is
+  retired. This is the law's enablement predicate restricted to the
   header bits visible at ingress: the filter sees the packed word, not a
   live marking chain, so it checks that the word *declares* an enabled,
   well-formed transition — not that the net state actually has the tokens.

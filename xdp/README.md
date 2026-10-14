@@ -11,13 +11,34 @@ offset 0..7   __le64  pn    — process number
 offset 8..15  __le64  ocel  — OCEL activity word
 ```
 
+This is byte-identical to `Stratus.PnFrame.encode/2`
+(`<<pn::64-little, ocel::64-little>>) and the Rust `strata_protocol`
+ABI. The BPF target is little-endian, so the filter loads both words
+with **no byte swap** — a bswap would run every later bit test in the
+byte-swapped register domain and drop every conformant frame.
+
+True LE bit positions (bit 0 = least significant) used by the checks:
+
+```
+pn   [15:0]  marking m       ocel [15:0]  activity id
+pn   [31:16] precondition W- ocel [31:16] source object id
+pn   [47:32] postcondition W+ ocel [47:32] target object id
+pn   [55:48] transition id   ocel [55:48] relationship qualifier
+pn   [63:56] flags byte      ocel [63:56] monotonic tick delta
+```
+
 ## Checks
 
 1. **Precondition**: `pn_mask & pn == pn_mask` — all required header bits set.
-   Current mask: `0x4000000000000001` (version tag bit 62 + ingress flag bit 0),
-   embedded as an immediate in `pn_pre_mask()`.
+   Current mask: `0x0000000000000001` (ingress-enabled flag, bit 0 of the
+   marking field), embedded as an immediate in `pn_pre_mask()`. The earlier
+   `0x4000000000000001` ("version tag bit 62 + ingress flag bit 0") was an
+   artifact of the byte-swapped register model: no pn word in the golden
+   vector set (V01–V15, `docs/PN64_VECTORS.md`) has bit 62 set, so requiring
+   it dropped every conformant frame.
 2. **Conformance**: `(ocel & 0xFF) == ((pn >> 48) & 0xFF)` — activity/tid byte
-   agreement between the OCEL word and the pn header.
+   agreement between the OCEL word and the pn header (law step 1, the same
+   predicate as the Elixir valve's `:malformed` check).
 
 Both fold into one `bad` scalar, resolved with the `(bad | -bad) >> 63` trick
 to `XDP_PASS - sign`: a single basic block, zero data-dependent branches
@@ -43,12 +64,16 @@ sign-fold, return), leaving >3x headroom.
    The `xdp` section must contain no conditional-jump instructions
    (`jeq`/`jne`/`jlt`/...): the branchless property is checkable from the
    object file.
-3. **Host logic test** (already run in this lane, PASS): the verdict arithmetic
-   was extracted and exercised on the host — 5/5 vectors pass (pass path,
-   missing precondition bit, tid mismatch, all-zero, minimal pass). This
-   caught a real bug during drafting: `(x | -x) >> 63` on an unsigned word is
-   +1, not -1, so `PASS + sign` returned the invalid verdict 3 on failure; the
-   committed form is `XDP_PASS - sign`.
+3. **Host logic test + differential court** (`scripts/xdp_host_vectors.sh`,
+   macOS-runnable): strips only the ELF-only `SEC` attribute and GPL license
+   symbol, compiles the unmodified filter body into a host main, and runs
+   5 verdict vectors through it — the V01/V07/V08 golden pairs reused
+   literally from `docs/PN64_VECTORS.md` (staged as real LE frames, no
+   pre-swap), plus all-zero and minimal-pass. For V01/V07/V08 the harness
+   additionally asserts agreement with the documented Elixir valve
+   expectations (`Stratus.Valve.Pn64.validate_and_advance/3`: V01 `submit`,
+   V07 `err:01` malformed, V08 `err:02` token starvation — all three map to
+   the same pass/drop verdict). Green = `5/5 PASS` + `DIFFERENTIAL 3/3 OK`.
 
 ## Loading
 

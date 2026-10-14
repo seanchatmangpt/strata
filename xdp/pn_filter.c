@@ -16,7 +16,8 @@
  *   offset 0..7   __le64  pn    — process number (little-endian on the wire)
  *   offset 8..15  __le64  ocel  — OCEL activity word (little-endian)
  *
- * Checks:
+ * Checks (all in the true LE register domain — the wire is little-endian
+ * and the BPF target loads LE words natively, so no byte swap anywhere):
  *   1. Precondition:  pn_mask & pn_pre == pn_pre  (all required bits set)
  *   2. Conformance:   (ocel & 0xFF) == ((pn >> 48) & 0xFF)
  *                     activity/tid nibble agreement between ocel and pn
@@ -36,8 +37,6 @@ typedef long long      __s64;
 #define XDP_PASS 2
 #define XDP_DROP 1
 
-#define __byte_swap(x) __builtin_bswap64(x)
-
 /* Opaque kernel struct; we only deref its first two pointer fields. */
 struct xdp_md;
 
@@ -55,9 +54,13 @@ int pn_filter(struct xdp_md *ctx)
 	if (data + 16 > data_end)
 		return XDP_DROP;
 
-	/* Two little-endian __u64 loads: pn, ocel. */
-	__u64 pn   = __byte_swap(*(__u64 *)(data + 0));
-	__u64 ocel = __byte_swap(*(__u64 *)(data + 8));
+	/* Two little-endian __u64 loads: pn, ocel. The BPF target is
+	 * little-endian, so a plain load of the LE wire word yields the
+	 * numeric value directly — no bswap (a bswap here would move every
+	 * later bit test into the byte-swapped domain and drop conformant
+	 * frames; see xdp/README.md wire-layout law). */
+	__u64 pn   = *(__u64 *)(data + 0);
+	__u64 ocel = *(__u64 *)(data + 8);
 
 	/* Branchless precondition: m & pre == pre.
 	 * bad_pre = ((m & pre) ^ pre) — 0 iff all precondition bits present. */
@@ -82,9 +85,12 @@ int pn_filter(struct xdp_md *ctx)
  * immediate; change here to retighten the gate. */
 static inline __u64 pn_pre_mask(void)
 {
-	/* Required pn header bits: version tag 0b01 in the top nibble plus
-	 * the ingress-enabled flag (bit 0). Adjust to the current spec. */
-	return 0x4000000000000001ULL;
+	/* Required pn header bit: the ingress-enabled flag (bit 0, true LE
+	 * domain). The old "version tag bit 62" clause was an artifact of the
+	 * byte-swapped register model — no pn word in the golden vector set
+	 * (V01-V15, docs/PN64_VECTORS.md) has bit 62 set, so requiring it
+	 * dropped every conformant frame. */
+	return 0x0000000000000001ULL;
 }
 
 char _license[] SEC("license") = "GPL";

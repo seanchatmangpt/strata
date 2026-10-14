@@ -118,6 +118,9 @@ unlanded). Open in wave 2: L75/L83/L85 probes unregistered in lib.rs
   kernel artifact — see docs/GATE0.md).
 - **ggen re-lock debt (L50)**: sync blocked by pack [FM-PACK-005]
   (.tmpl missing); L17 resumed to fix pack, L50 to re-lock after.
+- Post-wave-2 receipts live in `docs/receipts/` (L150/L153/L156 [W3, LANDED],
+  M04/M09/M16 [mutation, LANDED], N01-N19 [nato, LANDED], N20 [nato,
+  PARTIAL_ALIVE]); directory inventory tracked in docs/RECEIPTS_DIRS.md.
 - **XDP host**: PN64_XDP_INTEGRATION.md (L76) is source + honest status
   table; no host-side load/verdict run yet.
 - **In-wasm vector runner**: golden vectors (L21/L36) run in Rust and

@@ -29,6 +29,7 @@ pub mod precedence;
 pub mod provenance;
 pub mod trace_slice;
 pub mod pnabi;
+pub mod policy_admission;
 pub mod quad;
 pub mod register;
 pub mod rehydrate;

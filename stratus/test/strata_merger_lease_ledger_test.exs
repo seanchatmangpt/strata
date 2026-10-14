@@ -396,5 +396,56 @@ defmodule Strata.Merger.LeaseLedgerTest do
       refute function_exported?(LeaseLedger, :set_required_burn, 2)
       refute function_exported?(LeaseLedger, :raise_required_burn, 2)
     end
+
+    # -- KG-SX1-G1: record_burn per-pk ceiling (anti pre-load gate bypass) ----
+
+    defp capped_ledger(max_burn) do
+      id = {:kg_g1_ledger, max_burn, :erlang.unique_integer([:positive])}
+
+      start_supervised!(%{
+        id: id,
+        start:
+          {LeaseLedger, :start_link,
+           [[name: nil, required_burn: 250, max_burn: max_burn]]}
+      })
+    end
+
+    test "G1 bypass attempt above the ceiling refuses typed, ZERO side effects" do
+      ledger = capped_ledger(500)
+
+      # one legal increment first, so "untouched" is meaningful (stays at 400)
+      assert :ok == LeaseLedger.record_burn(ledger, @pk, 400)
+
+      # bypass attempt: 400 + 200 > 500 — refused typed, odometer untouched
+      assert {:error, :burn_ceiling_exceeded} == LeaseLedger.record_burn(ledger, @pk, 200)
+      assert 400 == LeaseLedger.burn_of(ledger, @pk)
+
+      # ceiling is per pk: another pk is independent and unblocked
+      other_pk = :crypto.strong_rand_bytes(Lease.pk_bytes())
+      assert :ok == LeaseLedger.record_burn(ledger, other_pk, 200)
+      assert 200 == LeaseLedger.burn_of(ledger, other_pk)
+
+      # the gate still holds for the capped pk: 400 + 100 admits
+      l = lease(run_id: "burn-ceiling-gate", lease_pk: @pk, fuel: 100)
+      assert {:ok, _} = Lease.admit(l, :a07, ledger)
+    end
+
+    test "G1 within-ceiling increments still work; exactly-at-ceiling positive control" do
+      ledger = capped_ledger(500)
+      assert :ok == LeaseLedger.record_burn(ledger, @pk, 250)
+      assert :ok == LeaseLedger.record_burn(ledger, @pk, 250)
+      assert 500 == LeaseLedger.burn_of(ledger, @pk)
+
+      # any further increment refuses
+      assert {:error, :burn_ceiling_exceeded} == LeaseLedger.record_burn(ledger, @pk, 1)
+      assert 500 == LeaseLedger.burn_of(ledger, @pk)
+    end
+
+    test "G1 default ceiling is generous: existing burn magnitudes pass unchanged" do
+      # the setup ledger already has the default ceiling; use it directly
+      ledger = low_fuel_ledger(1)
+      assert :ok == LeaseLedger.record_burn(ledger, @pk, 250)
+      assert 250 == LeaseLedger.burn_of(ledger, @pk)
+    end
   end
 end

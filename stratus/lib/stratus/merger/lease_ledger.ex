@@ -33,7 +33,14 @@ defmodule Strata.Merger.LeaseLedger do
       append-only (never
       decremented) and `required_burn` is init-fixed (a "fixed issuance
       register" per DFMEA F-2 — runtime raise/set is UNSUPPORTED by
-      design).
+      design). Because fuel is unsigned on the wire, `record_burn/3`
+      could otherwise pre-load the odometer unboundedly and defeat the
+      gate in one call; the standalone increment is therefore BOUNDED
+      per pk (`:max_burn`, init-fixed, generous default) — an increment
+      that would push the odometer past the ceiling refuses
+      `{:error, :burn_ceiling_exceeded}` with zero side effects. Admit
+      burns are metering-authority burns and are NOT subject to this
+      ceiling (they are gated by `required_burn` itself).
 
   Fixed zero-entropy atoms only; no exceptions cross this boundary.
   """
@@ -41,19 +48,21 @@ defmodule Strata.Merger.LeaseLedger do
   use GenServer
 
   @default_required_burn 1
+  @default_max_burn 1_000_000_000
 
   @typedoc "Ledger state: consumed slot keys, admitted lease digests, per-pk burn odometer."
   @type state :: %{
           slots: %{binary() => :consumed},
           digests: %{binary() => <<_::256>>},
           burn: %{binary() => non_neg_integer()},
-          required_burn: non_neg_integer()
+          required_burn: non_neg_integer(),
+          max_burn: pos_integer()
         }
 
   @doc "Start the ledger. Named `Strata.Merger.LeaseLedger` by default."
   @spec start_link(keyword()) :: GenServer.on_start()
   def start_link(opts \\ []) do
-    args = Keyword.take(opts, [:required_burn])
+    args = Keyword.take(opts, [:required_burn, :max_burn])
     GenServer.start_link(__MODULE__, args, Keyword.put_new(opts, :name, __MODULE__))
   end
 
@@ -82,9 +91,14 @@ defmodule Strata.Merger.LeaseLedger do
   @doc """
   Standalone burn increment for non-admit callers (e.g. work metering
   outside admission). Appends `fuel` to the pk odometer; never decrements.
+  Bounded per pk: an increment that would push the odometer above the
+  init-fixed `:max_burn` ceiling refuses `{:error, :burn_ceiling_exceeded}`
+  with ZERO side effects — the unsigned wire fuel must not be able to
+  pre-load the KG-SX1 gate unboundedly. Exactly-at-ceiling still succeeds
+  (the gate is `current + fuel <= max_burn`).
   """
   @spec record_burn(GenServer.server(), Strata.Merger.Lease.lease_pk(), pos_integer()) ::
-          :ok | {:error, :lease_invalid}
+          :ok | {:error, :lease_invalid | :burn_ceiling_exceeded}
   def record_burn(server \\ __MODULE__, lease_pk, fuel) do
     GenServer.call(server, {:record_burn, lease_pk, fuel})
   end
@@ -144,7 +158,8 @@ defmodule Strata.Merger.LeaseLedger do
   @impl true
   def init(args) when is_list(args) do
     required = Keyword.get(args, :required_burn, @default_required_burn)
-    {:ok, %{slots: %{}, digests: %{}, burn: %{}, required_burn: required}}
+    max_burn = Keyword.get(args, :max_burn, @default_max_burn)
+    {:ok, %{slots: %{}, digests: %{}, burn: %{}, required_burn: required, max_burn: max_burn}}
   end
 
   def init(:ok), do: init([])
@@ -162,10 +177,16 @@ defmodule Strata.Merger.LeaseLedger do
   end
 
   def handle_call({:record_burn, lease_pk, fuel}, _from, state) do
-    if valid_pk?(lease_pk) and is_integer(fuel) and fuel > 0 do
-      {:reply, :ok, %{state | burn: Map.update(state.burn, lease_pk, fuel, &(&1 + fuel))}}
-    else
-      {:reply, {:error, :lease_invalid}, state}
+    cond do
+      not (valid_pk?(lease_pk) and is_integer(fuel) and fuel > 0) ->
+        {:reply, {:error, :lease_invalid}, state}
+
+      Map.get(state.burn, lease_pk, 0) + fuel > state.max_burn ->
+        # Zero side effects: the odometer is untouched on refusal.
+        {:reply, {:error, :burn_ceiling_exceeded}, state}
+
+      true ->
+        {:reply, :ok, %{state | burn: Map.update(state.burn, lease_pk, fuel, &(&1 + fuel))}}
     end
   end
 

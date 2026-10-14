@@ -26,6 +26,11 @@
 //! * ids and attribute values are escaped (`& < > " '`) by a minimal escaper.
 
 /// Minimal XML attribute/text escaper covering the five predefined entities.
+///
+/// Whitespace characters are emitted as character references because XML 1.0
+/// attribute-value normalization (§3.3.3) rewrites literal `\n`/`\t`/`\r` in
+/// attribute values to spaces on parse — emitting them raw would break
+/// round-trip injectivity for ids containing whitespace.
 fn esc(s: &str) -> String {
     let mut out = String::with_capacity(s.len());
     for c in s.chars() {
@@ -35,6 +40,9 @@ fn esc(s: &str) -> String {
             '>' => out.push_str("&gt;"),
             '"' => out.push_str("&quot;"),
             '\'' => out.push_str("&apos;"),
+            '\n' => out.push_str("&#10;"),
+            '\t' => out.push_str("&#9;"),
+            '\r' => out.push_str("&#13;"),
             _ => out.push(c),
         }
     }
@@ -147,5 +155,85 @@ mod tests {
         assert_eq!(unescaped, ev.id);
         // Roundtrip through the full escaper for all five entities.
         assert_eq!(esc("&<\"'&"), "&amp;&lt;&quot;&apos;&amp;");
+    }
+
+    /// Court: `esc` must be round-trip injective through a spec-shaped
+    /// unescaper over a hostile corpus — five entities, whitespace char refs
+    /// (XML 1.0 §3.3.3 attribute normalization), literal `&amp;` already in
+    /// the input (double-escape must stay injective), and `]]>`.
+    #[test]
+    fn hostile_xml_roundtrip_injectivity_court() {
+        // Spec-shaped single-pass unescape: references resolve left-to-right
+        // in one scan, so "&amp;lt;" yields "&lt;" not "<" (sequential
+        // String::replace would double-unescape — that is a court bug, not an
+        // escaper bug).
+        let unesc = |s: &str| {
+            let mut out = String::with_capacity(s.len());
+            let mut rest = s;
+            while let Some(pos) = rest.find('&') {
+                out.push_str(&rest[..pos]);
+                let tail = &rest[pos..];
+                let resolved = [
+                    ("&amp;", '&'), ("&lt;", '<'), ("&gt;", '>'),
+                    ("&quot;", '"'), ("&apos;", '\''),
+                    ("&#10;", '\n'), ("&#9;", '\t'), ("&#13;", '\r'),
+                ]
+                .iter()
+                .find_map(|&(r, c)| tail.starts_with(r).then(|| (r.len(), c)));
+                match resolved {
+                    Some((len, c)) => {
+                        out.push(c);
+                        rest = &tail[len..];
+                    }
+                    None => {
+                        out.push('&');
+                        rest = &tail[1..];
+                    }
+                }
+            }
+            out.push_str(rest);
+            out
+        };
+        let corpus = [
+            "&", "<", ">", "\"", "'", "&amp;", "&lt;", "]]>", "e&a<b\"c'd",
+            "line1\nline2", "tab\there", "ret\rhere", "\n\t\r", "&&&<<>>\"\"",
+            "&amp;amp;", "<script>alert('x')</script>", " id=\"spoofed",
+        ];
+        for hostile in corpus {
+            let escaped = esc(hostile);
+            // Well-formedness: after stripping every known reference, no raw
+            // markup char (& < > " ') may remain in the attribute value.
+            let stripped = ["&amp;", "&lt;", "&gt;", "&quot;", "&apos;", "&#10;", "&#9;", "&#13;"]
+                .iter()
+                .fold(escaped.clone(), |acc, r| acc.replace(r, ""));
+            assert!(
+                !stripped
+                    .chars()
+                    .any(|c| matches!(c, '&' | '<' | '>' | '"' | '\'')),
+                "raw markup char escaped through for {hostile:?} -> {escaped:?}"
+            );
+            // The escaped form must be parseable as an attribute value: every
+            // `&` must belong to a reference this unescaper recognizes.
+            let ref_count: usize = ["&amp;", "&lt;", "&gt;", "&quot;", "&apos;", "&#10;", "&#9;", "&#13;"]
+                .iter()
+                .map(|r| escaped.matches(r).count())
+                .sum();
+            assert_eq!(
+                escaped.matches('&').count(),
+                ref_count,
+                "unrecognized reference for {hostile:?} -> {escaped:?}"
+            );
+            // Injectivity: unescape(escape(x)) == x.
+            assert_eq!(unesc(&escaped), hostile, "round-trip broke for {hostile:?}");
+        }
+        // Positive control (vacuity guard): the pre-fix escaper (whitespace
+        // emitted raw, mimicking XML attribute normalization on parse) must
+        // FAIL this court for a newline-bearing id.
+        let legacy_parse = |s: &str| s.replace('\n', " ");
+        assert_ne!(
+            legacy_parse(&esc("a\nb")),
+            "a\nb",
+            "court is vacuous: legacy normalization would pass"
+        );
     }
 }

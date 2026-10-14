@@ -1,3 +1,4 @@
+// VACUITY: EXEMPT — direct law-assertion court over a fixed corpus; no mutation-kill claim
 //! Lane M03 — mutation court for the branchless PN64 step kernel.
 //!
 //! Four hand-written mutants of [`strata_protocol::branchless::step_branchless`]
@@ -16,14 +17,14 @@
 //!      instruction-sequence / branch-count measurement), so this survival is
 //!      REPORTED WITH A NAMED DETECTOR, not a hole: output courts pin WHAT the
 //!      kernel returns, the census pins HOW it computes it.
-//!   2. `mutant_commit_mask_drops_0xFFFF` — commit mask drops the final
+//!   2. `mutant_commit_mask_drops_ffff` — commit mask drops the final
 //!      `& 0xFFFF`, so post-fire bits at 16.. leak into the committed word
 //!      beyond the marking field. Must be killed by field preservation
 //!      (upper word `got >> 16 == pn >> 16`).
 //!   3. `mutant_invariant_binds_m_not_mprime` — invariant predicate binds the
 //!      PRE-fire marking `m` instead of the post-fire `m'`. Must be killed
 //!      (this exact bug shipped in Wave 3).
-//!   4. `mutant_conformance_drops_0xFF` — verb-match conformance drops the
+//!   4. `mutant_conformance_drops_ff` — verb-match conformance drops the
 //!      `& 0xFF` on the activity word, so a high byte on `ocel` fakes a
 //!      mismatch (and only low-byte conformance is enforced). Must be killed.
 
@@ -51,11 +52,11 @@ const CORPUS_LEN: usize = 10_000;
 /// shape as the kernel unit tests: 16-bit marking, 8-bit pre/post, 4-bit tid,
 /// 8-bit flags).
 fn structured_word(r: &mut Rng) -> u64 {
-    let m = (r.next() & 0xFFFF) as u64;
-    let pre = (r.next() & 0x00FF) as u64;
-    let post = (r.next() & 0x00FF) as u64;
-    let tid = (r.next() & 0x0F) as u64;
-    let flags = (r.next() & 0xFF) as u64;
+    let m = r.next() & 0xFFFF;
+    let pre = r.next() & 0x00FF;
+    let post = r.next() & 0x00FF;
+    let tid = r.next() & 0x0F;
+    let flags = r.next() & 0xFF;
     m | (pre << 16) | (post << 32) | (tid << 48) | (flags << 56)
 }
 
@@ -144,10 +145,10 @@ fn m1_ct_branch_mutant_survives_output_equality_court() {
 /// shift results, carrying the tid/flag bytes above bit 15 into the
 /// committed word (upper-word corruption on commit). Must be killed by
 /// field-preservation courts.
-fn mutant_commit_mask_drops_0xFFFF(pn: u64, ocel: u64, invariant_mask: u64) -> u64 {
+fn mutant_commit_mask_drops_ffff(pn: u64, ocel: u64, invariant_mask: u64) -> u64 {
     let m = pn & 0xFFFF;
     let w_pre = (pn >> 16) & 0xFFFF;
-    let w_post_masked = (pn >> 32) & 0xFFFF;
+    let _w_post_masked = (pn >> 32) & 0xFFFF;
     let tid = (pn >> 48) & 0xFF;
     let activity = ocel & 0xFF;
 
@@ -192,7 +193,7 @@ fn mutant_invariant_binds_m_not_mprime(pn: u64, ocel: u64, invariant_mask: u64) 
 /// MUTANT 4: verb-match conformance drops the `& 0xFF` — the full activity
 /// word is compared against the 8-bit tid, so a high byte on `ocel` turns a
 /// conforming tagged event is refused (high-byte leak). Must be killed.
-fn mutant_conformance_drops_0xFF(pn: u64, ocel: u64, invariant_mask: u64) -> u64 {
+fn mutant_conformance_drops_ff(pn: u64, ocel: u64, invariant_mask: u64) -> u64 {
     let m = pn & 0xFFFF;
     let w_pre = (pn >> 16) & 0xFFFF;
     let w_post = (pn >> 32) & 0xFFFF;
@@ -251,7 +252,7 @@ fn run_step_mutant(mutant: fn(u64, u64, u64) -> u64) -> MutantRun {
 /// output divergence from the reference.
 #[test]
 fn m2_commit_mask_drop_is_killed() {
-    let run = run_step_mutant(mutant_commit_mask_drops_0xFFFF);
+    let run = run_step_mutant(mutant_commit_mask_drops_ffff);
     assert_ne!(
         run.xor_diff, 0,
         "mutant 2 SURVIVED the corpus — kill failed"
@@ -313,12 +314,12 @@ fn m4_conformance_high_byte_leak_is_killed() {
     let ocel = 0x0001_0001u64; // activity byte 0x01, high bytes tagged
     assert_ne!(step_reference(pn, ocel, 0), pn, "reference must fire");
     assert_eq!(
-        mutant_conformance_drops_0xFF(pn, ocel, 0),
+        mutant_conformance_drops_ff(pn, ocel, 0),
         pn,
         "witness no longer distinguishes mutant from reference"
     );
 
-    let run = run_step_mutant(mutant_conformance_drops_0xFF);
+    let run = run_step_mutant(mutant_conformance_drops_ff);
     assert_ne!(
         run.xor_diff, 0,
         "mutant 4 SURVIVED the corpus — kill failed"

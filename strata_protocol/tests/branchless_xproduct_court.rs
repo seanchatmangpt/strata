@@ -1,3 +1,4 @@
+// VACUITY: EXEMPT — direct law-assertion court over a fixed corpus; no mutation-kill claim
 //! Lane L31 — exhaustive structured cross-product differential court.
 //!
 //! Three assertions over one fixed grid, all requiring unconditional
@@ -101,7 +102,7 @@ fn pnabi_mapping_agrees_unconditionally_full_cross_product() {
         let kernel = branchless::step_branchless(pn, ocel, mask);
         let m = pn & 0xFFFF;
         let pre = (pn >> 16) & 0xFFFF;
-        let next_m = ((m ^ pre) | (((pn >> 32) & 0xFFFF))) & 0xFFFF;
+        let next_m = ((m ^ pre) | ((pn >> 32) & 0xFFFF)) & 0xFFFF;
 
         let expected = if (ocel & 0xFF) != ((pn >> 48) & 0xFF) {
             Err(PnAbiError::Malformed)

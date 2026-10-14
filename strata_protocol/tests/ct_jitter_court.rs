@@ -1,3 +1,4 @@
+// VACUITY: EXEMPT — exhaustive/property census court: asserts the law over the full declared corpus; no mutation-kill claim
 //! Constant-time jitter court (Lane L40, PRD NFR-04: zero divergence across
 //! valid/invalid paths).
 //!
@@ -49,7 +50,7 @@ fn strip_line_comments(src: &str) -> String {
 /// matching closing `}` (brace-depth scan, comments already stripped).
 fn fn_body(src: &str, name: &str) -> Option<String> {
     let stripped = strip_line_comments(src);
-    let marker = format!("fn {name}");
+    let marker = format!("fn {name}(");
     let start = stripped.find(&marker)?;
     let open = stripped[start..].find('{')? + start;
     let bytes = stripped.as_bytes();
@@ -90,17 +91,22 @@ fn step_branchless_body_is_branch_free() {
     );
 }
 
-/// SECONDARY CENSUS — `validate_and_advance` currently contains 3 branch
-/// sites (3 x `if `: conformance, enablement, invariant early-returns; the
-/// `ok_or` tail carries no `?`). It is a *validated* ABI surface, not the
-/// branchless kernel, so a nonzero count is the current measured baseline.
+/// SECONDARY CENSUS — `validate_and_advance` currently contains 1 branch
+/// site (the single tail `match` on the priority code). KG-N05 moved the
+/// entire decision into the branchless `validate_and_advance_ct` core
+/// (0 branch sites); the wrapper's `match` is one disclosed,
+/// predictor-trainable branch, verified empirically by the N05 dudect
+/// timing court.
+///
+/// History: baseline was 3 (three `if` early-returns + `ok_or` tail) before
+/// the KG-N05 branchless port.
 ///
 /// LOUD NOTE: this gates REGRESSION ONLY. Tightening this function to zero
-/// branch sites requires its owner (Lane L03) to actually go branchless —
-/// do not "fix" a failure here by editing this constant.
+/// branch sites requires eliminating the verdict `match` itself — do not
+/// "fix" a failure here by editing this constant without re-measuring.
 #[test]
 fn validate_and_advance_branch_census_no_regression() {
-    const MEASURED_BASELINE: usize = 3;
+    const MEASURED_BASELINE: usize = 1;
     let body = fn_body(PNABI_SRC, "validate_and_advance")
         .expect("fn validate_and_advance not found in src/pnabi.rs");
     let count = branch_count(&body);

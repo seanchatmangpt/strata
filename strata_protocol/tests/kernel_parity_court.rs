@@ -1,3 +1,4 @@
+// VACUITY: EXEMPT — direct law-assertion court over a fixed corpus; no mutation-kill claim
 //! Kernel-parity court: pins the observed behavior of the deployed PN64 wasm
 //! kernel (`temprun/pn_kernel/src/lib.rs::pn_step`, the 224-byte
 //! `pn_kernel.g0.wasm` Gate-0 artifact) as an executable Rust-side contract.
@@ -66,7 +67,7 @@ fn kernel_model_step(pn: u64, ocel: u64, invariant_mask: u64) -> u64 {
     let activity = ocel & 0xFF;
 
     let not_enabled = (m & pre) ^ pre;
-    let invariant_violation = (((m ^ pre) | post) & invariant_mask) as u64;
+    let invariant_violation = ((m ^ pre) | post) & invariant_mask;
     let mismatch = activity ^ tid;
     let ok = ct_is_zero(not_enabled | invariant_violation | mismatch);
 

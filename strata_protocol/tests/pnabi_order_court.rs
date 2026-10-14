@@ -1,3 +1,4 @@
+// VACUITY: EXEMPT — exhaustive/property census court: asserts the law over the full declared corpus; no mutation-kill claim
 //! Lane L91 — check-order census court for `pnabi::validate_and_advance`.
 //!
 //! Pins the precedence law (Malformed → TokenStarvation → InvariantViolation)
@@ -70,7 +71,7 @@ fn eight_class_precedence_census_over_canonical_six() {
         assert!(pre != 0, "op {op:#x}: pre empty, starvation unreachable");
         assert!(post != 0, "op {op:#x}: post empty, invariant mask vacuous");
         assert_ne!(pre, post, "op {op:#x}: pre == post, commit unobservable");
-        let invariant_clear_mask: u64 = (!post) as u16 as u64; // disjoint from next marking
+        let invariant_clear_mask: u64 = (!post) as u64; // disjoint from next marking
         let invariant_violating_mask: u64 = post as u64; // hits next marking directly
 
         for &conforming in &[true, false] {
@@ -123,7 +124,7 @@ fn word_violating_all_three_laws_returns_malformed() {
 fn branchless_commit_agrees_with_pnabi_ok_on_all_eight_classes() {
     for (op, pre, post) in canonical_six_donors() {
         let donor = (op, pre, post);
-        let invariant_clear_mask: u64 = (!post) as u16 as u64;
+        let invariant_clear_mask: u64 = (!post) as u64;
         let invariant_violating_mask: u64 = post as u64;
 
         for &conforming in &[true, false] {
@@ -153,7 +154,7 @@ fn branchless_commit_agrees_with_pnabi_ok_on_all_eight_classes() {
                     if committed {
                         assert_eq!(
                             pn64::marking(stepped),
-                            ((pre ^ pn64::marking(pn)) | post) & 0xFFFF
+                            (pre ^ pn64::marking(pn)) | post
                         );
                     } else {
                         assert_eq!(stepped, pn);
@@ -175,7 +176,7 @@ fn class_table_pins_the_law_one_class_at_a_time() {
     let pn_starving = pn64::pack(0, pre, post, op, 0);
     let ocel_conform = ocel64::pack(op as u16, 0, 0, 0, 0);
     let ocel_bad = ocel64::pack((op as u16) ^ 1, 0, 0, 0, 0);
-    let inv_ok: u64 = (!post) as u16 as u64;
+    let inv_ok: u64 = (!post) as u64;
     let inv_bad: u64 = post as u64;
 
     // (word triple, expected variant)

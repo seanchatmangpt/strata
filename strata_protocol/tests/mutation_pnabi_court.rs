@@ -1,4 +1,5 @@
-//! Lane M02 — mutation court for `pnabi::validate_and_advance` + `expected_tick_ok`.
+// VACUITY: ANTI_VACUITY_MUTANT
+// ANTI_VACUITY_MUTANT//! Lane M02 — mutation court for `pnabi::validate_and_advance` + `expected_tick_ok`.
 //!
 //! Each mutant is implemented IN-TEST as an executable alternative semantics
 //! (src/ untouched). For every mutant we assert two things against the REAL
@@ -7,6 +8,7 @@
 //!   2. the mutant's output DIVERGES from the real output there (so the pin
 //!      is non-vacuous — if src were mutated to this alternative, an
 //!      assertion of this court would fail).
+//!
 //! A mutant for which no divergence can be exhibited is a SURVIVOR and is
 //! reported verbatim as an observational-equivalence finding.
 //!
@@ -129,7 +131,7 @@ fn every_nonshipped_check_order_is_killed() {
             // TokenStarvation; Invariant-first orders answer InvariantViolation.
             let pn_s = pn_for((op, pre, post), false);
             let ocel_ok = ocel_w(op as u16, 0x41);
-            let starving_next = (0u16 ^ pre) | post;
+            let starving_next = pre | post;
             for mask in [starving_next as u64, 0u64] {
                 let real = validate_and_advance(pn_s, ocel_ok, mask);
                 let mutant = run_under_order(order, pn_s, ocel_ok, mask);
@@ -148,7 +150,7 @@ fn every_nonshipped_check_order_is_killed() {
             // Malformed/Starvation first would too here, so this class is the
             // control — real and mutant MUST agree (non-vacuity of the court).
             let pn_e = pn_for((op, pre, post), true);
-            for mask in [post as u64, (!post) as u16 as u64] {
+            for mask in [post as u64, (!post) as u64] {
                 let real = validate_and_advance(pn_e, ocel_ok, mask);
                 let mutant = run_under_order(order, pn_e, ocel_ok, mask);
                 assert_eq!(
@@ -182,7 +184,7 @@ fn every_nonshipped_check_order_is_killed() {
 fn shipped_order_agrees_with_real_surface_everywhere() {
     let ds = donors();
     for &(op, pre, post) in &ds {
-        let inv_clear: u64 = (!post) as u16 as u64;
+        let inv_clear: u64 = (!post) as u64;
         let inv_bad: u64 = post as u64;
         for &conforming in &[true, false] {
             let ocel = ocel_w(
@@ -222,19 +224,17 @@ fn shipped_order_agrees_with_real_surface_everywhere() {
 /// named in the mutant spec).
 fn tick_ok_wrap_saturates(prev_ocel: u64, next_ocel: u64) -> bool {
     ocel64::tick(next_ocel)
-        == ocel64::tick(prev_ocel)
-            .checked_add(1)
-            .unwrap_or(u8::MAX)
+        == ocel64::tick(prev_ocel).saturating_add(1)
 }
 
 /// Mutant: +1 -> +2 (skip-by-two admitted as a legal step).
 fn tick_ok_plus_two(prev_ocel: u64, next_ocel: u64) -> bool {
-    ocel64::tick(next_ocel) == (ocel64::tick(prev_ocel).wrapping_add(2) & 0xFF)
+    ocel64::tick(next_ocel) == ocel64::tick(prev_ocel).wrapping_add(2)
 }
 
 /// Mutant: equal ticks admitted (replay admitted as a legal step).
 fn tick_ok_equal_admitted(prev_ocel: u64, next_ocel: u64) -> bool {
-    ocel64::tick(next_ocel) == ((ocel64::tick(prev_ocel).wrapping_add(1)) & 0xFF)
+    ocel64::tick(next_ocel) == (ocel64::tick(prev_ocel).wrapping_add(1))
         || ocel64::tick(next_ocel) == ocel64::tick(prev_ocel)
 }
 
@@ -325,7 +325,7 @@ fn conformance_full_u16_mutant_is_killed() {
             "donor op {op:#x}: fixture degenerate (low byte zero)"
         );
         assert!(
-            conforms_full_u16(0, ocel_hi) == false,
+            !conforms_full_u16(0, ocel_hi),
             "mutant model: full-u16 compare must reject the high-byte word"
         );
     }

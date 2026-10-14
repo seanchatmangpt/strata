@@ -151,11 +151,11 @@ mod tests {
 
     fn structured_word(r: &mut Rng) -> u64 {
         // Bias toward structured fields so valid firings occur often.
-        let m = (r.next() & 0xFFFF) as u64;
-        let pre = (r.next() & 0x00FF) as u64;
-        let post = (r.next() & 0x00FF) as u64;
-        let tid = (r.next() & 0x0F) as u64;
-        let flags = (r.next() & 0xFF) as u64;
+        let m = r.next() & 0xFFFF;
+        let pre = r.next() & 0x00FF;
+        let post = r.next() & 0x00FF;
+        let tid = r.next() & 0x0F;
+        let flags = r.next() & 0xFF;
         m | (pre << 16) | (post << 32) | (tid << 48) | (flags << 56)
     }
 

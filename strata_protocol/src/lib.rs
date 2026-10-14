@@ -8,6 +8,7 @@ pub mod branchless;
 pub mod branchless_ref;
 pub mod cas;
 pub mod consensus;
+pub mod dao_full;
 pub mod dao_transitions;
 pub mod dao_vocab;
 pub mod dispatch;
@@ -29,6 +30,7 @@ pub mod provenance;
 pub mod trace_slice;
 pub mod pnabi;
 pub mod quad;
+pub mod register;
 pub mod rehydrate;
 pub mod ronr;
 pub mod ronr_full;
@@ -42,6 +44,7 @@ pub use pdu::{PduHeader, PDU_HEADER_LEN, PDU_MAGIC, PDU_VERSION};
 pub use quad::Quad;
 pub use receipt::{AttestationReceipt, ML_DSA_65_SIG_LEN};
 pub use refusal::RefusalReceipt;
+pub use register::Register;
 
 /// Typed errors. Deliberately opaque: callers learn "invalid", nothing more.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

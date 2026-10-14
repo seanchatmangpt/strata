@@ -361,3 +361,33 @@ result with no corresponding court file on disk.
 
 All user-pending actions from the main receipt body and addendum-2 remain
 pending; none closed this wave.
+
+---
+
+## Addendum-4 — wave-4 landings since f9fe978
+
+Every strata SHA below re-read this session via `git log --oneline --no-walk` (verified; see per-row results).
+
+| Landing | SHA(s) | Verification |
+|---|---|---|
+| Valve ingest crash-path fix: exactly-one-emit gap closed + fuel-metadata drift in ingest refusals (non-atom arena error had crashed Valve with zero telemetry + register reset; normalized to `:arena_failure` + supervision-tree soundness verified) | `76bffdc` | subject |
+
+Dedup notes (verified present in earlier addenda, NOT re-recorded):
+
+- `52e6274` policy_admission mutation-hook isolation — already in addendum-3.
+- `2d07251` pn64 Rust-mirror differential court — already in addendum-3.
+- `6213662` saga netting_ratio positivity guard — already in addendum-3.
+- `bbf1c58` pn_frame 15-vector codec court — already recorded in the main receipt body.
+- dao widen-ack witnesses (3/3 + 7/7 scratch lifecycle incl. negative controls) — already witnessed under addendum-3.
+
+### IN-FLIGHT (not landed)
+
+- rehydrate/idmap audit: working-tree changes only, uncommitted-but-green
+  (`strata_protocol/src/rehydrate.rs`, `strata_protocol/src/idmap.rs`,
+  `strata_protocol/tests/nato/n17_fips204_kat.rs`, `strata_protocol/Cargo.toml`).
+  Not a landing; will be receipted on its own commit.
+
+Session total: 193 commits on the branch as of this addendum.
+
+Falsifier for addendum-4: `git log --oneline --no-walk 76bffdc` failing at replay
+time, or rehydrate/idmap claimed landed while `git status` shows it still dirty.

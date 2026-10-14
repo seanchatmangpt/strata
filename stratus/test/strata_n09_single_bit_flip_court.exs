@@ -1,3 +1,4 @@
+# VACUITY: EXEMPT — fuzz-corpus court: asserts the law directly over a generated corpus; no mutation-kill claim
 # Strata N09 — Live-Session Single-Bit-Flip Court (S9, E14 integration).
 #
 # Executable manual runner (NOT an ExUnit case), per the

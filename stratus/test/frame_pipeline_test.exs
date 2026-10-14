@@ -6,6 +6,7 @@ defmodule Stratus.Valve.FramePipelineTest do
   alias Stratus.PnFrame
   alias Stratus.Valve.FramePipeline
   alias Stratus.Valve.Pn64
+  alias Stratus.Valve.Ronr
 
   @step [:stratus, :valve, :pn, :step]
   @refused [:stratus, :valve, :pn, :refused]
@@ -15,22 +16,11 @@ defmodule Stratus.Valve.FramePipelineTest do
   @v01 %{pn: 0x0001_0002_0001_0001, ocel: 0x1001_00B2_00A1_0001, mask: 0x0}
   @v01_next 0x0001_0002_0001_0002
 
-  # RONR canonical-six transition table (pre, post) — same table as
-  # pn64_valve_test.exs, derived from strata_protocol/src/ronr.rs.
-  @ronr %{
-    0x01 => {0x0081, 0x0082},
-    0x02 => {0x0002, 0x000C},
-    0x03 => {0x0008, 0x0010},
-    0x04 => {0x0010, 0x0008},
-    0x05 => {0x0008, 0x0060},
-    0x06 => {0x0024, 0x0101}
-  }
-
   defp ocel_word(tid), do: Pn64.pack_ocel(tid, 0, 0, 0, tid)
 
   defp pn_word(tid, marking) do
-    {pre, post} = Map.fetch!(@ronr, tid)
-    Pn64.pack(marking, pre, post, tid, 0x00)
+    {:ok, t} = Ronr.lookup(tid)
+    Pn64.pack(marking, t.pre, t.post, tid, 0x00)
   end
 
   defp frame_for(tid, marking, tick), do: PnFrame.encode(pn_word(tid, marking), Pn64.pack_ocel(tid, 0, 0, 0, tick))

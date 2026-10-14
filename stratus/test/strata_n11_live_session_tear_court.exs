@@ -1,3 +1,4 @@
+# VACUITY: EXEMPT — direct law-assertion court over a fixed corpus; no mutation-kill claim
 # Strata N11 — Live-Session Torn-Frame Tear Court (S9, E14 integration).
 #
 # Executable manual runner (NOT an ExUnit case), per the

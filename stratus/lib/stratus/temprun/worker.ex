@@ -87,7 +87,8 @@ defmodule Stratus.Temprun.Worker do
   ## Refusal vocabulary (mirrors `Stratus.Valve`)
 
   Fixed zero-entropy atoms: `:bridge_down`, `:sealed`, `:not_initialized`,
-  `:malformed_frame`. No data-dependent strings.
+  `:malformed_frame`, `:busy` (pipe backpressure on Step/Seal — the frame was
+  NOT enqueued; retry the call). No data-dependent strings.
 
   ## Binary-reference discipline
 
@@ -109,7 +110,8 @@ defmodule Stratus.Temprun.Worker do
   require Logger
 
   @typedoc "Fixed zero-entropy refusal atoms."
-  @type refusal :: :bridge_down | :sealed | :not_initialized | :malformed_frame
+  @type refusal ::
+          :bridge_down | :sealed | :not_initialized | :malformed_frame | :busy
 
   @typedoc "32-byte BLAKE3 digest as carried in the Sealed reply."
   @type digest :: <<_::256>>
@@ -142,6 +144,9 @@ defmodule Stratus.Temprun.Worker do
           optional(:bridge_dead) => boolean(),
           optional(:init_timeout) => pos_integer(),
           optional(:stall_timeout) => pos_integer(),
+          # Frame the driver refused (:busy) — retried every 10ms by the
+          # {:timeout, :port_flush} event until the port accepts it.
+          optional(:outbox) => binary(),
           port: port() | nil,
           model: binary(),
           quota: pos_integer(),
@@ -154,6 +159,18 @@ defmodule Stratus.Temprun.Worker do
   # STRATUS_TEMPRUN_WASM override in Stratus.Valve.DefaultArena.
   @step_bin_relative "priv/temprun_step"
   @step_bin_env "STRATUS_TEMPRUN_STEP_BIN"
+
+  # Optional rlimit shim (setrlimit(2) + execve): if `priv/temprun_rlimit_shim`
+  # exists and is executable, the bridge is spawned THROUGH it so the guest
+  # runs under a hard resource ceiling (AS 256 MiB, CPU 600s, NOFILE 64,
+  # CORE 0). Absent shim = graceful degrade: the bridge is spawned directly
+  # with identical port semantics. Override with STRATUS_TEMPRUN_SHIM.
+  @shim_relative "priv/temprun_rlimit_shim"
+  @shim_env "STRATUS_TEMPRUN_SHIM"
+
+  # Minimal environment for the shim'd bridge is defined in the shim itself
+  # (temprun_rlimit_shim.c: PATH=/usr/bin:/bin + forwarded TMPDIR) — this OTP
+  # rejects {:env, _} on spawn ports, so the scrub lives at execve time.
 
   @tag_new 1
   @tag_step 2
@@ -170,6 +187,14 @@ defmodule Stratus.Temprun.Worker do
   @step_record_bytes 21
   @digest_bytes 32
   @max_frame 1024 * 1024
+
+  # Driver write-queue busy limits (bytes): the port driver's internal queue
+  # is bounded to [@busy_low, @busy_high] — above @busy_high the port goes
+  # busy and try_send_frame gets :busy instead of silently buffering. The
+  # low/high pair bounds any single enqueued frame's residency to ~2 MiB
+  # (well under the 1 MiB max frame + queue bound semantics below).
+  @busy_low 512 * 1024
+  @busy_high 1024 * 1024
 
   # Yield state: the hibernate window between steps. Bounded so a stalled
   # bridge cannot wedge the session forever — on expiry the worker returns
@@ -254,19 +279,31 @@ defmodule Stratus.Temprun.Worker do
             {:ok, port} ->
               # Send New (model bytes) and hold in :init until the handle
               # arrives. The port message is decoded in handle_event(:info, ...).
-              send_frame(port, <<@tag_new>> <> model)
+              # On :busy the frame is stashed in `outbox` and retried every
+              # 10ms — the pipe backpressure bounds HOST memory (one stashed
+              # frame), not the driver's unbounded queue.
+              outbox_action =
+                try_send_frame(port, <<@tag_new>> <> model)
 
               # T15: bound the New round-trip. If the bridge accepted the New
               # frame but never answers, this timer seals :bridge_down instead
               # of wedging in :init forever.
               init_timeout = Keyword.get(opts, :init_timeout, @init_timeout)
 
+              timers =
+                [{{:timeout, :init_bridge}, init_timeout, :init_expired}] ++
+                  if(outbox_action == :busy,
+                    do: [{{:timeout, :port_flush}, 10, :flush}],
+                    else: []
+                  )
+
               {:ok, :init,
                %{port: port, model: model, quota: quota, buf: <<>>, pending: nil,
                  handle: nil, receipt: nil, refusal: nil, bridge_dead: false,
+                 outbox: outbox_stash(outbox_action, <<@tag_new>> <> model),
                  init_timeout: init_timeout,
                  stall_timeout: Keyword.get(opts, :stall_timeout, @bridge_stall_timeout)},
-               [{{:timeout, :init_bridge}, init_timeout, :init_expired}]}
+               timers}
 
           {:error, _} ->
             {:stop, :bridge_down}
@@ -310,12 +347,21 @@ defmodule Stratus.Temprun.Worker do
   # -- :stepping — handle in hand; Step frames carry the handle + u32 LE quota --
 
   def handle_event({:call, from}, :step, :stepping, data) do
-    send_frame(data.port, <<@tag_step, session_handle(data)::little-64, data.quota::little-32>>)
+    case try_send_frame(
+           data.port,
+           <<@tag_step, session_handle(data)::little-64, data.quota::little-32>>
+         ) do
+      :ok ->
+        # T15: bound the Step round-trip — a bridge that accepts the frame but
+        # never answers must not wedge the pending caller.
+        {:keep_state, %{data | pending: from, outbox: nil},
+         [{{:timeout, :bridge_stall}, data.stall_timeout, :stalled}]}
 
-    # T15: bound the Step round-trip — a bridge that accepts the frame but
-    # never answers must not wedge the pending caller.
-    {:keep_state, %{data | pending: from},
-     [{{:timeout, :bridge_stall}, data.stall_timeout, :stalled}]}
+      # Pipe full: reply {:error, :busy} IMMEDIATELY — no pending caller, no
+      # stall timer, no caller wedged behind a full pipe. The caller retries.
+      :busy ->
+        {:keep_state, data, {:reply, from, {:error, :busy}}}
+    end
   end
 
   def handle_event({:call, from}, :step, :yielding, data) do
@@ -327,8 +373,15 @@ defmodule Stratus.Temprun.Worker do
   end
 
   def handle_event({:call, from}, :seal, state, data) when state in [:stepping, :yielding] do
-    send_frame(data.port, <<@tag_seal, session_handle(data)::little-64>>)
-    {:keep_state, %{data | pending: from}, [{{:timeout, :bridge_stall}, data.stall_timeout, :stalled}]}
+    case try_send_frame(data.port, <<@tag_seal, session_handle(data)::little-64>>) do
+      :ok ->
+        {:keep_state, %{data | pending: from, outbox: nil},
+         [{{:timeout, :bridge_stall}, data.stall_timeout, :stalled}]}
+
+      # Same immediate-refusal lane as :step/:busy — seal retries are cheap.
+      :busy ->
+        {:keep_state, data, {:reply, from, {:error, :busy}}}
+    end
   end
 
   def handle_event({:call, from}, :registers, state, data) when state in [:stepping, :yielding] do
@@ -345,6 +398,22 @@ defmodule Stratus.Temprun.Worker do
   def handle_event(:info, {port, {:data, bytes}}, state, %{port: port} = data)
       when state in [:stepping, :yielding] do
     with_frames(data, bytes, &handle_bridge_frame(&1, &2, state))
+  end
+
+  # Outbox flush: the pipe accepted a frame at :busy earlier; retry every
+  # 10ms until the driver takes it. :init — success continues the post-New
+  # flow implicitly (the Newed reply decodes normally); live states clear the
+  # outbox (a Step/Seal outbox is not currently armed — busy replies happen
+  # at the call site — but the retry path is shared and total).
+  def handle_event({:timeout, :port_flush}, :flush, _state, %{outbox: frame} = data)
+      when frame != nil do
+    case try_send_frame(data.port, frame) do
+      :ok ->
+        {:keep_state, %{data | outbox: nil}}
+
+      :busy ->
+        {:keep_state, %{data | outbox: frame}, [{{:timeout, :port_flush}, 10, :flush}]}
+    end
   end
 
   # Yield expiry: return to :stepping; nothing else changes.
@@ -559,8 +628,28 @@ defmodule Stratus.Temprun.Worker do
     try do
       # Raw stream mode (no :packet): the u32 LE length prefix is hand-rolled
       # in with_frames/3 because the BEAM packet: 4 option is big-endian and
-      # the bridge speaks little-endian framing.
-      {:ok, Port.open({:spawn_executable, path}, [:binary, :exit_status, :eof])}
+      # the bridge speaks little-endian framing. NO :busy_exit — an exit
+      # signal on busy would kill this non-trapping gen_statem instead of
+      # surfacing busy. NOTE: {:busy_poll, _} is rejected ("invalid option")
+      # by this OTP 28 build, and WITHOUT busy limits a spawn port buffers
+      # writes unboundedly in the driver (nosuspend never returns false) —
+      # so the driver queue is explicitly bounded via {:busy_limits_port,
+      # {low, high}} and backpressure surfaces through :erlang.port_command/3
+      # [:nosuspend] -> false (try_send_frame).
+      opts = [:binary, :exit_status, :eof, {:busy_limits_port, {@busy_low, @busy_high}}]
+
+      case shim_path() do
+        {:ok, shim} ->
+          # NOTE: the minimal environment (PATH=/usr/bin:/bin + TMPDIR) is
+          # constructed INSIDE the shim's execve — this OTP rejects {:env, _}
+          # on spawn ports, and the shim is exactly the right place for the
+          # ambient-authority scrub anyway.
+          Port.open({:spawn_executable, shim}, opts ++ [{:args, [path]}])
+
+        :error ->
+          Port.open({:spawn_executable, path}, opts)
+      end
+      |> then(&{:ok, &1})
     rescue
       # Missing/unspawnable binary raises :badarg from the port BIF —
       # fail closed the same way.
@@ -568,10 +657,43 @@ defmodule Stratus.Temprun.Worker do
     end
   end
 
-  defp send_frame(port, payload) when is_binary(payload) do
+  # Mirror of step_bin_path/1 for the rlimit shim: explicit override via
+  # STRATUS_TEMPRUN_SHIM, else the documented default. :error (with no log)
+  # is the graceful-degrade lane — the shim is OPTIONAL capital.
+  defp shim_path do
+    case System.get_env(@shim_env) do
+      path when is_binary(path) and path != "" ->
+        if File.exists?(path), do: {:ok, path}, else: :error
+
+      _ ->
+        path = Path.expand(@shim_relative, Application.app_dir(:stratus))
+
+        if File.exists?(path) and File.stat!(path).access in [:read_write, :read] do
+          {:ok, path}
+        else
+          :error
+        end
+    end
+  end
+
+  defp outbox_stash(:busy, frame), do: frame
+  defp outbox_stash(:ok, _frame), do: nil
+
+  # Non-blocking frame write: :erlang.port_command/2 with :nosuspend returns
+  # immediately. All-or-nothing: on `false` NOTHING was enqueued (no partial
+  # write), so the caller retries the whole frame later — no driver-buffered
+  # unbounded queue, no scheduler blocking. `true` = the driver accepted the
+  # full frame.
+  @spec try_send_frame(port(), binary()) :: :ok | :busy
+  defp try_send_frame(port, payload) when is_binary(payload) do
     # Port protocol v1: [u32 LE total_len][tag + payload].
-    true = Port.command(port, <<byte_size(payload)::little-32, payload::binary>>)
-    :ok
+    if :erlang.port_command(port, <<byte_size(payload)::little-32, payload::binary>>, [
+         :nosuspend
+       ]) do
+      :ok
+    else
+      :busy
+    end
   end
 
   defp safe_command(port, payload) do

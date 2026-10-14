@@ -1,4 +1,5 @@
-defmodule Strata.BeamMutantCourt do
+# VACUITY: ANTI_VACUITY_MUTANT
+ANTI_VACUITY_MUTANTdefmodule Strata.BeamMutantCourt do
   @moduledoc """
   N24 — BEAM in-memory mutation census over `Stratus.Valve.Pn64.validate_and_advance/3`
   (in-test executable mutant classes — the proven M17 pattern formalized).

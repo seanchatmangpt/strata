@@ -1,3 +1,4 @@
+# VACUITY: EXEMPT — direct law-assertion court over a fixed corpus; no mutation-kill claim
 defmodule StrataConcuerrorCourtTest do
   @moduledoc """
   NATO N22 — Concuerror DPOR court over the CAS valve: the

@@ -1,5 +1,6 @@
 // frozen golden vector: profile 02_max_fuel, fuel 18446744073709551615
 // regenerate = deliberate diff (see test header)
+format: 1
 admitted: true
 receipt: d30747d5569b60eb445d7cc2f96aa46bcd7b9711cf642f3f744556f7da2c66d6
 universe_digest: d30747d5569b60eb445d7cc2f96aa46bcd7b9711cf642f3f744556f7da2c66d6

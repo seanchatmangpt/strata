@@ -31,6 +31,11 @@ use temprun::{run, ArenaInput, ParentLedger, RECEIPT_LEN};
 
 const FIXTURE_DIR: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures");
 
+/// Bump on any golden text layout change. `load_golden` REFUSES files whose
+/// `format:` line is missing or unrecognized — a stale/foreign layout can
+/// never silently re-parse into garbage (the N04 v1-writer class).
+const GOLDEN_FORMAT: u32 = 1;
+
 /// MMIX LCG (Knuth) — same deterministic generator family as arena_fuzz_test.
 struct Lcg(u64);
 
@@ -235,7 +240,7 @@ fn emit_golden() {
         let (mut inp, fuel) = profile(id);
         let out = run(&mut inp, FuelLease::new(fuel), &mut ParentLedger::new());
         let text = format!(
-            "// frozen golden vector: profile {id}, fuel {fuel}\n// regenerate = deliberate diff (see test header)\nadmitted: {}\nreceipt: {}\nuniverse_digest: {}\n",
+            "// frozen golden vector: profile {id}, fuel {fuel}\n// regenerate = deliberate diff (see test header)\nformat: {GOLDEN_FORMAT}\nadmitted: {}\nreceipt: {}\nuniverse_digest: {}\n",
             out.admitted,
             hex(&out.receipt),
             hex(&out.universe_digest),
@@ -254,10 +259,14 @@ fn regenerate_golden() {
 fn load_golden(id: &str) -> (bool, [u8; RECEIPT_LEN], [u8; 32]) {
     let text = fs::read_to_string(format!("{FIXTURE_DIR}/{id}.golden"))
         .unwrap_or_else(|e| panic!("missing fixture {id}.golden: {e}"));
+    let mut format = None;
     let mut admitted = None;
     let mut receipt = None;
     let mut digest = None;
     for line in text.lines() {
+        if let Some(v) = line.strip_prefix("format: ") {
+            format = Some(v.parse::<u32>().unwrap());
+        }
         if let Some(v) = line.strip_prefix("admitted: ") {
             admitted = Some(v.parse::<bool>().unwrap());
         } else if let Some(v) = line.strip_prefix("receipt: ") {
@@ -268,6 +277,11 @@ fn load_golden(id: &str) -> (bool, [u8; RECEIPT_LEN], [u8; 32]) {
             digest = Some(b.try_into().unwrap());
         }
     }
+    assert_eq!(
+        format,
+        Some(GOLDEN_FORMAT),
+        "{id}: golden format marker missing or foreign — regenerate, never silently re-parse"
+    );
     (
         admitted.expect("admitted line"),
         receipt.expect("receipt line"),
@@ -315,4 +329,40 @@ fn negative_golden_refusal_is_constant_shape() {
     assert!(twin.admitted);
     assert_eq!(out.receipt[1..], twin.receipt[1..]);
     assert_eq!(out.receipt[0], temprun::receipt::REFUSED_STATUS);
+}
+
+// Fixture-inventory court: the fixtures directory must contain EXACTLY the
+// PROFILES set — no orphaned `.golden` that no test reads, no missing file.
+// Every file must also carry the current format marker and its own profile
+// header, so a stray or stale fixture fails loudly instead of sitting.
+#[test]
+fn golden_fixture_inventory_exact() {
+    let mut expected: Vec<String> = PROFILES.iter().map(|id| format!("{id}.golden")).collect();
+    expected.sort();
+    let mut on_disk: Vec<String> = fs::read_dir(FIXTURE_DIR)
+        .unwrap()
+        .map(|e| e.unwrap().file_name().to_string_lossy().into_owned())
+        .collect();
+    on_disk.sort();
+    assert_eq!(
+        on_disk, expected,
+        "fixtures dir != PROFILES set (orphan or missing golden)"
+    );
+    for id in PROFILES {
+        let text = fs::read_to_string(format!("{FIXTURE_DIR}/{id}.golden")).unwrap();
+        let header = format!(
+            "// frozen golden vector: profile {id}, fuel {}",
+            profile(id).1
+        );
+        assert_eq!(
+            text.lines().next(),
+            Some(header.as_str()),
+            "{id}: stale or foreign golden header"
+        );
+        assert!(
+            text.lines()
+                .any(|l| l == format!("format: {GOLDEN_FORMAT}")),
+            "{id}: missing format marker — regenerate the golden"
+        );
+    }
 }

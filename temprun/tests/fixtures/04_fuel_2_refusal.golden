@@ -1,5 +1,6 @@
 // frozen golden vector: profile 04_fuel_2_refusal, fuel 2
 // regenerate = deliberate diff (see test header)
+format: 1
 admitted: false
 receipt: 02da7fce37800c16b0dd1c1cf57d79f76aa64818b845bb3fe6bbe7f3299bbb2b
 universe_digest: dbda7fce37800c16b0dd1c1cf57d79f76aa64818b845bb3fe6bbe7f3299bbb2b

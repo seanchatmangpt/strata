@@ -1,5 +1,6 @@
 // frozen golden vector: profile 07_clock_extremes, fuel 10
 // regenerate = deliberate diff (see test header)
+format: 1
 admitted: true
 receipt: 70d3e97076cd70b7851391838275b96f0cdc442e3c82012a8e71dec454878f1e
 universe_digest: 70d3e97076cd70b7851391838275b96f0cdc442e3c82012a8e71dec454878f1e

@@ -1,5 +1,6 @@
 // frozen golden vector: profile 06_payload_4mib, fuel 10
 // regenerate = deliberate diff (see test header)
+format: 1
 admitted: true
 receipt: ca47f72f7bfe4bb833e666bee6bfbc454d4020417ec83bf5f3af21a9072e8060
 universe_digest: ca47f72f7bfe4bb833e666bee6bfbc454d4020417ec83bf5f3af21a9072e8060

@@ -2,20 +2,24 @@
 
 [packs.strata-cas-pack]
 source = "path:/Users/sac/ggen-marketplace/packs/strata-cas-pack"
-content_hash = "blake3:fdf3aaac05c692c342aa50a0924b28a790da6afc59441dbd6dc8431156246037"
+content_hash = "blake3:1eb98be1e0ea80a57f5a61bef2f608c2dea34885e7b51dc2d1078acdc9a03caa"
+
+[packs.strata-pn64-pack]
+source = "path:/Users/sac/ggen-marketplace/packs/strata-pn64-pack"
+content_hash = "blake3:7a273ada958dfd9f2ee833b7fc66165109e45fd48683217d9e2ceae5d3498d2d"
 
 [packs.strata-protocol-pack]
 source = "path:/Users/sac/ggen-marketplace/packs/strata-protocol-pack"
-content_hash = "blake3:45c0586f79466ba0a4da95ff783daed9d57d054042ef1d586e99aca97df8f4c1"
+content_hash = "blake3:f89f4c0e7aa27cda847df4a96857ce8e3493feb24ca04af94724ec704c9be914"
 
 [packs.strata-signer-pack]
 source = "path:/Users/sac/ggen-marketplace/packs/strata-signer-pack"
-content_hash = "blake3:d4b7d2136ada03a48f04c77bfd7ed8a89eea5f63dc1581c544fb032fab210a8b"
+content_hash = "blake3:e8f5bd792eca94dae384a290e869effa19ef7e288076f47d94dd8bb83df4a712"
 
 [packs.strata-stratus-pack]
 source = "path:/Users/sac/ggen-marketplace/packs/strata-stratus-pack"
-content_hash = "blake3:bf1b3618872deaa00b6d9677b19d5063a6992a5f7bd6002d4f796a3081567324"
+content_hash = "blake3:4f88c552902c77a4a082627c25585d59da86773e8a37f8f1002d8b3db841ab1f"
 
 [packs.strata-temprun-pack]
 source = "path:/Users/sac/ggen-marketplace/packs/strata-temprun-pack"
-content_hash = "blake3:cb649455733108c08d6f46b84e788cc32fb3b933abab084ef4e0fdbdcdfdc966"
+content_hash = "blake3:19570c5524aca00a78ddd41f8c4015f84aa28cadd272784b79e1807425f73c71"

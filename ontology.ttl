@@ -123,9 +123,13 @@ st:DefaultFuelLease a st:FuelLease ;
     st:leaseHolder "strata-default" ;
     st:runsIn st:DefaultArena .
 
+# Digests are sha256 of the legacy placeholder names ("strata-genesis",
+# "strata-genesis-root") — ported to 64-hex to satisfy
+# strata-cas-pack gates/020_wormhole_digest_shape.rq (gates run against
+# the UNION graph, so tree seed facts must comply).
 st:GenesisWormhole a st:KnowledgeWormhole ;
-    st:sourceDigest "sha256:strata-genesis" ;
-    st:targetDigest "sha256:strata-genesis-root" .
+    st:sourceDigest "1b9eca448d1dd9fd777f86380e454ea01f9721023288991be017762f5118ddd1" ;
+    st:targetDigest "0f749ccc30c2e880728c96aba5f9e8ddd1fa3d823fd95e0f7dd629e204b5175c" .
 
 st:GenesisMask a st:CoordinateMask ;
     st:universeDigest "sha256:strata-genesis" ;
@@ -242,6 +246,10 @@ pn:Amend a pn:DaoVerb ; pn:value 3 .
 pn:ExecuteTransaction a pn:DaoVerb ; pn:value 11 .
 pn:Ragequit a pn:DaoVerb ; pn:value 116 .
 pn:Delegate a pn:DaoVerb ; pn:value 144 .
+# G2 delegation-closure verbs (dao_full.rs extension; verb/noun namespace
+# split on 146/147 is the documented shared opcode space).
+pn:ChainDelegate a pn:DaoVerb ; pn:value 146 .
+pn:AckDelegation a pn:DaoVerb ; pn:value 147 .
 pn:AcquireLease a pn:DaoVerb ; pn:value 148 .
 
 # DAO nouns (MainProposal 0x01 .. ReceiptRoot 0x92)
@@ -325,6 +333,14 @@ pn:DaoAdmitMember a pn:Transition ;        # 0x96 pre=0 post=MEMBER_ACTIVE
     pn:opcode 150 ; pn:preMask 0 ; pn:postMask 32 .
 pn:DaoExpelMember a pn:Transition ;        # 0x97 pre=MEMBER_ACTIVE post=MEMBER_EXPELLED
     pn:opcode 151 ; pn:preMask 32 ; pn:postMask 16384 .
+
+# DAO extension transitions (dao_full.rs G2 delegation closure; opcode =
+# dao_vocab verb value, same shared opcode space). Closes the orphaned
+# DELEGATION_PENDING (0x0800 = 2048) place: 0x92 produces, 0x93 consumes.
+pn:DaoChainDelegate a pn:Transition ;      # 0x92 pre=MEMBER_ACTIVE|DELEGATED post=MEMBER_ACTIVE|DELEGATED|DELEGATION_PENDING
+    pn:opcode 146 ; pn:preMask 40 ; pn:postMask 2088 .
+pn:DaoAckDelegation a pn:Transition ;      # 0x93 pre=DELEGATED|DELEGATION_PENDING post=DELEGATED
+    pn:opcode 147 ; pn:preMask 2056 ; pn:postMask 8 .
 
 # DAO nouns added in wave 2 (dao_vocab.rs constants missing from wave 1;
 # completes the documented 16-noun set).

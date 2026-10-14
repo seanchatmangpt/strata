@@ -370,7 +370,10 @@ defmodule Stratus.Temprun.Worker do
   end
 
   def handle_event({:call, from}, :step, :yielding, data) do
-    {:next_state, :stepping, data, [{:next_event, :internal, {:retry_step, from}}]}
+    # Cancel the yield timer explicitly: keep of :yield_expired firing in
+    # :stepping (no matching clause -> function_clause crash).
+    {:next_state, :stepping, data,
+     [{{:timeout, :yield}, :cancel}, {:next_event, :internal, {:retry_step, from}}]}
   end
 
   def handle_event(:internal, {:retry_step, from}, :stepping, data) do
@@ -557,7 +560,8 @@ defmodule Stratus.Temprun.Worker do
           # Quota consumed: yield. Hibernating in :yielding IS the yield back
           # to the scheduler; the next step/1 (or @yield_timeout) re-arms.
           {:next_state, :yielding, %{data | pending: nil, buf: <<>>},
-           [{{:timeout, :yield}, @yield_timeout, :yield_expired}]}
+           [{{:timeout, :bridge_stall}, :cancel},
+            {{:timeout, :yield}, @yield_timeout, :yield_expired}]}
         else
           # Violation/Trap latch Faulted host-side (errno 10 Error frame next
           # Step); Complete stays live and sealable — New→Step(Complete)→Seal
@@ -571,7 +575,12 @@ defmodule Stratus.Temprun.Worker do
       <<@tag_seal, _handle::little-64, _status::8, digest::binary-size(@digest_bytes)>> ->
         reply_pending(data, {:ok, %{digest: digest}})
         {:ok, data} = close_bridge(%{data | buf: <<>>})
-        {:next_state, :sealed, %{data | port: nil, receipt: %{digest: digest}, pending: nil}}
+
+        # Cancel the stall timer armed by seal/1: keep_state/next_state do
+        # not drop event timers, and a late :stalled in :sealed would corrupt
+        # a successfully sealed session (:bridge_down refusal on registers).
+        {:next_state, :sealed, %{data | port: nil, receipt: %{digest: digest}, pending: nil},
+         [{{:timeout, :bridge_stall}, :cancel}]}
 
       # Dropped: informational; the port is torn down right after Drop.
       <<@tag_drop, _handle::little-64, _status::8>> ->
@@ -702,14 +711,6 @@ defmodule Stratus.Temprun.Worker do
     end
   end
 
-  defp safe_command(port, payload) do
-    try do
-      Port.command(port, <<byte_size(payload)::little-32, payload::binary>>)
-    rescue
-      _ -> :ok
-    end
-  end
-
   defp close_bridge(%{port: nil}), do: {:ok, :already_closed}
 
   defp close_bridge(%{port: port} = data) when is_port(port) do
@@ -718,7 +719,11 @@ defmodule Stratus.Temprun.Worker do
     # have died (eof/EXIT/exit_status) gets NO Drop frame — the pipe is gone
     # and the EPIPE port kill is not rescuable.
     unless Map.get(data, :bridge_dead, false) do
-      _ = safe_command(port, <<@tag_drop, session_handle(data)::little-64>>)
+      # Non-blocking: a stalled-but-alive bridge may never drain its stdin
+      # pipe — a blocking Port.command here would wedge the worker (and any
+      # seal/1 caller) inside the driver. :busy = Drop lost, acceptable on
+      # the teardown path (the port is closed immediately after).
+      _ = try_send_frame(port, <<@tag_drop, session_handle(data)::little-64>>)
     end
 
     try do
@@ -732,11 +737,12 @@ defmodule Stratus.Temprun.Worker do
   # Seal-with-refusal: reply to any pending caller FIRST (never a hang),
   # record the fixed refusal atom, tear the bridge, enter :sealed.
   defp seal_with_refusal(data, reason) do
+    :telemetry.execute(@refused_event, %{}, %{class: reason, op: :seal_with_refusal})
     reply_pending(data, {:error, reason})
     {:ok, data} = close_bridge(data)
 
     {:next_state, :sealed,
-     %{data | port: nil, pending: nil, buf: <<>>, refusal: reason}}
+     %{data | port: nil, pending: nil, buf: <<>>, outbox: nil, refusal: reason}}
   end
 
   defp reply_pending(%{pending: nil}, _reply), do: :ok

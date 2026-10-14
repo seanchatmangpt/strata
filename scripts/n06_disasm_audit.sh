@@ -63,6 +63,8 @@ receipt = {
     "tools": {"wasm_objdump": "$([ -n "$wasm_objdump" ] && echo true || echo false)", "llvm_objdump": "$([ -n "$llvm_objdump" ] && echo true || echo false)"},
     "finished_at": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
 }
+if "$out".endswith(".legacy_payload.json"):
+    receipt.pop("lane", None)  # sidecar is a legacy payload, not a lane receipt
 open("$out", "w").write(json.dumps(receipt, indent=2) + "\n")
 EOF
   echo "[n06] FAIL: $1" >&2
@@ -162,6 +164,8 @@ receipt = {
     "host": {"arch": "arm64", "os": "darwin"},
     "finished_at": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
 }
+if out.endswith(".legacy_payload.json"):
+    receipt.pop("lane", None)  # sidecar is a legacy payload, not a lane receipt
 open(out, "w").write(json.dumps(receipt, indent=2) + "\n")
 print(json.dumps(receipt, indent=2))
 EOF

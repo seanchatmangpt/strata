@@ -63,6 +63,17 @@ defmodule Strata.Merger.LeaseLedgerTest do
     assert {:error, :lease_replayed} == LeaseLedger.admit(ledger, lease(slot: 0), digest(slot: 0))
   end
 
+  test "malformed digest is refused, never admitted with :ok (under-apply positive control)", %{
+    ledger: ledger
+  } do
+    l = lease()
+
+    # Zero side effects: slot not consumed, odometer untouched.
+    assert {:error, :lease_invalid} == LeaseLedger.admit(ledger, l, <<1, 2, 3>>)
+    assert {:error, :lease_invalid} == LeaseLedger.admit(ledger, l, nil)
+    assert :ok == LeaseLedger.admit(ledger, l, Lease.digest(l))
+  end
+
   # -- (2) phash2 collision regression pin -------------------------------------
 
   test "distinct run_ids with identical other fields never collide", %{ledger: ledger} do

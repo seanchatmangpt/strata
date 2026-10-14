@@ -216,22 +216,26 @@ defmodule Strata.Merger.LeaseLedger do
       Map.has_key?(state.slots, key) ->
         {:reply, {:error, :lease_replayed}, state}
 
+      not valid_digest?(digest) ->
+        # Refuse, never silently skip: a malformed digest admitted with
+        # `:ok` would make settle/2 return `:lease_invalid` forever —
+        # an under-apply hole in E-M19 conservation (admitted 2026-10-14 audit).
+        {:reply, {:error, :lease_invalid}, state}
+
       Map.get(state.burn, lease.lease_pk, 0) + lease.fuel < state.required_burn ->
         {:reply, {:error, :lease_insufficient_burn}, state}
 
       true ->
         state = %{state | slots: Map.put(state.slots, key, :consumed)}
-
-        state =
-          if is_binary(digest) and byte_size(digest) == 32,
-            do: %{state | digests: Map.put(state.digests, key, digest)},
-            else: state
-
+        state = %{state | digests: Map.put(state.digests, key, digest)}
         state = %{state | burn: Map.update(state.burn, lease.lease_pk, lease.fuel, &(&1 + lease.fuel))}
 
         {:reply, :ok, state}
     end
   end
+
+  defp valid_digest?(<<_::256>>), do: true
+  defp valid_digest?(_), do: false
 
   defp slot_key(run_id, agent_id, slot), do: {run_id, agent_id, slot}
 

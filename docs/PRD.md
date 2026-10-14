@@ -62,6 +62,11 @@ semantics, and persistence costs that scale poorly. Strata addresses all four.
   [ADJUDICATED 2026-10-10: acyclicity boundary — merge_join = order-coverage only;
   the separate acyclicity sieve covers cyclic-DAG traces; both enforced. Evidence:
   temprun/src/acyclicity.rs, temprun/tests/fr3_acyclicity_test.rs]
+  [CONVENTION 2026-10-13: the causal edge predicate is DEP_P == 7
+  (temprun/src/acyclicity.rs:42); a lineage row [s, 7, o, t] asserts "s depends
+  on o" (o precedes s); all other predicates are non-causal. Sieve: Kahn cycle
+  detection (incl. self-loops, O(V+E), NODE_CAP=1024 fail-closed) + within-trace
+  vector-clock inversion.]
   [ADJUDICATED 2026-10-10: POWL compilation architecture — host-side compile to sorted
   V_SPO; the wasm arena stays capability-free; bcinr-powl is optional/non-default
   feature-gated so wasm builds never link it. Evidence: temprun/src/conformance.rs,

@@ -2,7 +2,7 @@
 //! precedence, and verdict determinism. Chicago-style — real `run()` calls,
 //! assertions on observable output state only.
 
-use temprun::conformance::merge_join;
+use temprun::conformance::{merge_join, merge_join_total};
 use temprun::fuel::FuelLease;
 use temprun::{ArenaInput, RECEIPT_LEN};
 use temprun::ParentLedger;
@@ -55,6 +55,49 @@ fn temporal_field_t_not_in_conformance_key() {
     let l = vec![[1, 2, 3, 10], [4, 5, 6, 20]];
     let p = vec![[1, 2, 3, 999], [4, 5, 6, 888]];
     assert!(merge_join(&l, &p));
+}
+
+// ---- (1b) below-baseline coverage (2026-10-13 audit) ----
+
+#[test]
+fn below_baseline_lineage_row_refuses_not_silently_skipped() {
+    // REGRESSION (2026-10-13 audit): a lineage quad sorting strictly below the
+    // current policy key can never match (policy is sorted) — it is uncovered
+    // and must refuse. Pre-fix the join advanced `i` WITHOUT flagging, so
+    // zero-coverage lineage against a higher-keyed policy false-ACCEPTED.
+    assert!(!merge_join(&[[1, 2, 3, 10]], &[[4, 5, 6, 0]]));
+    assert!(!merge_join_total(&[[1, 2, 3, 10]], &[[4, 5, 6, 0]]));
+    // Mixed: covered head, uncovered below-baseline tail.
+    assert!(!merge_join(&[[1, 2, 3, 10], [5, 5, 5, 20]], &[[1, 2, 3, 0], [4, 4, 4, 0]]));
+}
+
+#[test]
+fn below_baseline_refusal_end_to_end() {
+    let mut inp = base_input();
+    // Shift every policy quad above every lineage quad: zero coverage.
+    inp.policy = vec![[9, 9, 9, 0], [9, 9, 10, 0]];
+    assert!(!temprun::run(&mut inp, FuelLease::new(3), &mut ParentLedger::new()).admitted);
+}
+
+#[test]
+fn merge_join_total_requires_full_policy_consumption() {
+    // Unconsumed policy rows refuse in the total join ...
+    assert!(!merge_join_total(&[[1, 2, 3, 10]], &[[1, 2, 3, 0], [5, 5, 5, 0]]));
+    // ... while the plain join admits the same pair (superset contract).
+    assert!(merge_join(&[[1, 2, 3, 10]], &[[1, 2, 3, 0], [5, 5, 5, 0]]));
+    assert!(merge_join_total(&[[1, 2, 3, 10], [5, 5, 5, 20]], &[[1, 2, 3, 0], [5, 5, 5, 0]]));
+}
+
+#[test]
+fn unsorted_input_documented_precondition_false_refuse_pinned() {
+    // Sortedness is a documented PRECONDITION, not an enforced invariant
+    // (enforcing it would add a data-dependent early-exit branch, breaking
+    // the branchless contract). Pinned: a specific unsorted permutation of a
+    // refused pair false-REFUSES (availability, never false-accepts).
+    let l = vec![[4, 4, 4, 20], [1, 2, 3, 10]]; // unsorted
+    let p = vec![[1, 2, 3, 0], [4, 4, 4, 0]];
+    assert!(!merge_join(&l, &p));
+    assert!(!merge_join_total(&l, &p));
 }
 
 // ---- (2) refusal classes ----

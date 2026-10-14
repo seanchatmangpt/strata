@@ -1,6 +1,13 @@
 //! Branchless sort-merge conformance: merge-join POS lineage vs SPO policy.
 
-/// Merge-join two sorted quad tables on (s, p, o). Scans the full overlap
+/// Merge-join two sorted quad tables on (s, p, o).
+///
+/// PRECONDITION (both arguments): sorted ascending by the full 4-tuple
+/// (equivalently by the (s, p, o) join key, since t is last) — the same
+/// POS/SPO ordering `ArenaInput` documents. An unsorted argument can advance
+/// the join past a key it should have matched and false-REFUSE (availability,
+/// never false-accept after the below-baseline fix); callers that cannot
+/// guarantee sortedness must sort before calling. Scans the full overlap
 /// regardless of match position — no early exit, no data-dependent branch on
 /// the failure offset. Returns true iff every lineage quad has a policy match.
 pub fn merge_join(lineage: &[[u64; 4]], policy: &[[u64; 4]]) -> bool {
@@ -18,6 +25,10 @@ pub fn merge_join(lineage: &[[u64; 4]], policy: &[[u64; 4]]) -> bool {
             i += 1;
             j += 1;
         } else if lk < pk {
+            // Lineage key below the current policy key: no later policy key
+            // can equal it (policy is sorted) — this lineage quad is
+            // uncovered. Flagged, never silently skipped.
+            mismatch |= 1;
             i += 1;
         } else {
             j += 1;
@@ -28,7 +39,8 @@ pub fn merge_join(lineage: &[[u64; 4]], policy: &[[u64; 4]]) -> bool {
     mismatch == 0
 }
 
-/// FR-3 unrolled-trace variant: same join, but additionally requires the
+/// FR-3 unrolled-trace variant: same sortedness precondition and join body as
+/// [`merge_join`] (including the below-baseline mismatch flag), but
 /// policy table to be fully consumed — no required milestone may be absent
 /// from the lineage. `merge_join` alone admits lineage traces that skip a
 /// required middle milestone (policy superset); this closes that gap for
@@ -48,6 +60,8 @@ pub fn merge_join_total(lineage: &[[u64; 4]], policy: &[[u64; 4]]) -> bool {
             i += 1;
             j += 1;
         } else if lk < pk {
+            // Same below-baseline rule as merge_join: uncovered lineage quad.
+            mismatch |= 1;
             i += 1;
         } else {
             j += 1;

@@ -184,6 +184,69 @@ fn nfr3_packed_second_surface_holds_operator_bound() {
     );
 }
 
+/// E28 SPV1 wiring court: the production write path (`Wormhole::snapshot_packed`)
+/// must emit SPV1-tagged packed blobs that read back byte-identically —
+/// Chicago style: real wormhole, real blob, real parse, assert final state.
+/// Also pins that the DEFAULT `snapshot` path emits nothing (raw stays raw)
+/// and that the selector dispatches without cross-encoding fallback.
+#[test]
+fn nfr3_spv1_snapshot_write_path_wired() {
+    use strata_protocol::cas::ColdEncoding;
+    use strata_protocol::wormhole::Wormhole;
+
+    let state: std::collections::BTreeSet<Quad> = epoch_quads(7).into_iter().collect();
+
+    // 1. Default path unchanged: `snapshot` records without emitting blobs,
+    //    and `emit_blob_cold(Raw)` output is byte-identical to `emit_blob`.
+    let mut wh_raw = Wormhole::new();
+    wh_raw
+        .snapshot(7, &state, (Quad::new(0, 0, 0, 0), Quad::new(u64::MAX, u64::MAX, u64::MAX, u64::MAX)))
+        .expect("default snapshot still works");
+    let raw_obj = cas::emit_blob_cold(&state.iter().copied().collect::<Vec<_>>(), ColdEncoding::Raw);
+    assert_eq!(
+        raw_obj.data,
+        cas::emit_blob(&state.iter().copied().collect::<Vec<_>>()).data,
+        "ColdEncoding::Raw must dispatch to the unchanged raw path",
+    );
+    assert_eq!(
+        cas::parse_blob_cold(&cas::inflate_object(&raw_obj.data).expect("raw inflates"), ColdEncoding::Raw)
+            .expect("raw parses"),
+        state.iter().copied().collect::<Vec<_>>(),
+        "raw selector round-trip",
+    );
+
+    // 2. Wired packed path: snapshot_packed emits an SPV1-tagged blob whose
+    //    unpacked payload is byte-identical to the frozen state.
+    let mut wh = Wormhole::new();
+    let bounds = (Quad::new(0, 0, 0, 0), Quad::new(u64::MAX, u64::MAX, u64::MAX, u64::MAX));
+    let obj = wh
+        .snapshot_packed(7, &state, bounds)
+        .expect("packed snapshot freezes and emits");
+    assert_eq!(wh.snapshots().len(), 1, "snapshot record kept");
+    cas::verify_object(obj.oid, &obj.data).expect("packed blob verifies by oid");
+    let inflated = cas::inflate_object(&obj.data).expect("packed blob inflates");
+    let payload = inflated
+        .iter()
+        .position(|&b| b == 0)
+        .map(|i| &inflated[i + 1..])
+        .expect("blob header present");
+    assert_eq!(&payload[..4], b"SPV1", "emitted blob must carry the SPV1 magic tag");
+    let parsed = cas::parse_blob_cold(&inflated, ColdEncoding::Packed).expect("packed parses");
+    assert_eq!(parsed, state.into_iter().collect::<Vec<_>>(), "byte-identical unpack");
+
+    // 3. Fail-closed cross-encoding gate: the SPV1 magic is the deterministic
+    //    refusal point. A raw payload fed to the packed arm is refused (no
+    //    SPV1 tag). The reverse arm is deliberately NOT asserted: raw parsing
+    //    carries no checksum, so a packed payload whose length happens to be
+    //    divisible by 32 would "parse" as garbage quads — the encoding tag,
+    //    not the raw length check, is the fail-closed gate.
+    let raw_inflated = cas::inflate_object(&raw_obj.data).expect("raw inflates");
+    assert!(
+        cas::parse_blob_cold(&raw_inflated, ColdEncoding::Packed).is_err(),
+        "raw payload must not parse as SPV1",
+    );
+}
+
 /// Step-0 measurement (print-only, no assertion): per-field min/max/universe
 /// of the same corpus, and the implied Elias-Fano floor in B/quad:
 ///   bits = 4 fields x 2n (EF overhead) + sum of u_i (payload width)

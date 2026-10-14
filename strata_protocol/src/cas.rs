@@ -453,3 +453,44 @@ pub fn parse_blob_packed(raw: &[u8]) -> crate::Result<Vec<Quad>> {
     let payload = strip_header(raw, "blob")?;
     unpack_quads_varint_delta(payload)
 }
+
+// ---------------------------------------------------------------------------
+// 6. Opt-in cold-path encoding selector (E28 SPV1 wiring, v26.10.10)
+//
+// The DEFAULT cold-path encoding remains raw loose blobs ([`emit_blob`]).
+// [`ColdEncoding::Packed`] is the opt-in: callers where storage density
+// matters select it explicitly at the write path, and every read of a packed
+// blob round-trips through [`unpack_quads_varint_delta`] fail-closed. Raw and
+// packed blobs coexist under git content addressing; no court surface or
+// default byte path changes.
+// ---------------------------------------------------------------------------
+
+/// Cold-path blob encoding selector. `Raw` is the default shipped topology
+/// (32-byte BE quads, zlib); `Packed` opts into the [`PACK_MAGIC`]-tagged
+/// SPV1 varint-delta stream at the same blob framing.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ColdEncoding {
+    /// Default: raw 32-byte BE quad payload (unchanged shipped path).
+    Raw,
+    /// Opt-in: SPV1 varint-delta payload (density win, ~2.577 B/quad corpus).
+    Packed,
+}
+
+/// Emit a quad blob in the selected cold-path encoding. Dispatch only —
+/// `Raw` is exactly [`emit_blob`], `Packed` is exactly [`emit_blob_packed`].
+pub fn emit_blob_cold(quads: &[Quad], encoding: ColdEncoding) -> GitObject {
+    match encoding {
+        ColdEncoding::Raw => emit_blob(quads),
+        ColdEncoding::Packed => emit_blob_packed(quads),
+    }
+}
+
+/// Parse a blob in the selected cold-path encoding. Dispatch only — the
+/// packed arm round-trips fail-closed through [`unpack_quads_varint_delta`];
+/// neither arm ever falls back to the other encoding.
+pub fn parse_blob_cold(raw: &[u8], encoding: ColdEncoding) -> crate::Result<Vec<Quad>> {
+    match encoding {
+        ColdEncoding::Raw => parse_blob(raw),
+        ColdEncoding::Packed => parse_blob_packed(raw),
+    }
+}

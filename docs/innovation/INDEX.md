@@ -19,7 +19,31 @@ ERRC_BRIEF.md. Cross-lane top-10 (leverage × cost):
    S — CLOSED 2026-10-13 (ELIMINATE: covered by
    strata_protocol/tests/nato/n17_fips204_kat.rs, 7/7 green; see E33 note
    below)
-3. Equivalence-court blind to 26 extended verbs (E02), S
+3. Equivalence-court blind to 26 extended verbs (E02), S — CLOSED 2026-10-14:
+   net_consistency_court.rs now pins the extended verb space
+   (ronr_full::RONR_FULL 0x0D-0x19): (a) first-12 carry-over identity vs
+   ronr::RONR, (b) table-vs-lookup firing sweep through real pnabi over every
+   reachable marking x 13 extended opcodes (markings*13 coverage asserted),
+   (c) region boundary/totality (lookup total exactly 0x01-0x19, dispatch/ronr
+   None there), (d) frozen mask vectors — 13 (pre,post) literals derived from
+   ontology.ttl. Vacuity honesty: the table-vs-lookup sweep is structurally
+   blind to a table-wide mask edit (both sides share the source); the kill is
+   carried by (d) — verified: mutating 0x0D post to N_FLOOR flips ONLY
+   extended_region_frozen_mask_vectors (9 pass / 1 fail), mask-drift deeper
+   policing is E10's ontology gate. Court 10/10 green; full
+   cargo test -p strata-protocol 0 failures (exit 0).
+7. Full-table ontology reverse-sync 25+13 verbs (E10), S — CLOSED 2026-10-14:
+   scripts/ontology_check.sh check 6 generalized from ronr.rs first-12 to the
+   full tables — ronr.rs (12/12), ronr_full.rs (25/25),
+   dao_transitions.rs (13/13), dao_full.rs (15/15, landed by a concurrent
+   lane on the same file, verified merged) — matched by opcode (verb value
+   for DAO), failing with a typed diff on any mask drift. Receipt:
+   `./scripts/ontology_check.sh --rust` exit 0 "50/50 opcodes
+   ontology-covered, zero drift"; must-fire positive control
+   `./scripts/ontology_check.sh --self-test` (mutates dao_full 0x91 pre
+   0x0008->0x0009 in a scratch mirror, asserts exit 1 + rust-cross-check
+   violation) exit 0; plus a manual one-bit ontology flip control (fired,
+   reverted).
 4. No MAC on OCEL64 words — forgery undetectable (E18), M-L — CLOSED
    2026-10-13: landed as strata_protocol/src/logchain.rs (registered
    lib.rs:16; blake3 chain_fold/chain_head, STRATA1 versioned header, typed
@@ -28,8 +52,27 @@ ERRC_BRIEF.md. Cross-lane top-10 (leverage × cost):
    tests/insa_sync_shape_court.rs, tests/sync_as_replay_kat.rs (commit
    548a0bf, chain_head pinned, one-bit tamper refused). E18 no-MAC finding
    closed at the implementation layer (WAVES_3_9 L166).
-5. docker LLVM-BPF compile court kills XDP blocker (E09), S
-6. Projection-superset pre-sync gate mechanizes L50 rule (E03), S
+5. docker LLVM-BPF compile court kills XDP blocker (E09), S — OPEN,
+   environment-blocked. On-disk check 2026-10-14: xdp/ holds only pn_filter.c
+   + README (no .o, no court script); docker CLI present but daemon
+   unreachable on this host (`docker info` times out). Adjudication ask:
+   E09 C1 is S-sized and fully specified (bpf-target LLVM image compiles
+   self-contained pn_filter.c; C2's objdump branchlessness gate is a further
+   S) but requires a running docker/Linux env — operator decision needed:
+   start colima/Docker Desktop here, or route E09 to a Linux fleet node.
+   Everything downstream (C3 test_run harness, C4 differential court) is M
+   and follows free.
+6. Projection-superset pre-sync gate mechanizes L50 rule (E03), S — OPEN,
+   needs operator sequencing. On-disk check 2026-10-14: no superset/pre-sync
+   gate exists (grep of scripts/, ggen.toml, justfile: zero hits). Its
+   precondition moved: the ggen re-lock landed (commit 8fa0f3b, 6 packs incl.
+   pn64), so the gate would now police a live pipeline instead of pre-lock
+   debt — but WHERE it hooks is an operator call: ggen.toml pre-sync hook,
+   justfile recipe, or a CI head (ci.yml is under active restructuring by
+   another lane — do not edit in-flight). Adjudication ask: name the
+   enforcement point (recommended: justfile recipe `ggen-superset-gate`
+   wired beside gate-docs, keeping ci.yml untouched) and this is a same-day
+   S implementation (render->scratch-diff->refuse-unless-add-only).
 7. Full-table ontology reverse-sync 25+13 verbs (E10), S
 8. Court-manifest JSON verdicts → ratchet + conformance report (E13+E20), M
 9. git-notes subject-keyed receipts (E14), M

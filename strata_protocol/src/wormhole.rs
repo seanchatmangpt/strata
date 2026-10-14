@@ -179,6 +179,26 @@ impl Wormhole {
         (snapshot_bytes + delta_tag_bytes) as f64 / self.corpus_quads as f64
     }
 
+    /// E28 SPV1 wiring (opt-in cold path): freeze a snapshot exactly like
+    /// [`Wormhole::snapshot`] (same cover/duplicate validations, same record),
+    /// then emit its state as an SPV1-packed CAS blob via
+    /// [`crate::cas::emit_blob_packed`] for write surfaces where storage
+    /// density matters. The DEFAULT [`Wormhole::snapshot`] path is unchanged
+    /// and emits nothing; packed and raw blobs coexist under git content
+    /// addressing. State is iterated in `BTreeSet` order — the sorted corpora
+    /// the varint-delta encoding assumes. Read back with
+    /// [`crate::cas::parse_blob_packed`], which fails closed on any mismatch.
+    pub fn snapshot_packed(
+        &mut self,
+        epoch: u64,
+        state: &BTreeSet<Quad>,
+        quad_range: (Quad, Quad),
+    ) -> crate::Result<crate::cas::GitObject> {
+        self.snapshot(epoch, state, quad_range)?;
+        let quads: Vec<Quad> = state.iter().copied().collect();
+        Ok(crate::cas::emit_blob_packed(&quads))
+    }
+
     pub fn snapshots(&self) -> &[WormholeSnapshot] {
         &self.snapshots
     }

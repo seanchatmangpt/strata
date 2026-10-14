@@ -57,6 +57,30 @@ pub fn is_reachable(set: &[u64], m: u16) -> bool {
     set[(m as usize) >> 6] & (1u64 << (m & 63)) != 0
 }
 
+/// Whole-set P-invariant court: the unit-weight conservation law
+/// `popcount(m & inv) == popcount(m0 & inv)` is checked against EVERY
+/// reachable marking, not one witness pair. `true` ⇔ no reachable marking
+/// violates conservation — the strong form [`token_conservation_ok`]
+/// (pairwise, violation-only) cannot deliver on its own.
+pub fn conservation_holds_over(
+    set: &[u64],
+    m0: u16,
+    invariant_mask: u16,
+) -> bool {
+    let target = (m0 & invariant_mask).count_ones();
+    for (word, &bits0) in set.iter().enumerate() {
+        let mut bits = bits0;
+        while bits != 0 {
+            let m = ((word as u16) << 6) | (bits.trailing_zeros() as u16);
+            if (m & invariant_mask).count_ones() != target {
+                return false;
+            }
+            bits &= bits - 1;
+        }
+    }
+    true
+}
+
 /// Deadlock (siphon-trap witness) check over the reachable set.
 ///
 /// Returns `Some(m)` for the first (lowest-valued) reachable marking `m` at
@@ -173,6 +197,22 @@ mod tests {
         assert_eq!(set.len(), 1024);
         assert!(is_reachable(&set, 0x8001));
         assert!(!is_reachable(&set, 0x8002));
+    }
+
+    #[test]
+    fn whole_set_conservation_court() {
+        // Chain: token moves p1->p2->p3; invariant {p1,p2,p3} conserved = 1.
+        let set = reachable_bitset(0x0001, &CHAIN);
+        assert!(conservation_holds_over(&set, 0x0001, 0x0007));
+        // Narrower support {p1,p2}: count drops 1 -> 0 at 0x0004 — violated.
+        assert!(!conservation_holds_over(&set, 0x0001, 0x0003));
+        // Deadlocked trap net: single reachable marking, trivially conserved.
+        let dead = [(0x0001u16, 0x0002u16)];
+        let dset = reachable_bitset(0x0002, &dead);
+        assert!(conservation_holds_over(&dset, 0x0002, 0xFFFF));
+        // Positive control (anti-vacuity): a caller-supplied mask that the
+        // reachable set genuinely violates must be refused — 0x0003 above.
+        assert!(!conservation_holds_over(&set, 0x0001, 0x0001));
     }
 
     #[test]

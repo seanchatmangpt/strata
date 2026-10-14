@@ -1,8 +1,7 @@
 //! Finite-trace LTL over `trace_slice::EntryIter` (lane W4-P10, ERRC2 E36/C1).
 //!
-//! Module ownership: lane W4-P10 (wave 4). Unregistered in `lib.rs` on
-//! purpose — `lib.rs` is coordinator-owned this wave; verified via standalone
-//! `rustc` probe (disclosed in the lane receipt), not `cargo test`.
+//! Module ownership: lane W4-P10 (wave 4). Registered in `lib.rs` and
+//! exercised by `cargo test -p strata-protocol`.
 //!
 //! # Semantics (finite traces, strong atoms)
 //!

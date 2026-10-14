@@ -548,3 +548,89 @@ docs/receipt commit (`git log --oneline 7dc9576..HEAD` = receipt commits
 only). Content-commit count at addendum-7 time: 106 (105 content + the
 addendum-6 receipt); receipt commits after 7dc9576 are additive by
 convention, per the addendum-5/6 pattern.
+
+---
+
+## Addendum-8 — closeout: series standing 12+, HIGH-findings dispatch, graphlaw blocker (append-only)
+
+Append-only. **No new code landings are recorded here** — every wave-7/8 SHA
+in the closeout dispatch list is already recorded in addendum-3/4/5/6/7
+(dedupe verified by re-reading those addenda this session): dao widen-ack
+cohort + dual witnesses `33f6705`/`0dba165`, court-naming sweep `60285b2`,
+DFMEA F-10/F-11 + vibration index `f553334`, idmap overflow + rehydrate
+escaping `3979ba0`, n17 domain-separation court + ml-dsa dev-dep `68906b2`,
+pn64 Rust-mirror court `2d07251`, pn_frame 15-vector `bbf1c58` (main body),
+ltl/invariants conservation `b02a8e1`, sagas positivity guard `6213662`,
+telemetry crash-path `76bffdc`, policy_admission + word_law
+`ef8480f`/`d391a7b`/`60696ec`, framing dual-defect `409a24b`, xdp byte-order
+saga `364b4b9`/`cc529eb`/`c2b8b09`, xdp pre-mask valve-law fix `a12d7cd`
+(witness 3/3), xdp finding ledgers `9384a7c`, F3 observability CANDIDATE
+`00bdbd1`, clippy/flake `fbaf17b`/`a9fe8a6`, quad layout pin `03ada53`, root
+src/ orphan deletion `7dc9576`, n06/n04 sidecar gitignores `3537abb` (+ N04
+writer class `f3046a7`/`ded5436`), mutation-hook isolation `52e6274`,
+GEMINI_BRIEF_ROADMAP `198e33e`.
+
+Receipt commits landed after addendum-7's content (all `--no-walk` verified
+this session): `f9e6d6f` (addendum-7), `b45ecf6` (falsifier correction; note
+it also carried other lanes' in-flight edits to `policy_admission.rs`,
+`word_law_boundary_court.rs`, `lease_ledger.ex` — disclosed, commit
+immutable), `47939e5` (falsifier made structural: receipt-commits-only after
+`7dc9576`).
+
+### Defect-series standing: 12+ fixed with courts
+
+The vibration-wave defect series now totals **12+ fixed defects with
+courts**, superseding the "11 fixed" figure in addendum-5 and release-train
+§3. Index of record: `docs/COURT_ADJUDICATIONS.md` § "Vibration-Wave Defect
+Series (2026-10-14, index)" (re-read this session; enumerates F-8 merge_join
+false-accept, F-9 xdp byte-order, the F-10/F-11 fail-open pair, sagas
+sealed-guard, tier3_leaf, the framing pair, the default_arena crash path,
+tick Display, the n18 leak, the abi overflow, and the POWL panic — 13
+enumerated, 12 carrying court receipts this session).
+
+### Vibration verdict — loop winding into the release train
+
+Discovery rate halved this wave (3 new-code SHAs + 1 docs candidate + 1
+companion vs 14 landings at addendum-5): the defect lattice saturated under
+sustained Audit/Mutate/Repair/Verify vibration. The root `src/` orphan
+deletion (`7dc9576`) was the final-wave find — ERRC
+delete-outranks-generate closing the session's highest-liability drift item.
+The loop formally winds into the release train per
+`docs/RELEASE_TRAIN_v26.10.12.md` (re-read this session; §2 frozen-subject
+requirement gates the full ladder, which remains OPEN).
+
+### HIGH findings dispatched for design/fix — IN-FLIGHT / DESIGNED, not landed
+
+| Finding | Status | Disk evidence this session |
+|---|---|---|
+| A02 partial-admit gate | IN-FLIGHT | `stratus/test/stratus/merger_card_a02_receipt_court_test.exs` present untracked; `stratus/lib/stratus/merger/card.ex` dirty (owning lane) |
+| card claim/enforcement gap | IN-FLIGHT | same `card.ex` working-tree edit in flight |
+| LeaseLedger durability | DESIGNED | `docs/innovation/LEDGER_DURABILITY_DESIGN.md` (untracked, status: DESIGN — no implementation, moduledoc honesty fix only) |
+
+None of the three carries a landing SHA or court receipt yet; carried forward
+on the release-train open-items list. Falsifier: any of the three recorded
+FIXED in a superseding addendum without a landing SHA + court receipt.
+
+### Cross-repo blocker routed to the graphlaw owner
+
+The graphlaw 26.10.12 pin-bump attempt is **BLOCKED: stack overflow**
+reproduced on the graphlaw subject; routed to the graphlaw owner with the
+reproduction. Strata stays on its current graphlaw pin until the owner lands
+a fix. Falsifier: a pin bump landing in strata without a graphlaw-owner fix
+receipt first.
+
+### Totals at addendum-8 time
+
+- Session range: `git log --oneline 548a0bf..HEAD | wc -l` = **110**
+  commits (was 106 at addendum-7 writing; +4 = `f9e6d6f`, `b45ecf6`,
+  `47939e5`, plus this lane's addendum-8 receipt to land). Receipt commits
+  are additive by convention per addendum-5/6/7.
+- Working tree at write time: `card.ex` modified (card lane),
+  `LEDGER_DURABILITY_DESIGN.md` + `sign_refusal_fuzz_court.rs` +
+  `merger_card_a02_receipt_court_test.exs` untracked (other lanes); none
+  staged by this lane.
+
+Falsifier for addendum-8: any SHA cited above failing
+`git log --oneline --no-walk` at replay time, or the commit count drifting
+from 110 minus 1 (this addendum's own receipt) without a superseding
+addendum.

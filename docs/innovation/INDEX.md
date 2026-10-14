@@ -334,3 +334,14 @@ committed; each needs operator scope decision.
   court `stratus/test/xdp_pn_filter_differential_test.exs`, which a12d7cd
   extended to the full 7-vector set — cite the pair, never the script line
   alone.
+
+- temprun pn::step untyped refusal — CANDIDATE (discovered by 845afdf's
+  differential court): a valid pn::step self-loop (pre==post, m'==m) is
+  bit-identical to a refusal at the current ABI, and soak_pn.rs's
+  `next==pn_word` classification therefore misclassifies self-loops as
+  refusals. ABI decision (typed `(word, verdict)` pair or a fire-ack flags
+  bit) belongs to the temprun owner; pnabi's typed `PnAbiError` is the
+  in-repo precedent. Falsifier: a self-loop frame still classifies as a
+  refusal under soak_pn after a table change that makes the self-loop
+  legal.
+

@@ -483,3 +483,64 @@ controls, positivity 3/3 x2, policy_admission 4/4, pn64 mirror.
 Falsifier for addendum-6: any SHA above failing
 `git log --oneline --no-walk` at replay time, or the commit count drifting
 from 101 without a superseding addendum.
+
+---
+
+## Addendum-7 — wave-7 landings since addendum-6 (841e4d2) — FINAL CLOSEOUT
+
+Append-only, final addendum: the vibration loop winds down into the release
+train. `git log --oneline 11211be..HEAD | wc -l` = **5** commits since
+addendum-6; every SHA below re-read this session via
+`git log --oneline --no-walk` (verified, exit 0). Deduped against
+addendum-3/4/5/6 (which covered through f553334 / 3979ba0 / 68906b2 / 2d07251).
+
+### New landings this wave (SHAs verified fresh)
+
+| Landing | SHA(s) | Verification |
+|---|---|---|
+| **HEADLINE — root src/ orphan deletion**: the ~470-line phantom root crate (5 files: arena, cas, clap_frame, signer, stratus — unwired ggen projection, no lib.rs/main.rs, zero mod declarations; carried drifted laws incl. a recursive unbounded `MerkleCommit::depth()` — live DoS the moment anything wired it) deleted as a drift liability after the audit proved zero wiring; root test binaries consume strata_protocol/temprun directly and stayed green. Recoverable from git history. Final-wave find | `7dc9576` | subject re-read + `git show --stat` |
+| xdp pre-mask valve-law fix: filter precondition = valve enablement law, not a second ingress flag; witness 3/3 | `a12d7cd` | subject re-read |
+| xdp finding CANDIDATE: ingress-drop observability (seam-audit lane, docs/innovation candidate — not a code landing) | `00bdbd1` | subject re-read |
+| quad wire-layout law: static assert pinning the 32-byte/8-aligned layout (landed this wave, not in the wave-7 dispatch list — recorded for completeness) | `03ada53` | subject re-read |
+| N04-sidecar class: sidecar gitignore additions (companion to the N06 receipt gitignore) | `3537abb` | subject re-read |
+
+### Dedupe — already recorded, NOT re-recorded (verified present)
+
+- `c2b8b09` xdp differential completion (real valve differential court + README
+  desimplified) — addendum-5 row.
+- `6213662` sagas netting_ratio positivity guard + dual witnesses 3/3 —
+  addendum-3 row.
+- `76bffdc` telemetry/default_arena crash-path fix — addendum-4 row.
+- `bbf1c58` pn_frame 15-vector codec court — main receipt body.
+- `2d07251` pn64 mirror court — addendum-3 row + addendum-5 dedupe note.
+- `b02a8e1` ltl/invariants conservation — addendum-5 row.
+- `f553334` DFMEA F-10/F-11 + vibration index row — addendum-5/6 rows.
+- `3979ba0` idmap overflow + rehydrate JSON-escape — addendum-5/6 rows.
+- `68906b2` n17 domain-separation + ml-dsa dev-dep — addendum-5/6 rows.
+- `52e6274` policy_admission mutation-hook isolation — addendum-3/5/6 rows.
+- `fbaf17b`, `a9fe8a6` clippy/flake fixes — addendum-5 rows.
+- dao widen-ack full cohort + dual witnesses — addendum-3/5 rows.
+
+### Valuation verdict (closeout)
+
+- Discovery rate halved this wave: 3 new-code SHAs + 1 docs candidate + 1
+  companion vs 14 landings at addendum-5 — consistent with the defect lattice
+  saturating under sustained Audit/Mutate/Repair/Verify vibration.
+- The loop winds into the release train: remaining open items (E03/E09/E13+E20/
+  E14/E07+E30 asks, KG-02, KG-P14 preimage, NFR-3 EF, KG-N05 residual channel,
+  KG-SX1) carry forward unchanged; none closed this wave.
+- The root src/ orphan deletion (`7dc9576`) was the final-wave find — ERRC
+  delete-outranks-generate closing the session's highest-liability drift item.
+
+### Totals at addendum-7 time
+
+- Session range: `git log --oneline 548a0bf..HEAD | wc -l` = **106**
+  commits (was 101 at addendum-6; +5 = quad assert, xdp valve-law, ingress-drop
+  candidate, root-src deletion, addendum-6 receipt commit).
+- Working tree: 3 entries (other lanes' in-flight edits:
+  policy_admission.rs, word_law_boundary_court.rs, untracked
+  sign_refusal_fuzz_court.rs); none staged by this lane.
+
+Falsifier for addendum-7: any SHA above failing
+`git log --oneline --no-walk` at replay time, or the commit count drifting
+from 106 without a superseding addendum.

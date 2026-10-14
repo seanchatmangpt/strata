@@ -55,7 +55,7 @@ Row per court/test file. `vacuity-signal` is indicative only (grep for VACUITY m
 | [mutation_tick_order_court.rs](strata_protocol/tests/mutation_tick_order_court.rs) | `consensus::ordering::` | Mutation court M15 — tick/ordering laws (lane M15, wave 3). Subjects under mutation: `consensus::tick::HwTick::mono_checked` (L158) | VACUITY marker+refusal assertions |
 | [mutation_wormhole_court.rs](strata_protocol/tests/mutation_wormhole_court.rs) | `quad::Quad` | Proves the wormhole acceptance surface is non-vacuous: for each mutant class, an in-test recomputation encodes the WRONG expectation (the | VACUITY marker+refusal assertions |
 | [net_consistency_court.rs](strata_protocol/tests/net_consistency_court.rs) | `—` | Whole-net behavioral equivalence court (N implementations of one calculus). Two independently-built net graphs over one calculus (16-bit place-mask | VACUITY marker |
-| [nfr3_storage_density_test.rs](strata_protocol/tests/nfr3_storage_density_test.rs) | `cas` | NFR-3 court: lineage + delta storage density <= 2.50 bytes/quad under LZ77 delta compression in Merkle packfiles. | none |
+| [nfr3_storage_density_test.rs](strata_protocol/tests/nfr3_storage_density_test.rs) | `cas` | NFR-3 court: lineage + delta storage density <= 2.50 bytes/quad under LZ77 delta compression in Merkle packfiles. | refusal assertions |
 | [nfr4_reconstruct_scaling_test.rs](strata_protocol/tests/nfr4_reconstruct_scaling_test.rs) | `wormhole::` | NFR-4 scaling court: point-in-time reconstruction vs. chain length n. PRD NFR-4: reconstruct_at scales O(log n + k) where n = frozen wormhole | none |
 | [ocel_conformance_test.rs](strata_protocol/tests/ocel_conformance_test.rs) | `Quad` | FR-3 OCEL 2.0 conformance court: lineage traces as IEEE OCEL 2.0 event logs rendered as (s, p, o, g) quad tuples. | none |
 | [ocel_schema_court.rs](strata_protocol/tests/ocel_schema_court.rs) | `ocel64::pack` | PN64 Gate 2 — structural conformance court of our OCEL 2.0 output. HONESTY NOTE: this court checks *shape conformance* — that the documents | VACUITY marker |
@@ -173,6 +173,9 @@ Row per court/test file. `vacuity-signal` is indicative only (grep for VACUITY m
 | [pdu_layout_test.exs](stratus/test/stratus/pdu_layout_test.exs) | `Stratus.Valve` | (no header doc) | refusal assertions |
 | [procbin_hardening_test.exs](stratus/test/stratus/procbin_hardening_test.exs) | `Stratus.Valve` | (no header doc) | refusal assertions |
 | [receipt_store_test.exs](stratus/test/stratus/receipt_store_test.exs) | `Stratus.Valve.ReceiptStore` | (no header doc) | none |
+| [no_authority_test.exs](stratus/test/stratus/resources/no_authority_test.exs) | `Stratus.Resources.` | (no header doc) | refusal assertions |
+| [refusal_binding_test.exs](stratus/test/stratus/resources/refusal_binding_test.exs) | `Stratus.Resources.` | (no header doc) | refusal assertions |
+| [valve_state_test.exs](stratus/test/stratus/resources/valve_state_test.exs) | `Stratus.Resources.ValveState` | (no header doc) | none |
 | [telemetry_test.exs](stratus/test/stratus/telemetry_test.exs) | `Stratus.Telemetry` | (no header doc) | refusal assertions |
 | [temprun_port_backpressure_test.exs](stratus/test/stratus/temprun_port_backpressure_test.exs) | `—` | (no header doc) | refusal assertions |
 | [temprun_timeout_test.exs](stratus/test/stratus/temprun_timeout_test.exs) | `—` | (no header doc) | refusal assertions |
@@ -187,4 +190,4 @@ Row per court/test file. `vacuity-signal` is indicative only (grep for VACUITY m
 | [xproduct_wire_witness_test.exs](stratus/test/stratus/xproduct_wire_witness_test.exs) | `Stratus.Valve` | (no header doc) | refusal assertions |
 | [valve_refusal_timing_test.exs](stratus/test/valve_refusal_timing_test.exs) | `Stratus.Valve` | (no header doc) | refusal assertions |
 
-**Totals**: 163 court/test files; 136 with a vacuity signal, 27 without.
+**Totals**: 166 court/test files; 139 with a vacuity signal, 27 without.

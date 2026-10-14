@@ -79,11 +79,20 @@ defmodule Stratus.DaoParityCourtTest do
       assert Pn64.marking(next) == 0x0828
     end
 
-    test "0x93 AckDelegation consumes DELEGATION_PENDING into DELEGATED (0x0008)" do
+    test "0x93 AckDelegation consumes DELEGATION_PENDING (0x0828 -> 0x0028)" do
       assert {:ok, next} =
-               DaoFull.validate_step(Pn64.pack(0x0808, 0x0808, 0x0008, 0x93, 0), ocel(0x93))
+               DaoFull.validate_step(Pn64.pack(0x0828, 0x0800, 0x0000, 0x93, 0), ocel(0x93))
 
-      assert Pn64.marking(next) == 0x0008
+      assert Pn64.marking(next) == 0x0028
+    end
+
+    test "0x93 after Undelegate drains the stuck pending place (0x0820 -> 0x0020)" do
+      # Defect-fix witness: the pre-fix masks (pre 0x0808) orphanized
+      # DELEGATION_PENDING here — this firing used to starve.
+      assert {:ok, next} =
+               DaoFull.validate_step(Pn64.pack(0x0820, 0x0800, 0x0000, 0x93, 0), ocel(0x93))
+
+      assert Pn64.marking(next) == 0x0020
     end
   end
 

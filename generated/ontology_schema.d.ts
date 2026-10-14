@@ -42,8 +42,8 @@ export const Transitions: Transition[] = [
   {
     "name": "DaoAckDelegation",
     "opcode": 147,
-    "postMask": 8,
-    "preMask": 2056
+    "postMask": 0,
+    "preMask": 2048
   },
   {
     "name": "DaoAcquireLease",

@@ -34,7 +34,7 @@ opcode	preMask	postMask	name
 144	32	40	DaoDelegate
 145	8	32	DaoUndelegate
 146	40	2088	DaoChainDelegate
-147	2056	8	DaoAckDelegation
+147	2048	0	DaoAckDelegation
 148	32	48	DaoAcquireLease
 149	16	32	DaoExpireLease
 150	0	32	DaoAdmitMember

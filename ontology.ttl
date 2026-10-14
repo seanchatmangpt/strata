@@ -337,10 +337,15 @@ pn:DaoExpelMember a pn:Transition ;        # 0x97 pre=MEMBER_ACTIVE post=MEMBER_
 # DAO extension transitions (dao_full.rs G2 delegation closure; opcode =
 # dao_vocab verb value, same shared opcode space). Closes the orphaned
 # DELEGATION_PENDING (0x0800 = 2048) place: 0x92 produces, 0x93 consumes.
+# 0x93 defect-fix deviation: pre 0x0800 / post 0x0000 (NOT the G2 verbatim
+# pre 0x0808 / post 0x0008) — under (m & pre) == pre, m' = (m ^ pre) | post,
+# the widened pre drains the pending bit from ANY pending marking, so an
+# Undelegate (0x91) between ChainDelegate and Ack no longer orphanizes the
+# pending place (0x0828 -> 0x0028 with DELEGATED surviving; 0x0820 -> 0x0020).
 pn:DaoChainDelegate a pn:Transition ;      # 0x92 pre=MEMBER_ACTIVE|DELEGATED post=MEMBER_ACTIVE|DELEGATED|DELEGATION_PENDING
     pn:opcode 146 ; pn:preMask 40 ; pn:postMask 2088 .
-pn:DaoAckDelegation a pn:Transition ;      # 0x93 pre=DELEGATED|DELEGATION_PENDING post=DELEGATED
-    pn:opcode 147 ; pn:preMask 2056 ; pn:postMask 8 .
+pn:DaoAckDelegation a pn:Transition ;      # 0x93 pre=DELEGATION_PENDING post=0 (drains pending; DELEGATED survives via XOR law)
+    pn:opcode 147 ; pn:preMask 2048 ; pn:postMask 0 .
 
 # DAO nouns added in wave 2 (dao_vocab.rs constants missing from wave 1;
 # completes the documented 16-noun set).

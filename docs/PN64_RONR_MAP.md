@@ -152,12 +152,21 @@ same documented shared opcode space as `dao_vocab` vs RONR.
 | Verb | Name           | noun_scope | pre    | post   | pre (dec) | post (dec) |
 |------|----------------|----------- |--------|--------|-----------|------------|
 | 0x92 | ChainDelegate  | 0x34       | 0x0028 | 0x0828 | 40        | 2088       |
-| 0x93 | AckDelegation  | 0x34       | 0x0808 | 0x0008 | 2056      | 8          |
+| 0x93 | AckDelegation  | 0x34       | 0x0800 | 0x0000 | 2048      | 0          |
 
 `0x92` is the producer leg (re-delegation mints `DELEGATION_PENDING`);
-`0x93` is the AdoptDelegation-style consumer leg (spec masks verbatim:
-`pre: DELEGATED|DELEGATION_PENDING, post: DELEGATED`; `MEMBER_ACTIVE`
-survives via the token-retention law). The closure is a cycle
+`0x93` is the AdoptDelegation-style consumer leg. Mask deviation
+(defect-fix lane): the G2 verbatim masks (`pre: 0x0808 =
+DELEGATED|DELEGATION_PENDING, post: 0x0008 = DELEGATED`) orphanized the
+pending place whenever Undelegate `0x91` fired between `0x92` and `0x93`
+(`0x0028 -> 0x92 -> 0x0828 -> 0x91 -> 0x0820` no longer matched pre
+`0x0808` — `0x0800` stuck forever). Under the law `(m & pre) == pre` to
+enable, `m' = (m ^ pre) | post`, the widened masks (`pre 0x0800`,
+`post 0x0000`) drain the pending bit from ANY pending marking:
+`0x0828 -> 0x0028` (`DELEGATED` survives via the XOR retention law) and
+`0x0820 -> 0x0020` (you cannot ack what you undelegated). `0x91` cannot
+take the fix: the first 13 entries are pinned byte-identical to the base
+table and post masks only OR bits. The closure is a cycle
 (Delegate → ChainDelegate → AckDelegation → ChainDelegate → ...), so
 delegation depth is a net-reachability question. Mirror:
 `stratus/lib/stratus/valve/dao_full.ex` (byte-identical masks).

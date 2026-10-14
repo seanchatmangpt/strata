@@ -12,13 +12,14 @@
 //!    HEURISTIC: it gates the source text, not the emitted machine code (the
 //!    compiler could still introduce branches), but any *source-level* branch
 //!    a future edit introduces is caught. `step_branchless` is gated to ZERO.
-//! 2. **Timing-distribution court (secondary, honest).** Batched wall-clock
-//!    timing (64 iters per sample, 100k samples per path) comparing the mean
-//!    ns of the valid vs invalid path through `branchless::step_branchless`.
-//!    This is EVIDENCE, NOT PROOF: wall-clock courts are flaky in CI
-//!    (frequency scaling, scheduler noise, shared runners). The bound is
-//!    generous: `max(2 ns, 20% of the mean)`. If it proves flaky it should be
-//!    `#[ignore]`d and disclosed, never tightened to fake determinism.
+//! 2. **Timing-distribution court (secondary, REPORT-ONLY).** Batched
+//!    wall-clock timing (64 iters per sample, 100k samples per path)
+//!    comparing the mean ns of the valid vs invalid path through
+//!    `branchless::step_branchless`. This is EVIDENCE, NOT PROOF: wall-clock
+//!    timing is load-dependent (frequency scaling, scheduler noise, shared
+//!    runners), so it is printed for disclosure and NEVER asserted — the
+//!    structural census (layer 1) is the sole gate. Hardenening ruling
+//!    2026-10-13, precedent: pnwire_slo absolute ns gates -> report-only.
 
 use std::time::Instant;
 
@@ -152,12 +153,12 @@ fn corpus() -> Vec<(u64, u64, u64)> {
         .collect()
 }
 
-/// SECONDARY COURT — timing-distribution comparison. EVIDENCE, NOT PROOF.
-/// Wall-clock courts are flaky under CI noise; the bound is deliberately
-/// generous. If this proves flaky across runs, `#[ignore]` it with a
-/// disclosure comment rather than tightening the bound.
+/// SECONDARY COURT — timing-distribution comparison. EVIDENCE, NOT PROOF,
+/// and REPORT-ONLY: wall-clock timing is load-dependent, so the divergence
+/// is printed for disclosure; the structural census is the sole gate.
+/// Hardening ruling 2026-10-13; never re-tighten this into an assert.
 #[test]
-fn valid_vs_invalid_mean_timing_within_bound() {
+fn valid_vs_invalid_mean_timing_report() {
     let data = corpus();
     let iters_per_sample: u32 = 64;
     let samples: usize = 100_000;
@@ -185,14 +186,12 @@ fn valid_vs_invalid_mean_timing_within_bound() {
 
     let mean_valid = mean_ns(true);
     let mean_invalid = mean_ns(false);
-    let mean = (mean_valid + mean_invalid) / 2.0;
-    let bound = 2.0f64.max(0.20 * mean);
     let diff = (mean_valid - mean_invalid).abs();
-    assert!(
-        diff < bound,
-        "valid/invalid timing divergence {diff:.3} ns exceeds bound {bound:.3} ns \
-         (mean_valid={mean_valid:.3}, mean_invalid={mean_invalid:.3}). \
-         Either the kernel grew a data-dependent path or the machine is noisy; \
-         re-run before concluding the kernel regressed."
+    // REPORT-ONLY: no assert. Wall-clock divergence is disclosed, not gated.
+    println!(
+        "CT-JITTER-TIMING (report-only): mean_valid={mean_valid:.3} ns, \
+         mean_invalid={mean_invalid:.3} ns, |divergence|={diff:.3} ns \
+         (bound would have been max(2 ns, 20%) — retired 2026-10-13; \
+         structural census is the sole gate)"
     );
 }

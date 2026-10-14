@@ -22,7 +22,7 @@ FR/NFR test files. Companions: `docs/COURT_ADJUDICATIONS.md` (ledger),
   raw CLAP dual-read) + payload-length check + segment-permutation check;
   valid header over missing/short/mismatched payload or mis-sorted segments
   refuses exit 1 (EX_VERIFY_FAIL). CLI court `strata_protocol/tests/
-  strata_cli_test.rs` 23/23; probe re-run PASS exit 0.
+  strata_cli_test.rs` 42/42 (re-counted 2026-10-13); probe re-run PASS exit 0.
 
 ## KG-02 — Commit OIDs are wire-permutation identity
 

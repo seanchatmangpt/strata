@@ -690,3 +690,12 @@ Falsifier: a graphlaw pin bump in strata without that fix receipt first.
 `git log --oneline --no-walk` at replay time, or the session commit count
 drifting from the figure above minus receipt commits, without a superseding
 addendum. This is the final addendum for the 2026-10-14 session.
+
+**Disclosure correction (receipt-commit, immutable-commit rule)**: the
+addendum-9 receipt commit `66015a0` also carried the card lane's pre-staged
+index edits — `stratus/lib/stratus/merger/card.ex` (-19) and
+`stratus/test/stratus/merger_card_a02_receipt_court_test.exs` (+67, new).
+Disclosed, not authored, by this lane; commit immutable per session rule.
+The card lane's A02 work is therefore committed (no landing SHA of its own
+beyond `66015a0`); its FIXED/court standing remains the card lane's to
+declare. Falsifier unchanged.

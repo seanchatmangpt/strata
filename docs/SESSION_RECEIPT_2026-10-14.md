@@ -831,6 +831,13 @@ ladder OPEN) and continues per operator mandate.
   receipt commits additive by convention per addenda 5-10). HEAD moved
   during this lane's write (`9eb1de5` → `fa6a228`); figures are as-of-write.
 
+**Disclosure correction (pre-commit re-read)**: the +3 delta attribution
+above is incomplete — the temprun lane's `845afdf` (temprun differential
+court vs `strata_protocol` pnabi) also landed inside the 119 window before
+this lane's commit. 119 is measured-with-`845afdf` and exact; the count is
+unchanged (post-commit total 120 = 119 + this receipt commit, falsifier
+satisfied).
+
 **Session falsifier**: any SHA cited in this receipt failing
 `git log --oneline --no-walk` at replay time, or the session commit count
 drifting from the figure above minus receipt commits, without a superseding

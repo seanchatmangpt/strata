@@ -21,6 +21,14 @@ defmodule Strata.Merger.Supervisor do
       `:temporary` children per admission
       (`Strata.Merger.AgentBase.child_spec/3` pattern).
 
+  DURABILITY BOUNDARY: `:one_for_one` lets the phase agents survive a
+  `Strata.Merger.LeaseLedger` crash, but the restarted ledger re-inits
+  EMPTY — anti-replay slots, E-M19 conservation digests, and the KG-SX1
+  burn odometer are all zeroed (a replayed lease admits again). The
+  designed fix (file-backed ledger) is
+  `docs/innovation/LEDGER_DURABILITY_DESIGN.md` (DESIGN status, not
+  implemented at this commit).
+
   NOT started here (disclosed): `Strata.Merger.Reactor` (per-phase saga
   supervisor) — its reactor modules are E-M20 / Wave 3; the child is
   appended when the first saga module lands. A missing child is
@@ -43,10 +51,13 @@ defmodule Strata.Merger.Supervisor do
   """
   @spec admit_agent(Strata.Merger.Lease.t(), module(), keyword()) ::
           {:ok, pid()} | {:error, term()}
-  def admit_agent(lease, module, opts \\ []) do
-    phase = lease.phase
+  def admit_agent(lease, module, opts \\ [])
+
+  def admit_agent(%{phase: phase} = lease, module, opts) when phase >= 1 and phase <= 10 do
     DynamicSupervisor.start_child(phase_supervisor_name(phase), Strata.Merger.AgentBase.child_spec(module, lease, opts))
   end
+
+  def admit_agent(_lease, _module, _opts), do: {:error, :bad_phase}
 
   defp phase_supervisor_name(phase) when phase >= 1 and phase <= 10,
     do: Module.concat(Strata.Merger, :"Phase#{phase}")

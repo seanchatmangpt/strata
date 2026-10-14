@@ -55,7 +55,7 @@ FR/NFR test files. Companions: `docs/COURT_ADJUDICATIONS.md` (ledger),
   `temprun` + `strata_protocol` + stratus courts coherent; probe re-run PASS
   exit 0 (byte0=0x2, register frozen, CAS empty).
 
-## KG-P14 — chained admit stream vs 1/256 status-code ambiguity (ESCALATED)
+## KG-P14 — chained admit stream vs 1/256 status-code ambiguity (CLOSED — re-adjudicated, OPTION b)
 
 - **Requirement ref**: Probe 14 (AGENT-14-ZERO-HEAP-TERM-PASSING), Phase A.
 - **Gap**: under the KG-42 wire law (refuse iff receipt byte0 == 0x02; admit
@@ -63,19 +63,25 @@ FR/NFR test files. Companions: `docs/COURT_ADJUDICATIONS.md` (ledger),
   0x02 classifies as a refusal with p = 1/256 — the documented fail-closed
   ambiguity. On a chained 1000-admit stream (p14 Phase A: parent = live
   register, nonce varies), the first collision refuses AND breaks parent
-  chaining, so the "1000/1000 admit" assertion fails deterministically
-  (witnessed at frame 92: all sieves pass, `{:error, :refused}`;
-  P(1000 clean) = (255/256)^1000 ≈ 2%). Phase B additionally carries a
-  pre-existing builder bug (declares N=M=0 while carrying 10240B payload —
-  malformed under the KG-PDU valve law).
-- **Evidence**: `stratus/test/probes/p14_zero_heap_test.sh` (exit 1);
-  manual chain replay frames 1..120 — first refuse at i=92
-  `{:error, :refused}`; `temprun/src/receipt.rs` ambiguity-bound doc.
-- **Disposition**: ESCALATED to operator 2026-10-10 — wire-contract decision
-  required: (a) fallback law (admit → byte0 = 0x00, refuse → 0x02;
-  unambiguous status channel, register carries 31/32 digest bytes) or
-  (b) keep the KG-42 law and re-adjudicate p14's Phase A admission assertion
-  to the ambiguity bound. No unilateral change applied.
+  chaining (witnessed at frame 92).
+- **Evidence**: `stratus/test/probes/p14_zero_heap_test.sh` — VERDICT 0,
+  exit 0 (twice, deterministic); witness frame 92, fail-closed trio holds
+  (register frozen, CAS empty). New court
+  `temprun/tests/receipt_stream_ambiguity_test.rs` 5/5 GREEN (injected
+  byte0=0x02 positive control, chained 1000-link stream refusing at link 92
+  with no post-freeze silent admit, 10^6-draw tail pin [990, 9900],
+  byte-identical replay, 256-value fail-closed sweep). Builder bug fixed
+  in-probe (quad counts derived from payload; both tables nonempty —
+  `<<n::32, n::32>>`).
+- **Disposition**: RESOLVED 2026-10-13 per operator OPTION (b) — KG-42 law
+  kept; Phase A re-adjudicated to the ambiguity bound (lawful outcomes =
+  1000/1000 at p≈2%, or refuse-at-k+1 with the fail-closed trio).
+  ESCALATED STRUCTURAL FINDING: the guest universe digest binds only
+  (tree_entries, parent, message) — nonce and payload do not enter
+  `git::assemble`'s digest preimage, so after a register freeze on a
+  colliding successor every subsequent frame replays the identical colliding
+  digest. Remediation (bind nonce + frame hash into the preimage) is a
+  wire-contract change, held for operator adjudication alongside KG-02.
 
 ## KG-03 — FR-3 cycle-detection boundary
 
@@ -83,8 +89,8 @@ FR/NFR test files. Companions: `docs/COURT_ADJUDICATIONS.md` (ledger),
 - **Gap**: `conformance::merge_join`/`merge_join_total` is an ORDER-COVERAGE
   check only; flat quads carry no dependency-edge graph, so a causal cycle
   that is policy-covered previously admitted (pinned by
-  `tests/fr3_causal_test.rs::causal_cycle_is_policy_covered_and_admits_
-  under_merge_join`).
+  `temprun/tests/fr3_causal_test.rs::
+  causal_cycle_is_order_covered_but_refused_by_the_acyclicity_sieve`).
 - **Evidence**: `temprun/src/acyclicity.rs` module docs (operator adjudication
   2026-10-10); `docs/COURT_ADJUDICATIONS.md` FR-3 row (GAP → mandatory fix).
 - **Disposition**: FIXED 2026-10-10 — acyclicity sieve (Kahn cycle detection +
@@ -160,35 +166,40 @@ FR/NFR test files. Companions: `docs/COURT_ADJUDICATIONS.md` (ledger),
   code in the tree as of 2026-10-10.
 - **Evidence**: `docs/ash-tier-scope.md` (Recommendation: DEFER, line 97;
   "no Ash or R2RML code exists", line 39); `docs/ARD.md` line 39.
-- **Disposition**: DEFERRED — the quadstore already has a canonical home;
-  FR-4's own no-DO-authority clause means a projection would duplicate it.
+- **Disposition**: FIXED 2026-10-13 — minimal Ash projection tier landed in
+  stratus per operator GO: 2 resources (`Stratus.Resources.ValveState`,
+  `Stratus.Resources.Receipt` over `ReceiptStore`), 1 custom data layer
+  (`Stratus.Valve.DataLayer`, `can?(:create) → false` — no-DO-authority
+  enforced at the LAYER), 1 policy module (`Stratus.Resources.Refusals`),
+  1 domain. Courts `stratus/test/stratus/resources/*_test.exs` 13/0;
+  full suite 341/0 (20 excluded); deps-tree receipt
+  `docs/receipts/fr4-ash-deps-tree.txt` (`mix deps.tree | grep -c ash` = 1).
+  AshR2RML remains scoped out (its moduledoc: not a data layer).
 
-## KG-FR8 — fr8 sig placeholder size divergence (informational)
+## KG-FR8 — fr8 sig placeholder size divergence (FIXED)
 
 - **Requirement ref**: FR-8 (Merkle commit).
-- **Gap**: `tests/fr8_merkle_commit_test.rs:63` uses a 2420-byte placeholder
-  signature; the real ML-DSA-65 signature is 3309 bytes (FIPS 204) as
-  asserted by `signer_test.rs`, `fr9_conservation_test.rs:134`,
-  `receipt_refusal.rs` (WIRE_LEN = 32+32+8+3309), and probe 16 (3309-byte
-  sig header check).
+- **Gap**: `strata_protocol/tests/fr8_merkle_commit_test.rs:63` used a
+  2420-byte placeholder signature; the real ML-DSA-65 signature is 3309
+  bytes (FIPS 204).
 - **Evidence**: cites above; `docs/ARD.md` line 73 (3309 B ML-DSA-65 detached
   signature, `signer::assert_wire_sizes`).
-- **Disposition**: accepted — informational; placeholder in a synthetic
-  receipt fixture does not gate the real wire-size assertions, which hold
-  elsewhere.
+- **Disposition**: FIXED 2026-10-13 — fixture corrected to
+  `vec![0xAB; 3309]`; `fr8_merkle_commit_test` 8/0, `fr9_conservation_test`
+  5/0, `cas_ledger_integrity_test` 5/0.
 
-## KG-ARD21 — ARD 2.1 signing-division divergence: valve does NOT sign
+## KG-ARD21 — ARD 2.1 signing-division divergence: valve does NOT sign (DOCUMENTED/CLOSED)
 
 - **Requirement ref**: ARD §2.1 / component division (Stratus Valve).
 - **Gap**: ARD assigns the valve admission control, lease minting, fuel
   budgets, and typed refusals — but NOT signing; signatures are Rust-side
   only (ML-DSA-65 detached, `signer::assert_wire_sizes`), and the valve does
   not sign.
-- **Evidence**: `docs/ARD.md` lines 23–29 (valve responsibilities; no signing
-  listed), line 73 (signatures Rust-side); `docs/COURT_ADJUDICATIONS.md`
-  bcinr-POWL boundary (valve stays authority boundary, arena pure).
-- **Disposition**: accepted — documented divergence; Rust-side-only signing
-  is the operating arrangement.
+- **Evidence**: `docs/ARD.md` §2.1 divergence note appended 2026-10-13
+  (cross-referencing `docs/COURT_ADJUDICATIONS.md` bcinr-POWL boundary:
+  valve stays authority boundary, arena pure).
+- **Disposition**: DOCUMENTED/CLOSED 2026-10-13 — deliberate operating
+  arrangement, now annotated in ARD §2.1 itself.
 
 ## KG-PDU — valve segment_len unchecked (FIXED)
 
@@ -205,55 +216,101 @@ FR/NFR test files. Companions: `docs/COURT_ADJUDICATIONS.md` (ledger),
 - **Disposition**: FIXED 2026-10-10 — refuse behavior verified by the flipped
   witness tests.
 
-## KG-N05 — dudect constant-time court RED on branched validate_and_advance
+## KG-N05 — dudect constant-time court on validate_and_advance (FIXED-BRANCHLESS; residual ~1-cycle channel accepted)
 
 - **Requirement ref**: N-05 (constant-time admission kernel; pnabi
   `validate_and_advance`).
-- **Gap**: the dudect constant-time court is RED on the current BRANCHED
-  `pnabi::validate_and_advance` kernel pairing: Welch t ≈ 231–245, witnessed
-  2026-10-11 and stable across idle re-runs — a large, reproducible timing
-  leakage signal. The prior `N05.json` GREEN receipt (t = +0.33) is STALE for
-  this kernel pairing; `N20.json`'s CITED-GREEN citation of N05 is stale on
-  this same point.
-- **Evidence**: dudect court re-run 2026-10-11, Welch t ≈ 231–245
-  (idle-rerun-stable); stale `N05.json` (GREEN, t=+0.33) and `N20.json`
-  CITED-GREEN reference — receipts themselves not edited here (coordinator
-  concern).
-- **Disposition**: OPEN — resolve by porting the branchless
-  `validate_and_advance` (the `step_branchless`-equivalence precedent
-  exists), or by explicit operator waiver of the constant-time bound for this
-  kernel. Classified pre-existing-red, court-correct.
+- **Gap**: the dudect constant-time court was RED on the branched kernel
+  (Welch t ≈ 231–245, 2026-10-11). The prior `N05.json` GREEN receipt
+  (t = +0.33) was STALE for that pairing.
+- **Evidence**: branchless port landed — private
+  `validate_and_advance_ct(pn, ocel, mask) → (u64, u8)` with priority-encoded
+  errors (`e_mal + 2*e_starve + 3*e_inv`, Malformed > Starvation >
+  Invariant preserved; redundant `fire().ok_or()` dropped with proof comment;
+  invariant mask narrowed to `& 0xFFFF` reconciled with `step_branchless`).
+  Parity court `pnabi_branchless_parity_court.rs` 4/0 (exhaustive small
+  domain + 200k xorshift cross-product vs frozen branched reference AND
+  `step_branchless`, in-memory vacuity twin). All pnabi/branchless/ct courts
+  green. Dudect re-run (harness fold made data-dependent on ALL outcome
+  paths to rule out a measurement confound): |t| = 16.9/20.9/25.0/33.2 on 4
+  idle-rerun attempts, valid 3.62–3.74 ns vs refusal 3.27–3.36 ns — the
+  residual is the kernel's early-exit gate structure retiring ~1 cycle
+  faster, magnitude ~0.4 ns (under one 41 ns timer quantum; visible only via
+  1024× burst averaging). Positive control fired (court not vacuous).
+- **Disposition**: FIXED-BRANCHLESS 2026-10-13 with an accepted ~1-cycle
+  residual channel — the distinguishable early-return branches are gone; the
+  remaining signal is inherent to early-exit gate structure. Kernel
+  restructure (fold all three predicates into one admission word, no early
+  exit) is deferred. FAIL-HONEST receipt lawful per repo doctrine.
+  `step_branchless` kernel: UNREACHABLE behind the ABI court's panic (its
+  own figures this session: n/a); N05.json/N20.json/dossier refresh pending
+  coordinator receipt edit.
 
-## KG-SX1 — Sybil resistance: burn/odometer absent; lease attestation was unverified (PARTIAL — attestation FIXED, burn/odometer OPEN)
+## KG-RONR — RONR table had no Elixir mirror (FIXED)
+
+- **Requirement ref**: RONR parity (Rust courts green unilaterally).
+- **Gap**: Elixir mirrored only canonical-six of ronr.rs's 12 base verbs via
+  hand-copied `@ronr` test literals ×3; `ronr_full.rs`'s 13 extension verbs
+  (0x0D–0x19), the `0x8000 N_COMMITTED` place bit, and the precedence-rank
+  extension had no Elixir counterpart.
+- **Disposition**: FIXED 2026-10-13 — `stratus/lib/stratus/valve/ronr.ex`
+  mirrors the full 25-verb table byte-identical to `ronr_full.rs`
+  (single source: `ontology.ttl` `pn:Transition` individuals, zero deltas);
+  parity court `stratus/test/ronr_parity_court.exs` 9/0 (25-row ontology
+  tripwire, fail-closed law, rank ladder, 0x8000-mint positive controls);
+  the three hand-copied test tables retired. Rust `dispatch.rs` stays
+  frozen base-12 (deliberate asymmetry, documented in both moduledocs).
+
+## KG-SX1 — Sybil resistance: burn/odometer (ATTESTATION FIXED 514308f/3125f63; burn/odometer FIXED in-BEAM, CTT boundary unchanged)
 
 - **Requirement ref**: thesis §24.6 (Sybil resistance via burn/odometer);
   `Stratus.Merger.Lease.admit/3`.
-- **Gap**: burn and odometer mechanisms are absent — the §24.6 Sybil-resistance
-  claim is UNSUPPORTED as shipped. Separately, `Lease.admit/3` accepted
-  `attested: true` without verifying the lease signature, and fuel was an
-  unsigned constant — an unverified attestation could carry arbitrary fuel.
-- **Evidence**: skeptic-ensemble finding SX1 (v26.10.12 adversarial skeptic
-  ensemble). Attestation half fixed by R35: `514308f` (lease admission
-  fail-closed on unverified signatures) + `3125f63` (lease ledger tests to
-  honest semantics) — `attested: true` is now reachable ONLY behind a
-  `verify_sig` callback (ML-DSA-65 verify stays at the CTT host-bin boundary;
-  in-BEAM deference marks `attested: false, verification:
-  :deferred_ctt_boundary`). Witnessed on disk in
-  `stratus/lib/stratus/merger/lease.ex` at `3125f63`.
-- **Disposition**: PARTIAL — attestation half FIXED (514308f, 3125f63);
-  burn/odometer Sybil mechanisms remain OPEN/UNSUPPORTED (thesis §24.6
-  unachievable in current design).
+- **Gap**: burn and odometer mechanisms were absent (§24.6 UNSUPPORTED);
+  separately, `Lease.admit/3` accepted `attested: true` without verifying
+  the lease signature (fixed by R35: `514308f`, `3125f63`).
+- **Evidence**: `Stratus.Merger.LeaseLedger` meters fuel as a per-`lease_pk`
+  append-only odometer; every `admit/4` burns the lease's fuel atomically
+  with slot consumption and refuses `:lease_insufficient_burn` (zero side
+  effects) while `odometer + fuel < required_burn` (init-fixed, default 1 —
+  "fixed issuance register", DFMEA F-2; runtime raise UNSUPPORTED). Wire
+  `canonical_fields`/`canonical_encoding` UNCHANGED. Courts:
+  `strata_merger_lease_ledger_test.exs` — monotonicity, anti-vacuity
+  below-threshold MUST-fire with zero side effects, Sybil-distinctness per
+  pk, conservation tie (E-M19), boot `{:stop, :lease_insufficient_burn}`,
+  backward-compat; full suite 341/0.
+- **Disposition**: PARTIALLY-SUPPORTED 2026-10-13 — in-BEAM admission is
+  burn-gated and Sybil-costly under the bound ledger (Sybil cost is linear
+  in admitted work per identity; N pre-mined keypairs each still start at
+  0). NOT wire-level or CTT-side: a hostile CTT host bypasses the ledger
+  entirely; wire-attested fuel and signature-attested metering remain CTT
+  work. Burn enforcement is the admit/4 authority path only
+  (`skip_lease_enforcement`/`verify/3` test paths bypass it).
 
-## KG-SX7 — port membrane: no write-side backpressure; ambient confinement ends at the BEAM boundary (OPEN)
+## KG-SX7 — port membrane: bounded write queue + typed busy refusal + rlimit shim (FIXED — mechanism differs from original premise)
 
 - **Requirement ref**: zero-ambient capability claim (strata/port membrane);
-  court `stratus/test/stratus/temprun_port_backpressure_court.exs`.
-- **Gap**: no write-side backpressure on the port membrane — up to 64 MiB can
-  buffer in driver memory against a stalled bridge process with no admission
-  control. Additionally the bridge process inherits the full BEAM environment
-  and runs with no rlimits, so the zero-ambient property holds only inside
-  the BEAM, not across the port boundary.
-- **Evidence**: skeptic-ensemble finding SK7 (CTT adversarial-findings.md first-ensemble row 7) (v26.10.12 adversarial skeptic
-  ensemble); court `temprun_port_backpressure_court.exs` is the existing
-  qualification surface.
-- **Disposition**: OPEN — no fix landed as of `e42b9b7` (A163).
+  court `stratus/test/stratus/temprun_port_backpressure_test.exs`.
+- **Gap**: no write-side admission control on the port membrane; the bridge
+  inherits the full BEAM environment with no rlimits.
+- **Evidence**: measured on OTP 28/darwin — `{:busy_poll, _}` is rejected as
+  an invalid port option and the FIRST `port_command` after open is always
+  admitted, so the originally-proposed mechanism is physically unavailable.
+  Landed instead: `{:busy_limits_port, {512 KiB, 1 MiB}}` bounding the
+  driver write queue; `port_command(..., [:nosuspend])` all-or-nothing
+  staged writes with an `outbox` + 10 ms `:port_flush` retry (verified
+  unarmed in vacuity — the init New frame is always admitted);
+  `step`/`seal` reply `{:error, :busy}` immediately beyond one in-flight
+  frame (no pending, no stall timer). C rlimit shim
+  (`stratus/priv/temprun_rlimit_shim.c` via `Mix.Tasks.Compile.TemprunShim`,
+  soft-fail without a toolchain): AS 256 MiB on non-Darwin (**darwin
+  setrlimit(RLIMIT_AS) returns EINVAL — measured**; ceiling compiled in only
+  where honored), CPU 600 s, NOFILE 64, CORE 0, `_exit(78)` on failure;
+  minimal-env scrub lives in the shim's execve (this OTP rejects `{:env, _}`
+  on spawn ports). Court 5/0 ×3 consecutive (flipped falsifier, vacuity
+  drain arm, SIGUSR1 unblock, shim env/rlimit probe, mailbox bound);
+  default suite 341/0, full-tag 346/0.
+- **Disposition**: FIXED 2026-10-13 — driver queue bounded + typed `:busy`
+  admission control + shim-based confinement. Residuals disclosed: macOS
+  does not enforce RLIMIT_AS for the shim (advisory on darwin; full
+  confinement enforced on Linux only); per-key FIFO ordering is a capacity-1
+  ring law (consumer duty above the valve tier).

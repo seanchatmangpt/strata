@@ -150,7 +150,7 @@ const ACTIVITY_REGIMES: [u16; 3] = [0x0000, 0x0102, 0x0203];
 fn n01_exhaustive_small_domain_all_65536_markings() {
     // Deterministic B-payload sampler so each (marking, transition) cell is
     // audited against 8 armed B combinations; coverage is reported.
-    let mut lcg = 0x4E3031_2Au64; // deterministic seed (replayable)
+    let mut lcg = 0x4E30_312A_u64; // deterministic seed (replayable)
     let mut cells = 0u64;
     let mut b_combos = 0u64;
     for m in 0..=u16::MAX {
@@ -210,14 +210,14 @@ const N_SAMPLES: u64 = 10_000_000;
 
 #[test]
 fn n01_dual_tenant_lcg_10m_non_interference() {
-    let mut lcg = Lcg(0x4E3031_2A_2026_10_12_u64 & 0x7FFF_FFFF_FFFF_FFFF);
+    let mut lcg = Lcg(0x4E30_312A_2026_1012_u64 & 0x7FFF_FFFF_FFFF_FFFF);
     let mut ok_fired = 0u64;
     let mut refused = 0u64;
     for _ in 0..N_SAMPLES {
         let mut m = lcg.below(1 << 16) as u16;
         let pre = lcg.below(1 << 16) as u16;
         let post = lcg.below(1 << 16) as u16;
-        let mut tid = lcg.below(1 << 8) as u8;
+        let tid = lcg.below(1 << 8) as u8;
         let mut activity = lcg.below(1 << 16) as u16;
         let tick = lcg.below(1 << 8) as u8;
         // Calibration: half the samples are shaped to be admissible

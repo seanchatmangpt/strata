@@ -118,7 +118,9 @@ paths, Chatman Invariant, fail-closed typed refusals, structured receipt).
 - L155 LANDED — race court 100k×3 (300k execs, 24.37M words) 1/0; honest FIFO adaptation (bag semantics, seq-recovery gate); self-caught seed-cancellation bug; correctly refused misrouted tick instruction (UNSUPPORTED wrong-lane)
 - L152 LANDED (rev 2) — gasless_quota_court re-censused to per-place law: 4/0, court-4 refutation CLOSED (uniform(1) admits all 12 RONR incl. the four popcount-2 cases)
 - L133 LANDED (refix) — pn_law quad gate vacuity CLOSED via option 1 (expand_to_quads rewrites header n/m=1,1); real-wire witness court added; 12/0 arena, mix 226/2 (2 = cas_ring_valve race flake, L163's file)
-- L146 LANDED (final) — cas_ring: F5e padded per-slot (honest measured verdict: noise-dominated ±20% at N=4096, drain footprint 8x — DFMEA records "no regression, benefit unproven at this N"); abandon()/abandoned_count (E29 vacuity refused); u64::MAX/MAX-1 sentinel reserve; drain ABA documented as value-ABA at-least-once under concurrent drainers (both semantics courted); slot-stealing = documented trust boundary (no spare bits). 44/0 both profiles. OPEN: slot.rs owner-tag hard fix (L156), criterion padding verdict (L153)
+- L146 LANDED (final) — cas_ring: F5e padded per-slot (honest measured verdict: noise-dominated ±20% at N=4096, drain footprint 8x — DFMEA records "no regression, benefit unproven at this N"); abandon()/abandoned_count (E29 vacuity refused); u64::MAX/MAX-1 sentinel reserve; drain ABA documented as value-ABA at-least-once under concurrent drainers (both semantics courted); slot-stealing = documented trust boundary (no spare bits). 44/0 both profiles. OPEN (2026-10-13 status-sync): slot.rs owner-tag hard fix LANDED as the slot-layer owner-bound seal (`write_owned`/`read_owned`, `STRATA-SLOT-OWNER-v1` domain) + 3 courts in slot.rs — 7/0 both profiles, substitution kill witnessed (stale owner's delayed commit refuses typed at the new owner's read, F-A01-1 slot-layer closure; cas_ring adoption remains L146's surface); criterion padding verdict RESOLVED honest-no-court: single-configuration bench (padded ring only, no unpadded baseline in-tree) cannot A/B — L146's noise-dominated ±20% record stands (see ERRC2_mutation_ledger.md Findings)
+- L156 LANDED (fix) — slot.rs hard owner-tag check: `write_owned`/`read_owned` bind the blake3 seal to a 64-bit owner tag (no spare bits to store one — owner lives in the seal domain, `STRATA-SLOT-OWNER-v1`); courts: stale_owner_substitution_refused (F-A01-1 kill), ownerless_read_refuses_owned_payload, cross_owner_torn_write_hammer; 7/0 debug + release; mutation_slot_wire_court 6/6 both profiles
+- P5 FORENSICS — temprun/src/lib.rs deletion NEVER COMMITTED: no deleting commit in any ref (`--diff-filter=D --all` empty); uncommitted working-tree deletion restored by M19FIX-A (full finding in ERRC2_mutation_ledger.md Findings)
 - L165 UPDATE (E31 meta-review fix applied + real rerun): gate now defaults
   to VERDICT: FAIL (exit 1) when any stage SKIPPED — SKIP=PASS asymmetry
   closed; --allow-skip (default OFF, header-documented) is the
@@ -310,6 +312,7 @@ No filler lanes. Ceiling 20, occupied 9 + any unreported stragglers.
 - M17/M18 FINAL (single session, both lanes) — M18's apostrophe-drop survivor was the exact hole W4-P9's refix already closed (bare-mask token + COVERAGE ratchet, 6/6 self-test incl. that class); survivor CLOSED. Behavior probe: pnabi 11/0 (code correct). All mutation-tier survivors now dispositioned: 0 open.
 - M20 LANDED (final) — certification mutation ledger: 90/86/3 (3.3% hole-rate, all 3 dispositioned: M03-1 named-detector closed-by-design, M07-1 equivalent → simplification WO, M19-H1 CLOSED by pin). Corrections: M13 m4 stack-overflows in DEBUG (verdict binds in release — standing WO); M18 audit PENDING note superseded (landed later, survivor closed). M19-H2 master_gate vacuous-stage = the one OPEN work order (fix designed in ERRC2_tollgate_mutants.md)
 - N20-REGEN LANDED — dossier REGENERATED: 19/19 courts covered, 17 EXECUTED-GREEN + 2 CITED-GREEN, 0 SKIPPED; N08/N18 receipts written from real landed evidence + live re-runs; re-sealed (new sha256 + fresh ML-DSA-65 signature, generator self-signing, demo seed disclosed). NATO SUITE COMPLETE.
+- STALE-NOTE (status-sync 2026-10-13): earlier M18 PENDING / M19-H2 "work order open" notes are superseded — M18 COMPLETE (survivor CLOSED by W4-P9 refix, line "M17/M18 FINAL"); M19-H2 CLOSED by M19FIX-B (master_gate.sh:85-94 add_stage lint, master_gate.sh:368-382 zero-test guard). M13 debug-profile WO remains the one open item.
 
 ## ADVERSARIAL GAP-HUNT WAVE (A01-A20, 2026-10-12)
 20 read-only adversarial lanes attacking every accumulated surface. Deliverables:
@@ -318,3 +321,13 @@ Fill lanes dispatched after the A-wave consolidates. TAIL ladder running in
 parallel (background bz13c4vh1).
 - F-FRAMING LANDED — framing mutation court 6/0: 5/5 mutants killed, zero survivors (magic inversion, preamble ±1, version drop, strip-skip, double-wrap); key finding: frame_wrap has a structural double-wrap guard (Poka-Yoke)
 - F-CASRING LANDED — cas_ring mutation court 6/0 (5/6 mutants killed; M4 abandon-ordering Relaxed/Relaxed = SURVIVOR on this aarch64 host/run, recorded in-test not a kill — ordering discipline not observably divergent under this court as executed); compile errors self-fixed before coordinator ping landed
+- STALE-NOTE (status-sync 2026-10-13): re-verified against disk — master_gate
+  registry `|` record-separator truncation is STILL OPEN (scripts/master_gate.sh
+  CMDS="$CMDS|$_cmd" + stage_cmd cut -d'|', M19FIX-B's disclosed follow-up WO,
+  no fix landed); ggen re-lock debt (C5/E03) IN-FLIGHT in a lane (no landed
+  lock receipt on disk); E50 strata query verb IN-FLIGHT (no query verb in
+  src/ or bin/ yet); INDEX.md rows updated: E18 CLOSED (logchain.rs + 4
+  courts), E28 CLOSED-at-implementation (cas.rs SPV1 + court; production
+  write-path wiring open), E48 RE-VERIFIED OPEN (valve_refusal_timing_test.exs
+  absent; consensus_slo refusal court only partial), E27 PARTIALLY CLOSED
+  (ci.yml wires gate-pn-fast + gate-docs; consensus courts still unwired).

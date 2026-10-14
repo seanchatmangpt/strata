@@ -244,7 +244,7 @@ fn sites_with_keyword(src: &str, file: &'static str, kw: &str) -> Vec<Site> {
         let mut positional: Vec<String> = Vec::new();
         if let Some((off, t)) = lits.first() {
             let after = &span[off + t.len() + 2..];
-            for part in split_args(after).iter().skip(0) {
+            for part in split_args(after).iter() {
                 let p = part.trim();
                 if !p.is_empty() && p != "," {
                     positional.push(p.to_string());
@@ -360,9 +360,7 @@ fn n18_census_fixed_string_audit_and_entropy() {
     sites.extend(sites_with_keyword(&cli, "cli", "fail("));
     sites.extend(sites_with_keyword(&cli, "cli", "Err(format!"));
     // map_err(|_| format!(...)) / map_err(|e| format!(...)) producers
-    for producer in ["format!("] {
-        sites.extend(sites_with_keyword(&cli, "cli", producer));
-    }
+    sites.extend(sites_with_keyword(&cli, "cli", "format!("));
     // lib.rs: the typed Error Display must be a fixed literal, no format!
     assert!(
         !lib.contains("format!"),
@@ -442,7 +440,7 @@ fn n18_runtime_refusal_vocabulary() {
         "usage: strata sign <seed> <msg> -o <sig>",
     ] {
         assert!(
-            cli.contains(&required.replace("{path}", "{path}")) || cli.contains(required),
+            cli.contains(required),
             "N18 FAIL: expected template `{required}` absent from the CLI source"
         );
     }
@@ -550,4 +548,97 @@ fn n18_exit_code_vocabulary() {
             panic!("N18 FAIL: undeclared refusal class: {t}");
         }
     }
+}
+
+/// Court 6: positive control (vacuity sweep) — a mutated diagnostic that DOES
+/// interpolate a path must FAIL the census. Without this court, a scanner
+/// regression that silently stops flagging uncategorized captures would read
+/// as a passing crate (tautological green).
+#[test]
+fn n18_positive_control_path_interpolation_must_fire() {
+    let cli = std::fs::read_to_string(format!("{MANIFEST}/{STRATA_RS}")).unwrap();
+    for injected in [
+        // path-valued interpolation of an uncategorized capture
+        "let q = \"q\"; format!(\"{query_path}: Turtle parse refused: {e}\")",
+        // a differently-named uncategorized capture
+        "format!(\"cannot open store {graph_path}: {e}\")",
+    ] {
+        let mutated = format!("{cli}\nfn __n18_probe() {{ let e = \"x\"; {injected} }}\n");
+        let sites = sites_with_keyword(&mutated, "cli", "format!(");
+        let flagged: Vec<_> = sites
+            .iter()
+            .flat_map(|s| s.leak.iter())
+            .collect();
+        assert!(
+            !flagged.is_empty(),
+            "N18 VACUITY: injected leaking diagnostic `{injected}` was NOT flagged; \
+             the census cannot detect path interpolation and proves nothing"
+        );
+    }
+    // And the clean source must not trip the same scan (no false positive on
+    // the constant-refusal query verb).
+    let sites = sites_with_keyword(&cli, "cli", "format!(");
+    let flagged: Vec<_> = sites
+        .iter()
+        .flat_map(|s| s.leak.iter())
+        .collect();
+    assert!(
+        flagged.is_empty(),
+        "N18 FAIL: clean CLI source flagged: {flagged:?}"
+    );
+}
+
+/// Court 7: the query verb's fail-closed diagnostics are constant refusal
+/// classes — byte-identical regardless of the offending path names, exit 1,
+/// no stdout, and every stderr rendering is in the fixed vocabulary.
+#[test]
+fn n18_query_verb_constant_refusals() {
+    // Static: the refusal classes are fixed constants, not interpolated.
+    let cli = std::fs::read_to_string(format!("{MANIFEST}/{STRATA_RS}")).unwrap();
+    for required in [
+        "\"query: refused: cannot read graph\"",
+        "\"query: refused: cannot read query\"",
+        "\"query: refused: malformed turtle\"",
+        "\"query: refused: malformed sparql\"",
+        "\"query: store refused\"",
+        "\"query: eval refused\"",
+        "\"query: non-select refused\"",
+    ] {
+        assert!(
+            cli.contains(required),
+            "N18 FAIL: query-verb refusal class {required} absent from the CLI source"
+        );
+    }
+    // No format! may carry the query/graph path into a diagnostic.
+    for leaking in ["{query_path}", "{graph_path}"] {
+        for line in cli.lines() {
+            if line.contains("format!") && line.contains(leaking) {
+                panic!("N18 FAIL: query path interpolated into a diagnostic: {line}");
+            }
+        }
+    }
+
+    // Runtime: two differently-named missing inputs must produce byte-identical
+    // stderr (zero bits about the paths), exit 1, empty stdout.
+    let (c1, out1, e1) = run_query_aux("/nonexistent/n18_a.rq", "/nonexistent/n18_a.ttl");
+    let (c2, out2, e2) = run_query_aux("/nonexistent/other-name.rq", "/nonexistent/x/y.ttl");
+    assert_eq!(c1, 1);
+    assert_eq!(c2, 1);
+    assert_eq!(out1, "");
+    assert_eq!(out2, "");
+    assert_eq!(e1, "strata: query: refused: cannot read graph\n");
+    assert_eq!(e1, e2, "path names leaked into the diagnostic");
+}
+
+/// Same spawn as `run_bin` plus stdout, for the query verb.
+fn run_query_aux(rq: &str, ttl: &str) -> (i32, String, String) {
+    let out = Command::new(env!("CARGO_BIN_EXE_strata"))
+        .args(["query", rq, "--graph", ttl])
+        .output()
+        .expect("spawn strata bin");
+    (
+        out.status.code().unwrap_or(-1),
+        String::from_utf8_lossy(&out.stdout).into_owned(),
+        String::from_utf8_lossy(&out.stderr).into_owned(),
+    )
 }

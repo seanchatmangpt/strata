@@ -89,7 +89,7 @@ fn reach_from(m: u16, transitions: &[(u16, u16)]) -> Vec<u16> {
         out.push(cur);
         for &(pre, post) in transitions {
             if cur & pre == pre {
-                let m2 = ((cur & !pre) as u16) | post;
+                let m2 = (cur & !pre) | post;
                 if !seen[m2 as usize] {
                     seen[m2 as usize] = true;
                     queue.push(m2);
@@ -104,8 +104,8 @@ fn reach_from(m: u16, transitions: &[(u16, u16)]) -> Vec<u16> {
 /// which no disposition marking is reachable.
 fn liveness_counterexamples(transitions: &[(u16, u16)], set: &[u64]) -> Vec<u16> {
     let mut bad = Vec::new();
-    for word in 0..1024usize {
-        let mut bits = set[word];
+    for (word, &bits0) in set.iter().enumerate() {
+        let mut bits = bits0;
         while bits != 0 {
             let low = bits.trailing_zeros();
             let m = ((word as u16) << 6) | low as u16;
@@ -214,8 +214,8 @@ fn n15_weak_fairness_schedule_witnesses() {
     let set = reachable_bitset(M0, &RONR_TABLE);
     let progress: [u8; 10] = [0x05, 0x06, 0x01, 0x02, 0x04, 0x07, 0x08, 0x0A, 0x03, 0x0C];
     let mut checked = 0usize;
-    for word in 0..1024usize {
-        let mut bits = set[word];
+    for (word, &bits0) in set.iter().enumerate() {
+        let mut bits = bits0;
         while bits != 0 {
             let low = bits.trailing_zeros();
             let m = ((word as u16) << 6) | low as u16;
@@ -229,7 +229,7 @@ fn n15_weak_fairness_schedule_witnesses() {
                 let fired = progress.iter().find_map(|&op| {
                     ronr::lookup(op).and_then(|t| {
                         if cur & t.pre == t.pre {
-                            Some(((cur & !t.pre) as u16) | t.post)
+                            Some((cur & !t.pre) | t.post)
                         } else {
                             None
                         }

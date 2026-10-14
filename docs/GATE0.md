@@ -12,27 +12,21 @@ wasm binary directly — no wasm toolchain on PATH required.
 **kernel artifact gates (G1'–G4')**; the legacy whole-cdylib census
 (G1–G4) is informational only.
 
-## Run output (2026-10-11)
+## Run output (2026-10-13)
 
 ```
 === Gate 0 — PN64 wasm kernel court ===
 
 --- legacy artifact (informational; does NOT key the verdict) ---
-| gate | criterion                          | measured                          | verdict |
-|------|------------------------------------|-----------------------------------|---------|
-| G1   | zero linear memory                 | memory 17 pages (max present)     | FAIL |
-| G2   | kernel exported (step/fire)        | kernel NOT PRESENT in artifact    | FAIL |
-| G3   | kernel branch-free (0x0C/0D/0E/05) | kernel NOT PRESENT in artifact    | FAIL |
-| G4   | size <= 512 bytes                  | 18353 bytes (raw)                 | FAIL |
-whole-cdylib branch-byte census: 569; functions: 46; exports: ["memory", "clock_monotonic", "conformance_join", "coord_lock_ok"]
+legacy artifact not found under target/wasm32-unknown-unknown/release (informational)
 
 --- kernel artifact (verdict-bearing) ---
-artifact: .../pn_kernel/target/wasm32-unknown-unknown/release/pn_kernel.g0.wasm (197 bytes) [Gate 0 artifact]
+artifact: /Users/sac/strata/temprun/pn_kernel/target/wasm32-unknown-unknown/release/pn_kernel.g0.wasm (197 bytes) [Gate 0 artifact]
 | gate | criterion                           | measured                          | verdict |
 |------|-------------------------------------|-----------------------------------|---------|
 | G1'  | zero linear memory                 | memory section ABSENT             | PASS |
-| G2'  | exports pn_step/pn_fire/pn_enabled | all present: [...]                | PASS |
-| G3'  | branch-free code section           | 0 branch bytes / 3 fn bodies      | PASS |
+| G2'  | exports pn_step/pn_fire/pn_enabled | all present: ["pn_step", "pn_fire", "pn_enabled"] | PASS |
+| G3'  | branch-free code section (0x0C/0D/0E/05) | 0 branch bytes / 3 fn bodies      | PASS |
 | G4'  | size <= 512 bytes                  | 197 bytes (raw)                   | PASS |
 kernel exports: ["pn_enabled", "pn_fire", "pn_step"]
 

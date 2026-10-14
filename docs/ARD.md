@@ -27,6 +27,13 @@ usable exactly once), enforces fuel budgets, and emits typed refusals. Owns the
 authority boundary: the valve is the only component that converts an order into a
 lease, and the only component that admits a transition into state.
 
+**Divergence note (KG-ARD21, 2026-10-13)**: signing is Rust-side only —
+ML-DSA-65 detached signatures are produced outside the valve via
+`signer::assert_wire_sizes` (3309-byte signatures). The valve remains an
+authority boundary per the bcinr-POWL adjudication: it authorizes the
+transition; it does not sign the commit artifact. See
+`docs/COURT_ADJUDICATIONS.md`.
+
 ### Temprun Arena (wasm32-unknown-unknown)
 
 Candidate execution sandbox. Hard bounds: ≤5 ms per cycle, 16 MB linear memory,

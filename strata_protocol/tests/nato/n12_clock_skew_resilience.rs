@@ -205,7 +205,7 @@ fn court1_jitter_injection_every_glitch_typed_refused_or_lawfully_ordered() {
     );
     assert_eq!(
         typed_refusals,
-        (glitch_count * 2 + 2) / 3,
+        (glitch_count * 2).div_ceil(3),
         "backwards/0-jump classes (2/3 of glitches) must refuse; huge jumps must not"
     );
     assert_eq!(
@@ -227,9 +227,9 @@ fn court1_jitter_injection_every_glitch_typed_refused_or_lawfully_ordered() {
 fn court2a_u64_max_wrap_lawful_boundary_glitches_deterministically_pinned() {
     // The documented wrap itself: MAX -> 0 -> 1, defined behavior.
     let mut seq = Sequence::starting_at(u64::MAX);
-    assert_eq!(seq.next(), u64::MAX);
-    assert_eq!(seq.next(), 0, "documented wrap to 0");
-    assert_eq!(seq.next(), 1, "monotonic continuation after wrap");
+    assert_eq!(seq.next_tick(), u64::MAX);
+    assert_eq!(seq.next_tick(), 0, "documented wrap to 0");
+    assert_eq!(seq.next_tick(), 1, "monotonic continuation after wrap");
     assert_eq!(seq.peek(), 2);
 
     // `order` across the boundary: raw-domain sort is total and
@@ -256,7 +256,7 @@ fn court2a_u64_max_wrap_lawful_boundary_glitches_deterministically_pinned() {
     let pre = u64::MAX;
     let post = pre.wrapping_add(1); // the documented wrap: MAX -> 0
     let pre_w = ocel64::pack(0x0102, 0x0055, 0x0046, 0x00, (pre >> 56) as u8);
-    let post_w = ocel64::pack(0x0102, 0x0055, 0x0046, 0x00, ((post >> 56) as u64 & 0xFF) as u8);
+    let post_w = ocel64::pack(0x0102, 0x0055, 0x0046, 0x00, ((post >> 56) & 0xFF) as u8);
     // (pre>>56)=0xFF, (post wrapped to 0)>>56=0x00 -> the lawful byte wrap.
     assert!(pnabi::expected_tick_ok(pre_w, post_w));
 

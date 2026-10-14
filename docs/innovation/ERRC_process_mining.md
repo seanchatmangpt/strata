@@ -55,7 +55,15 @@ or the token counts disagree with a brute-force marking replay on a
 
 Cost: M. Composes: C05, C27-style external court.
 
-## C4 (Eliminate) — Collapse the duplicated verify law
+## C4 (Eliminate) — Collapse the duplicated verify law — CLOSED 2026-10-13
+
+Landed: single law implementation `logsink::verify_iter`
+(`strata_protocol/src/logsink.rs`, generic over `Iterator<Item=LogEntry>`,
+one-entry lookahead); `logsink::verify_trace` and
+`trace_slice::verify_trace_bytes` are thin adapters; the duplicated
+verify loop and the 10k differential guard in `trace_slice.rs` are
+deleted, replaced by a 512-entry all-masks wiring court. Lib 204/204,
+all verify-law caller courts green.
 
 Claim: `trace_slice::verify_trace_bytes` reimplements
 `logsink::verify_trace` (marking chain / tid / ticks) and is held equal

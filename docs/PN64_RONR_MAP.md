@@ -107,7 +107,7 @@ Source of truth: `strata_protocol/src/dao_transitions.rs` (module doc +
 | `0x0100` | `TREASURY_SOLVENT`       | treasury solvency proven for this scope        |
 | `0x0200` | reserved (unused)        | reserved for future dispute-scope flag         |
 | `0x0400` | `ESCROW_RELEASED`        | escrow released without dispute (produced by no verb in the current table) |
-| `0x0800` | `DELEGATION_PENDING`     | delegation awaiting acknowledgement (produced by no verb in the current table) |
+| `0x0800` | `DELEGATION_PENDING`     | delegation awaiting acknowledgement (closed by `dao_full.rs` G2: produced by `0x92`, consumed by `0x93`) |
 | `0x1000` | `COLLATERAL_WITHDRAWN`   | collateral returned to the member              |
 | `0x2000` | `STREAM_HALTED`         | stream halted, settlement pending              |
 | `0x4000` | `MEMBER_EXPELLED`        | membership terminated by expulsion             |
@@ -136,8 +136,31 @@ Verb constants and names from `dao_vocab.rs`; `noun_scope` is the
 
 Two self-start entries (`pre == 0`, the only lawful transitions from an
 empty marking, mirroring RONR 0x0C): 0x70 DepositCollateral and 0x96
-AdmitMember. Unassigned verb slots (e.g. 0x75, 0x76, 0x92) stay `None`
-(`lookup` returns `None`, ABI wraps it as `Malformed`).
+AdmitMember. Unassigned verb slots (e.g. 0x75, 0x76) stay `None` on the
+base `dao_transitions` table (`lookup` returns `None`, ABI wraps it as
+`Malformed`).
+
+# DAO extension table (dao_full.rs, G2 delegation closure)
+
+Layered on the base table following the `ronr_full.rs` precedent: the first
+13 entries are byte-identical to `dao_transitions::DAO`; two new verbs fill
+the `0x92`/`0x93` gap slots and close the orphaned place `DELEGATION_PENDING
+0x0800` (previously produced by zero transitions). The verb/noun namespace
+split on `0x92`/`0x93` (noun namespace: ReceiptRoot, PetriNetMarking) is the
+same documented shared opcode space as `dao_vocab` vs RONR.
+
+| Verb | Name           | noun_scope | pre    | post   | pre (dec) | post (dec) |
+|------|----------------|----------- |--------|--------|-----------|------------|
+| 0x92 | ChainDelegate  | 0x34       | 0x0028 | 0x0828 | 40        | 2088       |
+| 0x93 | AckDelegation  | 0x34       | 0x0808 | 0x0008 | 2056      | 8          |
+
+`0x92` is the producer leg (re-delegation mints `DELEGATION_PENDING`);
+`0x93` is the AdoptDelegation-style consumer leg (spec masks verbatim:
+`pre: DELEGATED|DELEGATION_PENDING, post: DELEGATED`; `MEMBER_ACTIVE`
+survives via the token-retention law). The closure is a cycle
+(Delegate → ChainDelegate → AckDelegation → ChainDelegate → ...), so
+delegation depth is a net-reachability question. Mirror:
+`stratus/lib/stratus/valve/dao_full.ex` (byte-identical masks).
 
 # Dispatch seeding status (on-disk truth as of this writing)
 
@@ -201,7 +224,8 @@ assumption is stale relative to the tree.
    (0x0040), `ADOPTED`, `TABLED`, `POSTPONED_INDEF`, `RECESS_PENDING`,
    `ADJOURNED`, `POINT_OF_ORDER_RAISED`, `DIVISION_DEMANDED`. DAO:
    `MEMBER_SUSPENDED` (0x0040, documented as such in the source),
-   `ESCROW_RELEASED` (0x0400) and `DELEGATION_PENDING` (0x0800) are each
+   `ESCROW_RELEASED` (0x0400) and — until the G2 extension — `DELEGATION_PENDING`
+   (0x0800) were each
    produced by no verb in the current `DAO` table (documented places with
    no producing transition), and terminal places (`COLLATERAL_WITHDRAWN`,
    `STREAM_HALTED`, `MEMBER_EXPELLED`) have no consuming verb.

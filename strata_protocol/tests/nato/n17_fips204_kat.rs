@@ -439,7 +439,7 @@ fn kat_verify_accepts_legitimate() {
         (KAT0_SEED_HEX, KAT0_PK_HEX, KAT0_SIG_HEX, 0u8),
         (KAT1_SEED_HEX, KAT1_PK_HEX, KAT1_SIG_HEX, 1u8),
     ] {
-        let s = Signer::from_seed(kat_seed(seed_hex));
+        let _s = Signer::from_seed(kat_seed(seed_hex));
         let pk = unhex(pk_hex);
         let sig = unhex(sig_hex);
         assert!(

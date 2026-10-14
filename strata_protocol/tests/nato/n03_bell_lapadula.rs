@@ -335,5 +335,6 @@ fn n03_strong_tranquility_static_levels() {
     }
 
     // (c) Lattice ordering is total: PUBLIC < CONFIDENTIAL < SECRET < TOP.
-    assert!(PUBLIC < CONFIDENTIAL && CONFIDENTIAL < SECRET && SECRET < TOP_SECRET);
+    // Const-known at compile time — asserted at compile time, not runtime.
+    const _: () = assert!(PUBLIC < CONFIDENTIAL && CONFIDENTIAL < SECRET && SECRET < TOP_SECRET);
 }

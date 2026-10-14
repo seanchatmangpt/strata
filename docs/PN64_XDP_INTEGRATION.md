@@ -13,7 +13,7 @@ and mirrored in the kernel export `pn_step(pn, ocel, mask)`:
 1. Conformance: `(ocel & 0xFF) == ((pn >> 48) & 0xFF)`
 2. Enablement: `(m & W-) == W-`
 3. Invariant: `(m' & mask) == 0`
-4. Advance: `M' = (M ^ W-) | W+`
+4. Advance: `M' = (M ^ W−) | W+`
 
 The XDP filter enforces the same predicates on the same 16-byte dual word,
 branchlessly, in one basic block:

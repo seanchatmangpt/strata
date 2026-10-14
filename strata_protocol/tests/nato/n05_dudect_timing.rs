@@ -37,8 +37,8 @@
 //! executions measured as ONE interval; the raw interval of the fastest
 //! sample is ASSERTED > 20x the measured resolution and every batch span
 //! > 100x, so the timing window provably exceeds the clock resolution. A
-//! collapsed window (optimizer elision, timer coarsening) fails loudly
-//! instead of grading timer artifacts.
+//! > collapsed window (optimizer elision, timer coarsening) fails loudly
+//! > instead of grading timer artifacts.
 //!
 //! # Positive control (falsifier of the harness itself)
 //!
@@ -234,7 +234,7 @@ fn measure<F: FnMut(u64, u64) -> u64>(
 fn median(v: &mut [f64]) -> f64 {
     v.sort_by(|a, b| a.partial_cmp(b).unwrap());
     let n = v.len();
-    if n % 2 == 0 {
+    if n.is_multiple_of(2) {
         (v[n / 2 - 1] + v[n / 2]) / 2.0
     } else {
         v[n / 2]
@@ -306,18 +306,29 @@ fn court<F: FnMut(u64, u64) -> u64 + Clone>(
 #[test]
 fn n05_dudect_constant_time_court() {
     // Calibrated-N admission gate: below 100k/class the court is not admitted.
-    assert!(TOTAL_PER_CLASS >= 100_000);
+    const _: () = assert!(TOTAL_PER_CLASS >= 100_000);
+
+    // Fold fix (lane diagnosis): the previous fold fed LOOP-INVARIANT
+    // sentinels (0xAAAA…/0xBBBB…/0xCCCC…) into the accumulator on refusal
+    // paths, letting the CPU retire the dependency chain ~1 cycle early and
+    // producing a systematic valid-vs-refusal asymmetry that is a HARNESS
+    // artifact, not kernel leakage. Fix: every outcome — valid or refusal —
+    // mixes the full input words into the fold, so both classes carry an
+    // identical input-bit dependency into the next iteration. The kernel
+    // under test is unchanged.
+    let fold = |v: u64, pn: u64, ocel: u64| v.rotate_left(13) ^ pn ^ ocel;
 
     let (attempts_abi, min_raw_abi, min_span_abi, res) =
         court("validate_and_advance", |pn, ocel| {
-            match validate_and_advance(pn, ocel, 0x0100) {
+            let v = match validate_and_advance(pn, ocel, 0x0100) {
                 Ok(next) => next,
                 Err(e) => match e {
                     PnAbiError::Malformed => 0xAAAA_AAAA_AAAA_AAAA,
                     PnAbiError::TokenStarvation => 0xBBBB_BBBB_BBBB_BBBB,
                     PnAbiError::InvariantViolation => 0xCCCC_CCCC_CCCC_CCCC,
                 },
-            }
+            };
+            fold(v, pn, ocel)
         });
     let t_abi = *attempts_abi.last().unwrap();
     assert!(
@@ -329,7 +340,9 @@ fn n05_dudect_constant_time_court() {
     );
 
     let (attempts_bl, min_raw_bl, min_span_bl, res_bl) =
-        court("step_branchless", |pn, ocel| step_branchless(pn, ocel, 0x0100));
+        court("step_branchless", |pn, ocel| {
+            fold(step_branchless(pn, ocel, 0x0100), pn, ocel)
+        });
     let t_bl = *attempts_bl.last().unwrap();
     assert!(
         passes(t_bl),

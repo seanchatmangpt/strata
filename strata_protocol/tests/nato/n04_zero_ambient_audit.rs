@@ -401,20 +401,20 @@ fn n04_zero_ambient_symbols() {
         .iter()
         .map(|(k, n)| format!("\"{k}\":{n}"))
         .collect();
+    let modules_json = format!("{{{}}}", per_module.join(","));
+    let banned_json =
+        format!("[{}]", BANNED.iter().map(|s| format!("\"{s}\"")).collect::<Vec<_>>().join(","));
+    let allowlist_json = format!("[{}]",
+        STD_ALLOWLIST.iter().map(|s| format!("\"{s}\"")).collect::<Vec<_>>().join(","));
+    let instant_json = format!("[{}]",
+        instant_hits
+            .iter()
+            .map(|h| format!("\"{h}\""))
+            .collect::<Vec<_>>()
+            .join(","));
     let receipt_section = format!(
         "\"static_audit\":{{\"modules\":{},\"banned_symbols_checked\":{},\"banned_hits\":0,\"allowlist\":{},\"std_census\":{{{}}},\"instant_monotonic_hits\":{}}}",
-        format!("{{{}}}", per_module.join(",")),
-        format!("[{}]", BANNED.iter().map(|s| format!("\"{s}\"")).collect::<Vec<_>>().join(",")),
-        format!("[{}]", STD_ALLOWLIST.iter().map(|s| format!("\"{s}\"")).collect::<Vec<_>>().join(",")),
-        census_json.join(","),
-        format!(
-            "[{}]",
-            instant_hits
-                .iter()
-                .map(|h| format!("\"{h}\""))
-                .collect::<Vec<_>>()
-                .join(",")
-        )
+        modules_json, banned_json, allowlist_json, census_json.join(","), instant_json
     );
     merge_receipt(&receipt_section);
     flush_receipt(None);

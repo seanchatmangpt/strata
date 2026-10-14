@@ -1,5 +1,21 @@
 # DoD Tollgate Verification
 
+> **SUPERSEDED 2026-10-13 — read this banner before any verdict below.**
+> History below is preserved as written; do not treat stale claims as live.
+>
+> - Probes 05 and 01 are **CLOSED** per the ledger
+>   (`docs/COURT_ADJUDICATIONS.md`): KG-42 / KG-01 **FIXED**. The verdict
+>   table's "05 and 19 KNOWN-GAP-42" and "01 FAIL-finding closed" rows are
+>   stale.
+> - Probe 19 final run was **EXECUTED**, verdict 42: rho 8.066 B/quad vs the
+>   2.50 bound, refuted by real `git repack` measurement — later re-scoped
+>   per `docs/NFR3_PRD_REVISION.md`.
+> - The "uncommitted in-flight fielddelta/framing" note is **stale** —
+>   `strata_protocol/src/framing.rs` and the fielddelta packing work landed
+>   in commit `ce22590` (2026-10-10).
+> - The HEAD pin `38ea23f` below is **stale**: repo HEAD is `548a0bf`
+>   (verified `git rev-parse HEAD` 2026-10-13 — re-verify at use).
+
 Date: 2026-10-10. Lane: dod-verify-2. SUPERSEDES the earlier dod-verify run
 (same date), which ran before several landings. Every verdict below is from a
 real command run in `/Users/sac/strata` at HEAD `38ea23f` (probe 19 final);

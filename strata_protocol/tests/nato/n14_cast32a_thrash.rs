@@ -214,7 +214,7 @@ fn run_court(_run_no: u32) -> RunSummary {
             for i in 0..PER_PRODUCER {
                 let t0 = Instant::now();
                 // 1. FIFO sequencer tick (deterministic counter).
-                let _tick = sequencer.lock().expect("sequencer mutex").next();
+                let _tick = sequencer.lock().expect("sequencer mutex").next_tick();
                 // 2. Ring claim under contention (spin until a slot frees;
                 //    consumers drain concurrently so this is liveness-safe).
                 let slot: SlotId = loop {

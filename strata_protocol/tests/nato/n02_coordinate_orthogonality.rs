@@ -53,7 +53,7 @@ impl Dims {
         pn64::pack(self.m, self.pre, self.post, self.tid, self.flags)
     }
     /// (name, getter, setter-with-canary-baseline) as a uniform axis tuple.
-    fn axes() -> [(&'static str, fn(&Dims) -> u64, fn(&mut Dims, u64)); 5] {
+    fn axes() -> Axes {
         [
             ("D0.marking", |d| d.m as u64, |d, v| d.m = v as u16),
             ("D1.pre", |d| d.pre as u64, |d, v| d.pre = v as u16),
@@ -76,7 +76,7 @@ fn spill_fail(path: &str, axis: &str, value: u64, other: &str, before: u64, afte
 /// value against canary baselines must leave every other dimension bit-exact.
 fn pack_census() {
     for canary_i in 0..CANARY16.len() {
-        for (k, (name, get, set)) in Dims::axes().into_iter().enumerate() {
+        for (k, (name, _get, set)) in Dims::axes().into_iter().enumerate() {
             let values: Vec<u64> = if k < 3 {
                 B16.iter().map(|&v| v as u64).collect()
             } else {
@@ -166,6 +166,8 @@ fn advance_census(path: &str, advance: impl Fn(&Dims) -> Dims) {
         }
     }
 }
+
+type Axes = [(&'static str, fn(&Dims) -> u64, fn(&mut Dims, u64)); 5];
 
 #[test]
 fn n02_pack_path_is_bit_spill_free() {

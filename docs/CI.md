@@ -9,7 +9,18 @@ The single entry point is `just ci`, which runs the full verification ladder:
 3. `just check-wasm-imports` — Imports = ∅ gate.
 4. `just lint` — `cargo clippy --workspace --all-targets -- -D warnings`.
 
-The toolchain is pinned by `rust-toolchain.toml` (nightly + `wasm32-unknown-unknown` target). GitHub Actions (`.github/workflows/ci.yml`) checks out, installs the pinned toolchain plus the wasm target, installs `just`, and runs `just ci`.
+The toolchain is pinned by `rust-toolchain.toml` (nightly + `wasm32-unknown-unknown` target).
+
+**GitHub Actions does not run `just ci`.** As of 2026-10-13 (`.github/workflows/ci.yml` read at edit time), the `rust` job runs the gates step-by-step:
+
+1. `just test`
+2. `just lint`
+3. `just test-wasm` + `just check-wasm-imports`
+4. `just gate-pn-fast` (PN64 fast gate; the full 10x10^6 soak variant is local-only via `just gate-pn`)
+5. `just gate-docs` (ontology + module ratchet gates; installs `rdflib`)
+6. `cargo build -p temprun --target wasm32-wasip1 --release`
+
+A second `stratus` job (Elixir 1.19 / OTP 28) runs `just test-stratus`. The local `just ci` recipe (test, test-wasm, check-wasm-imports, lint, test-stratus) is a subset of CI — it omits `gate-pn-fast` and `gate-docs`.
 
 ## Imports = ∅ verification
 
@@ -25,8 +36,7 @@ This is a constant-time structural parse of the artifact bytes — no host, no r
 
 Behavioral claims (cycle semantics, refusal paths) are verified by sampling, not by example: the soak harness draws 10^6 cycles and asserts on aggregate state. `just soak` is the entry point:
 
-- Runs a sampling binary (`target/release/soak` or `target/debug/soak`) with `--cycles N` (default 10^6, override via `SOAK_CYCLES`).
-- Until the harness lane lands the binary, `just soak` skips with an explicit message — the gate never fails silently and never fabricates a pass.
+- Runs the real harness: `cargo run --release -p temprun --bin soak -- --cycles N` (default 10^6, override by passing a count: `just soak 10000`). Exits nonzero if Cp < 2.0.
 
 Chicago discipline applies to the harness itself: real cycle execution, assertions on final observed state, no doubles.
 

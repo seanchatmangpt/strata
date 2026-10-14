@@ -4,32 +4,32 @@
 //! evaluation and classifies every fault:
 //!
 //! - `REFUSED`     — the transition law returns a typed `PnAbiError`
-//!                   (fail-closed).
+//!   (fail-closed).
 //! - `LAWFUL-DEAD` — the transition admits, but the committed word is exactly
-//!                   the lawful image of the corrupted word under the same
-//!                   spec law (fault effect bounded to the flip itself: either
-//!                   outcome-equivalent dead-region flips or lawful-but-
-//!                   different states). This matches repo doctrine
-//!                   (`adversarial_pn_court.rs` court 2: an admitted flip whose
-//!                   committed marking is the lawful post-state of the flipped
-//!                   word is lawful, not corruption).
+//!   the lawful image of the corrupted word under the same
+//!   spec law (fault effect bounded to the flip itself: either
+//!   outcome-equivalent dead-region flips or lawful-but-
+//!   different states). This matches repo doctrine
+//!   (`adversarial_pn_court.rs` court 2: an admitted flip whose
+//!   committed marking is the lawful post-state of the flipped
+//!   word is lawful, not corruption).
 //! - `SDC`         — silent data corruption: the word changed AND the
-//!                   transition admits while committing something OTHER than
-//!                   the lawful image of the corrupted word (fault
-//!                   amplification: the law no longer holds on the word it
-//!                   just admitted).
+//!   transition admits while committing something OTHER than
+//!   the lawful image of the corrupted word (fault
+//!   amplification: the law no longer holds on the word it
+//!   just admitted).
 //! - `HALT`        — iteration neither refuses nor admits (hang/panic). The
-//!                   pnabi transition is a total function returning `Result`;
-//!                   halt is structurally 0 here — disclosed, not assumed
-//!                   silently. A panic under fault is counted SDC-class
-//!                   failure (worse than halt: it admits-by-crash), so the
-//!                   court fails on panic rather than crediting halt.
+//!   pnabi transition is a total function returning `Result`;
+//!   halt is structurally 0 here — disclosed, not assumed
+//!   silently. A panic under fault is counted SDC-class
+//!   failure (worse than halt: it admits-by-crash), so the
+//!   court fails on panic rather than crediting halt.
 //!
 //! Scale: spec target 1,000,000 flips; executed 1,000,000 (full spec scale,
 //! no calibration needed — release run < 5 min).
 //!
 //! Determinism: a single 64-bit LCG (Knuth constants) drives every fault;
-//! fixed seed 0x4E413039_0000_0001 ("NA09"). Per-class histogram printed.
+//! fixed seed 0x4E41_3039_0000_0001 ("NA09"). Per-class histogram printed.
 
 use strata_protocol::{ocel64, pn64, pnabi};
 
@@ -56,7 +56,7 @@ impl Lcg {
 // PN64 layout: marking[15:0] pre[31:16] post[47:32] tid[55:48] flags[63:56]
 // OCEL64 layout: activity[15:0] src[31:16] tgt[47:32] qual[55:48] tick[63:56]
 const PN_BASE: u64 = 0x0002_000C_0002_0082; // m=0x0082 pre=0x0002 post=0x000C tid=0x02
-const OCEL_BASE: u64 = 0x41_00_0046_0055_0102; // activity=0x0102 (lo=0x02==tid), tick=0x41
+const OCEL_BASE: u64 = 0x4100_0046_0055_0102; // activity=0x0102 (lo=0x02==tid), tick=0x41
 const INVARIANT_MASK: u64 = 0x0000_0000_0000_0010; // bit 4 forbidden in m'
 
 /// Independent re-derivation of the spec law (NOT a call into `pnabi`), used
@@ -74,7 +74,7 @@ fn lawful_image(pn: u64) -> Option<u64> {
 #[test]
 fn n09_seu_single_bit_zero_sdc() {
     const N: u64 = 1_000_000;
-    let mut rng = Lcg(0x4E413039_0000_0001);
+    let mut rng = Lcg(0x4E41_3039_0000_0001);
 
     let mut refused: u64 = 0;
     let mut lawful_dead: u64 = 0;

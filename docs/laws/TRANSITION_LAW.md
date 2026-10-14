@@ -44,6 +44,17 @@ site's list by editing this section — never by doc-local edits.
 COVERAGE-docs/PN64_ABI.md : Conformance, Enablement, Invariant, Advance, Tick
 COVERAGE-docs/PN64_VECTORS.md : Conformance, Invariant, Advance, Tick
 
+E55 12-site census coverage ratchet (2026-10-13): every census site below
+is in the drift-gate SCOPE; each carries a COVERAGE- line pinning exactly
+the laws its text actually carries (measured, not aspirational — tightening
+is by editing this section with a receipt).
+
+COVERAGE-docs/PN64_XDP_INTEGRATION.md : Invariant
+COVERAGE-docs/PN64_CROSS_LANG.md : Invariant
+COVERAGE-stratus/lib/stratus/valve/pn64.ex : Advance
+COVERAGE-temprun/src/pn.rs : Advance
+COVERAGE-docs/PN64_KERNEL_VECTORS.md : Advance
+
 ## Error map
 
 | Violation | Error |

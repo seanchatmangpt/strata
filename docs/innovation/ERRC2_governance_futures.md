@@ -22,6 +22,15 @@ token), i.e. no observation can distinguish federated from parallel play.
 
 ## G2 — Delegation-as-transition closure (fix the orphaned DELEGATION_PENDING)
 
+LANDED 2026-10-13 (CREATE, ronr_full-style extension): `strata_protocol/src/dao_full.rs`
+(`DAO_FULL` 15 entries = base 13 verbatim + ChainDelegate `0x92` pre `0x0028`
+→ post `0x0828` producing `DELEGATION_PENDING`, AckDelegation `0x93` pre
+`0x0808` → post `0x0008` consuming it; `lookup`/`validate_step`; 7 unit
+tests incl. orphan-closure positive control). Mirror:
+`stratus/lib/stratus/valve/dao_full.ex` + `stratus/test/dao_full_valve_test.exs`
+(6 tests green). Ontology + map doc updated. Base `dao_transitions.rs`
+13-verb table and frozen `dispatch.rs` untouched.
+
 Eliminate/Reduce. `PN64_RONR_MAP.md` says `DELEGATION_PENDING 0x0800` is
 "produced by no verb in the current table" — a place with no producer is
 unreachable-but-documented; `dao_transitions.rs` Delegate 0x90 produces

@@ -26,10 +26,11 @@
 //! Scoping law (docs/nato/NATO_N01_N20.md, N13): "<= 12 cycles target,
 //! measured table published". Delivered: static op-count table (deliverable)
 //! + derived dependency depth = 12 for the branchless kernel (the <= 12
-//! figure, proven not asserted) + calibrated wall-clock confirmation with a
-//! disclosed 16x timer margin. `Sequence::order` (alloc + sort, data-sized)
-//! is OUT of kernel scope and is not claimed bounded; the sequencer target
-//! is the documented zero-allocation tick path `next()`.
+//!   figure, proven not asserted) + calibrated wall-clock confirmation with a
+//!   disclosed 16x timer margin. `Sequence::order` (alloc + sort, data-sized)
+//!   is OUT of kernel scope and is not claimed bounded; the sequencer target
+//!   is the documented zero-allocation tick path `next_tick()`.
+//!
 
 use std::hint::black_box;
 use std::time::Instant;
@@ -346,7 +347,7 @@ fn class_words(
     };
     let pn = pn64::pack(marking, pre, post, tid, 0xFF);
     let ocel = ocel64::pack(activity | 0xFF00, 0xFFFF, 0xFFFF, 0xFF, 0xFF);
-    let next = ((marking ^ pre) | post) & 0xFFFF;
+    let next = (marking ^ pre) | post;
     let mask: u64 = if inv_clear {
         (!next) as u64 // full-width, disjoint from m' (maximal shape)
     } else {
@@ -383,11 +384,9 @@ fn n13_static_instruction_count_table_is_published_and_self_consistent() {
     assert_eq!(BRANCHLESS.branches, 0, "kernel must be branch-free");
     assert_eq!(BRANCHLESS.loads + BRANCHLESS.stores, 0, "kernel must be memory-free at the ALU budget level");
     // THE SPEC FIGURE: dependency depth 12 <= 12 cycles.
-    assert!(
+    const _: () = assert!(
         BRANCHLESS_DEPTH <= SPEC_TARGET_CYCLES,
-        "branchless kernel depth {} exceeds the <= {} cycle spec target",
-        BRANCHLESS_DEPTH,
-        SPEC_TARGET_CYCLES
+        "branchless kernel depth exceeds the spec cycle target"
     );
 }
 
@@ -429,7 +428,7 @@ fn n13_measured_worst_case_within_static_bound() {
         targets.push(Target {
             name: "branchless_commit",
             row: BRANCHLESS,
-            kernel: Box::new(move |p, o, m| step_branchless(p, o, m)),
+            kernel: Box::new(step_branchless),
         });
     }
     targets.push(Target {
@@ -449,7 +448,7 @@ fn n13_measured_worst_case_within_static_bound() {
         name: "sequencer_next",
         row: SEQUENCER_NEXT,
         kernel: Box::new(move |_p, _o, _m| {
-            let t = seq.next();
+            let t = seq.next_tick();
             black_box(t)
         }),
     });

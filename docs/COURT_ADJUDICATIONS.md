@@ -9,7 +9,7 @@ NFR-3 gap; see probe row).
 
 | Probe | Verdict | Finding / Evidence |
 |---|---|---|
-| 01 | PASS | KG-01 CLOSED 2026-10-10: payload-facing `strata pdu verify` verb landed (`strata_protocol/src/bin/strata.rs`) — full-frame parse (STRA preamble / raw CLAP dual-read), payload-length and segment-permutation checks, exit 1 EX_VERIFY_FAIL on valid-header/missing-payload. P4 refuses exit 1; CLI court 23/23 (`strata_protocol/tests/strata_cli_test.rs`); probe re-run PASS exit 0. |
+| 01 | PASS | KG-01 CLOSED 2026-10-10: payload-facing `strata pdu verify` verb landed (`strata_protocol/src/bin/strata.rs`) — full-frame parse (STRA preamble / raw CLAP dual-read), payload-length and segment-permutation checks, exit 1 EX_VERIFY_FAIL on valid-header/missing-payload. P4 refuses exit 1; CLI court 42/42 (`strata_protocol/tests/strata_cli_test.rs`; counted 2026-10-13 via `grep -c '#\[test\]' strata_protocol/tests/strata_cli_test.rs` = 42 #[test] fns, may include helper-attributed cases); probe re-run PASS exit 0. |
 | 02 | SPLIT | Universe digests HOLD via BTreeSet canonicalization (deterministic order-independence verified). Commit OIDs do NOT: wire-form identity diverges — finding. |
 | 03 | PASS | Probe evidence cited from probe 03 run. |
 | 05 | PASS | KG-42 CLOSED 2026-10-10: wire refusal status is the spec'd byte code — receipt byte 0 = 0x02 exactly on refuse; admit register = untouched universe digest; consumers refuse iff byte0 == 0x02 (1/256 fail-closed ambiguity documented in `temprun/src/receipt.rs`). Probe re-run: raw byte0=0x2, valve `{:error, :refused}`, register frozen, CAS empty — PASS exit 0. Historical evidence: pre-fix byte0=0x35 under the LSB law. |

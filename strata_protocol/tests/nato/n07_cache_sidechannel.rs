@@ -32,7 +32,7 @@ use strata_protocol::pnabi::{validate_and_advance, expected_tick_ok};
 // (m' cycles 0x0086 -> 0x0084 -> 0x0086 ...). OCEL64 word: activity=0x0102
 // (low byte == tid), tick increments +1 mod 256 per transition.
 const PN0: u64 = 0x0002_0006_0002_0082;
-const OCEL0: u64 = 0x41_00_0046_0055_0102;
+const OCEL0: u64 = 0x4100_0046_0055_0102;
 
 const N_TRANSITIONS: u64 = 1_000_000;
 
@@ -48,7 +48,6 @@ struct Pass {
     checksum_idle_ref: u64,
     max_idle_ns: f64,
     sum_idle_ns: f64,
-    storm_wall_s: f64,
     storm_seq: Vec<u64>,
     idle_seq: Vec<u64>,
 }
@@ -140,7 +139,6 @@ fn run_pass() -> Pass {
         checksum_idle_ref,
         max_idle_ns,
         sum_idle_ns,
-        storm_wall_s: 0.0,
         storm_seq,
         idle_seq,
     }

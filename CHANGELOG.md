@@ -2,6 +2,63 @@
 
 ## Unreleased
 
+### Added
+
+- `strata query` verb: SPARQL SELECT over an RDF graph via oxrdfio +
+  oxigraph (pinned 0.5.9), TSV results, zero-entropy typed refusals
+  (n18-sidechannel court extended to 5 tests with a path-interpolation
+  positive control); golden snapshot + byte-compare court
+  (`query_golden_court` 4/0).
+- KG-P14 closeout (operator option b): p14 probe re-adjudicated to the
+  documented 1/256 fail-closed ambiguity bound — probe VERDICT 0 exit 0
+  (deterministic, witnessed at frame 92); new court
+  `temprun/tests/receipt_stream_ambiguity_test.rs` 5/5 (injected 0x02
+  collision, chained 1000-link stream, 10^6-draw tail pin, byte-identical
+  replay). Escalated structural finding: guest universe digest binds only
+  (tree_entries, parent, message) — nonce/payload absent from the
+  preimage; held for operator adjudication with KG-02.
+- FR-4 Ash projection tier (minimal slice, operator GO): 2 resources +
+  `Stratus.Valve.DataLayer` (no-DO-authority at the layer) + `Refusals`
+  policy module + domain; courts 13/0; deps-tree receipt in
+  `docs/receipts/fr4-ash-deps-tree.txt`.
+- RONR Elixir parity: `Stratus.Valve.Ronr` mirrors the 25-verb
+  `ronr_full.rs` table from ontology.ttl (single source, zero deltas);
+  parity court 9/0; three hand-copied test tables retired.
+- DAO extension table `dao_full.rs` + Elixir mirror (`ChainDelegate 0x92`
+  / `AckDelegation 0x93`) closing the G2 `0x0800 DELEGATION_PENDING`
+  orphan place; protocol 399/0 across 40 suites.
+- Burn/odometer (KG-SX1): `LeaseLedger` per-`lease_pk` append-only
+  odometer, `:lease_insufficient_burn` with zero side effects; wire
+  canonical encoding unchanged (§24.6 → PARTIALLY-SUPPORTED, in-BEAM
+  only).
+- Port membrane (KG-SX7): `busy_limits_port`-bounded driver queue +
+  typed `{:error, :busy}` staged writes + C rlimit shim with minimal-env
+  execve scrub; court flipped from defect-pinning to falsifiable law
+  (5/0 ×3).
+- Drift meta-court `insa_sync_shape_court.rs` (6/0) pinning the T12
+  shared chaining law against live insa-proof source (law text, GENESIS,
+  step update order, KAT triple-pin, vacuity twins).
+- Register model (`strata_protocol/src/register.rs`) + temprun
+  `ParentLedger`: replay/epoch-inversion refusals; `merge_join_total`
+  wired into the pipeline (truncated-lineage now refuses).
+- Laws wired to mechanisms: `gate_status_sync.sh`, `gate_vacuity.sh`
+  (first census: 70 courts, 0 refusals), `gate_receipts.sh` + receipt
+  schema v2 (builder/grader lanes, SELF_GRADED refusal; 26 receipts
+  backfilled, legacy payloads preserved verbatim in `legacy` fields),
+  `gate_doc_drift.sh` wired into gate-docs scope (E55 census);
+  `gen_ledger.py` reproducible with `--check`; `gen_court_inventory.py`
+  → `docs/COURT_INVENTORY.md` (161 courts).
+- pnabi branchless port (KG-N05): `validate_and_advance_ct` with
+  priority-encoded errors; parity court 4/0 (exhaustive + 200k
+  cross-product, vacuity twin). Dudect re-run: FAIL-HONEST — accepted
+  ~1-cycle early-exit residual channel (harness confound ruled out;
+  KNOWN_GAPS KG-N05).
+- CLI refusal fuzz court (207 real-subprocess cases, 206 refused / 1
+  control, vacuity class-representation asserts); RONR walkthrough
+  example; `insa_sync_shape_court`; query verb; E48 refusal-timing
+  closed on both surfaces (pnwire length-refusal ratio 0.20× gate PASS;
+  BEAM valve per-class ≤5× PASS).
+
 ### Changed
 
 - `temprun_step`: bridge rebased to the CTT guest ABI v2 (59ed80c) —
@@ -19,19 +76,42 @@
   digest::32>>`, errno 11 added). New cross-check court
   `tests/abi_version_court.rs` asserts probe == 2 against a real built
   `ctt_wasm_guest.wasm`.
-
-### Pending
-
-- Guest-payload N09/N11 court New-semantics update: not yet landed as
-  of 59ed80c — N09 not executable in-session, N11 RED_CONTRAST_REFUSED
-  under the new CTTG-bytes `New` payload (strata lane).
-- Guest-module pin law (`install_guest_wasm.sh`): present in the
-  working tree (untracked, not yet committed as of this entry) —
-  resolves the artifact, copies it into `temprun/priv/`, and
-  sha256-verifies it against the pin; missing artifact is a typed
-  refusal with the exact build command. Guest module currently
-  pinned/embedded from `temprun/priv/ctt_wasm_guest.wasm` (gitignored
-  by repo law); commit of the pin script remains queued.
+- Guest-payload courts (N09/N11 wave) landed and green under guest ABI
+  v2 (rebase 59ed80c; pin-SHA refresh bf49871):
+  `guest_roundtrip_court` 2/0 and `abi_version_court` 1/0 via
+  `cargo test -p temprun --features host-step` against the real pinned
+  artifact `temprun/priv/ctt_wasm_guest.wasm` (sha256 af932e6c…a01080,
+  sidecar pin verified). The prior Pending blockers ("N09 not
+  executable in-session", "N11 RED_CONTRAST_REFUSED") are stale — both
+  receipts LANDED at full spec scale (N09: 10^6 SEU faults, SDC 0.000%;
+  N11: 884,736 model checks, 0 torn words admitted).
+- Guest-module pin law committed: `scripts/install_guest_wasm.sh` —
+  resolves the artifact, copies into `temprun/priv/`, sha256-verifies
+  against the sidecar pin; missing artifact = typed refusal (exit 2,
+  build command printed), pin mismatch = exit 3.
+- Workspace gating: `temprun/pn_kernel` excluded from the workspace as a
+  standalone `[workspace]` root (no_std cdylib, wasm32-only); host
+  `cargo check/test/clippy --workspace` now exit 0; `just
+  pn-kernel-wasm` + `wasip1` recipes; `just ci` == ci.yml (single rust
+  job, Elixir 1.19/OTP 28, fail-closed `check-wasm-imports` pinned to
+  `temprun.wasm`); `release.yml` aligned and runs `just release-check`.
+- Clippy `-D warnings` debt cleared workspace-wide (~120 lints, real
+  fixes; zero `#[allow]` added, zero lint loosening).
+- ggen re-lock: all 6 packs re-locked (strata-pn64-pack now in
+  `ggen.lock`); pack ontology reconciled to the tree's `pn:` schema;
+  `ggen receipt verify` fully-bound; idempotent dry-run clean. Consumer
+  `.tmpl`-glob regression unblocked with comment-only `README.tmpl`
+  companions (ggen 26.10.11 resolves `.tmpl` only — flagged upstream).
+  `pn64.rs` hand law untouched (pack-side witness projection only).
+- Ignored-test census reduced 7 → 4 (2 newly-enabled courts, 2
+  implemented surfaces; lease/fuel remain ignored WITH KNOWN_GAPS
+  references; fuel test body disclosed as a vacuous stub).
+- Docs: cas.md rewritten to the real `CasSnapshotLedger`/`Wormhole`
+  semantics + CLI section; CI.md corrected against actual ci.yml;
+  DOD_TOLLGATE dated supersede banner; NFR3_PRD_REVISION measured EF
+  floor (2.366 B/quad → re-adjudication recommendation); README counts
+  re-read from receipts; ARD §2.1 divergence note; GATE0.md refreshed
+  (2026-10-13 Gate 0 PASS, 197 B).
 
 ## 26.10.11 — 2026-10-11 (release, tag v26.10.11 @ e0e7f19)
 

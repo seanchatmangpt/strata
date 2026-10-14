@@ -4,20 +4,20 @@
 //! pnabi evaluation and classifies every fault:
 //!
 //! - `REFUSED`     — the transition law returns a typed `PnAbiError`
-//!                   (fail-closed).
+//!   (fail-closed).
 //! - `LAWFUL-DEAD` — the transition admits, but the committed word is exactly
-//!                   the lawful image of the corrupted word under the same
-//!                   spec law (fault effect bounded to the flips themselves:
-//!                   either outcome-equivalent dead-region flips or lawful-
-//!                   but-different states). Matches repo doctrine
-//!                   (`adversarial_pn_court.rs` court 2), same as N09.
+//!   the lawful image of the corrupted word under the same
+//!   spec law (fault effect bounded to the flips themselves:
+//!   either outcome-equivalent dead-region flips or lawful-
+//!   but-different states). Matches repo doctrine
+//!   (`adversarial_pn_court.rs` court 2), same as N09.
 //! - `SDC`         — silent data corruption: the transition admits while
-//!                   committing something OTHER than the lawful image of the
-//!                   corrupted word (fault amplification).
+//!   committing something OTHER than the lawful image of the
+//!   corrupted word (fault amplification).
 //! - `HALT`        — iteration neither refuses nor admits (hang/panic).
-//!                   Structurally 0 (total function returning `Result`);
-//!                   disclosed, not assumed. A panic under fault is scored
-//!                   SDC-class (admits-by-crash), never credited fail-closed.
+//!   Structurally 0 (total function returning `Result`);
+//!   disclosed, not assumed. A panic under fault is scored
+//!   SDC-class (admits-by-crash), never credited fail-closed.
 //!
 //! Injection classes (all deterministic, seed below):
 //!
@@ -41,7 +41,7 @@
 //! and the random class carries statistical weight. Release run < 5 min.
 //!
 //! Determinism: a single 64-bit LCG (Knuth constants), fixed seed
-//! 0x4E413130_0000_0001 ("NA10"). Per-class histogram printed.
+//! 0x4E41_3130_0000_0001 ("NA10"). Per-class histogram printed.
 
 use strata_protocol::{ocel64, pn64, pnabi};
 
@@ -69,7 +69,7 @@ impl Lcg {
 // PN64 layout: marking[15:0] pre[31:16] post[47:32] tid[55:48] flags[63:56]
 // OCEL64 layout: activity[15:0] src[31:16] tgt[47:32] qual[55:48] tick[63:56]
 const PN_BASE: u64 = 0x0002_000C_0002_0082;
-const OCEL_BASE: u64 = 0x41_00_0046_0055_0102;
+const OCEL_BASE: u64 = 0x4100_0046_0055_0102;
 const INVARIANT_MASK: u64 = 0x0000_0000_0000_0010; // bit 4 forbidden in m'
 
 /// Independent re-derivation of the spec law (NOT a call into `pnabi`), used
@@ -118,7 +118,7 @@ fn n10_seu_double_bit_zero_sdc() {
     const RANDOM_N: u64 = 292_000;
     const N: u64 = ADJ_REPS * 112 + BYPASS_REPS * 16 + RANDOM_N; // 500,000
 
-    let mut rng = Lcg(0x4E413130_0000_0001); // "NA10"
+    let mut rng = Lcg(0x4E41_3130_0000_0001); // "NA10"
 
     let mut refused: u64 = 0;
     let mut lawful_dead: u64 = 0;

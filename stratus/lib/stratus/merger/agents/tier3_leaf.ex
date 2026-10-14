@@ -51,8 +51,13 @@ defmodule Strata.Merger.Agents.Tier3 do
     @typedoc "Saga boundary transition atoms."
     @type boundary :: :saga_start | :saga_join | :saga_complete | :saga_abort
 
-    @typedoc "Boundary plan entry: owning agent, its lease cell, classified transition."
-    @type plan_entry :: %{agent: atom() | nil, cell: binary(), boundary: boundary()}
+    @typedoc "Boundary plan entry: owning agent, its lease cell, classified transition. `ok` carries the leaf result's success flag so `execute/1` can re-classify without re-running the leaf (absent = success)."
+    @type plan_entry :: %{
+            required(:agent) => atom() | nil,
+            required(:cell) => binary(),
+            required(:boundary) => boundary(),
+            optional(:ok) => boolean()
+          }
 
     @typedoc "Working map carried into `:executing`."
     @type working :: %{lease: Lease.t(), plan: [plan_entry()]}
@@ -76,6 +81,7 @@ defmodule Strata.Merger.Agents.Tier3 do
         fails closed; aborting is the supervisor's enactment)
     """
     @spec classify({:ok, leaf_result()} | {:error, atom()}, binary() | nil) :: boundary()
+    def classify({:ok, %{ok: false}}, _saga_id), do: :saga_abort
     def classify({:ok, _result}, nil), do: :saga_start
     def classify({:ok, _result}, _saga_id), do: :saga_join
     def classify({:error, _reason}, _saga_id), do: :saga_abort
@@ -93,12 +99,16 @@ defmodule Strata.Merger.Agents.Tier3 do
       %{aborted: aborted, plan: plan}
     end
 
+    defp entry(%{agent: agent, cell: cell, ok: false} = result, saga_id) do
+      %{agent: agent, cell: cell, ok: false, boundary: classify({:ok, result}, saga_id)}
+    end
+
     defp entry(%{agent: agent, cell: cell} = result, saga_id) do
-      %{agent: agent, cell: cell, boundary: classify({:ok, result}, saga_id)}
+      %{agent: agent, cell: cell, ok: true, boundary: classify({:ok, result}, saga_id)}
     end
 
     defp entry({:error, _reason} = err, saga_id) do
-      %{agent: nil, cell: <<>>, boundary: classify(err, saga_id)}
+      %{agent: nil, cell: <<>>, ok: false, boundary: classify(err, saga_id)}
     end
 
     # -- MergerAgent callbacks ---------------------------------------------------
@@ -115,15 +125,20 @@ defmodule Strata.Merger.Agents.Tier3 do
 
     @impl true
     def execute(%{lease: %{saga_id: saga_id}, plan: plan}) do
-      # Re-classify every entry against the lease's saga id, purely.
-      plan =
-        Enum.map(plan, fn
+      # `plan` is either the build_plan/2 wrapper (%{aborted:, plan: entries})
+      # from admit or a bare entry list; normalize to the entries. Then
+      # re-classify every entry against the lease's saga id, purely — the
+      # carried `ok` flag preserves a failed leaf across re-computation.
+      entries = if is_map(plan), do: Map.get(plan, :plan, []), else: plan
+
+      entries =
+        Enum.map(entries, fn
           %{agent: agent, cell: cell} = e ->
-            %{e | boundary: classify({:ok, %{agent: agent, cell: cell}}, saga_id)}
+            %{e | boundary: classify({:ok, %{agent: agent, cell: cell, ok: Map.get(e, :ok, true)}}, saga_id)}
         end)
 
-      aborted = Enum.any?(plan, &(&1.boundary == :saga_abort))
-      {:ok, %{saga_id: saga_id, aborted: aborted, plan: plan}}
+      aborted = Enum.any?(entries, &(&1.boundary == :saga_abort))
+      {:ok, %{saga_id: saga_id, aborted: aborted, plan: entries}}
     end
 
     def execute(_), do: {:error, :malformed_payload}

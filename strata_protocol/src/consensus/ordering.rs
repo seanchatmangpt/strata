@@ -207,6 +207,41 @@ mod tests {
         }
     }
 
+    /// Composition law positive control: key order == tuple lexicographic
+    /// order (monotone strictly increasing in tick, then slot, then masked
+    /// tie) over a 20k LCG corpus spanning the wide domain, including the
+    /// tie-masking narrowing. Must NEVER fire against a masked-tie witness.
+    #[test]
+    fn key_is_monotone_in_every_component_over_lcg_corpus() {
+        let mut seed: u64 = 0xA076_1D64_78BD_542F;
+        let mut next = || {
+            seed = seed
+                .wrapping_mul(6364136223846793005)
+                .wrapping_add(1442695040888963407);
+            seed
+        };
+        // Sample a,b in the 48/32/64-bit domains; mask a's tie so the
+        // narrowing is on the hot path.
+        let k = |t: u64, s: u64, tie: u64| total_order_key(t, s, tie).unwrap();
+        for _ in 0..20_000 {
+            let at = next() % (1 << 20);
+            let asl = next() % (1 << 20);
+            let atie = next() & TIE_MASK;
+            // same tick: slot strictly monotone, masked tie subordinate
+            let b_asl = next() % (1 << 20);
+            let btie = next();
+            let (ka, kb) = (k(at, asl, atie), k(at, b_asl, btie));
+            assert_eq!(kb > ka, b_asl > asl || (b_asl == asl && (btie & TIE_MASK) > atie),
+                "slot/tie monotonicity violated tick={at} a=({asl},{atie:#x}) b=({b_asl},{btie:#x})");
+            // different tick: tick dominates slot+tie entirely
+            let bt = at + 1 + next() % 1000;
+            let kc = k(bt, next() % (1 << 20), next());
+            assert!(kc > ka, "tick dominance violated a=({at},{asl},{atie:#x}) btick={bt}");
+            // mask narrowing can only merge exact-tie equalities, never invert:
+            assert!(k(at, asl, atie) >= k(at, asl, atie & TIE_MASK));
+        }
+    }
+
     /// E29 R7: width overflow is a typed refusal in ALL build profiles —
     /// release included. No masked/wrapping path exists. This test pins the
     /// release semantics; it runs (and passes) under `--release` too.

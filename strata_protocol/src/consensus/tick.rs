@@ -33,11 +33,14 @@ pub enum TickError {
 
 impl core::fmt::Display for TickError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        // Zero diagnostic entropy (crate convention, cf. `OrderingError`):
+        // the Display message names the law violated, never the sampled
+        // tick values — those stay in the typed fields / Debug output for
+        // callers that explicitly opt in.
         match self {
-            TickError::Regression { prev, next } => write!(
-                f,
-                "tick regression: next={next} <= prev={prev}"
-            ),
+            TickError::Regression { .. } => {
+                f.write_str("tick regression: monotonic clock did not strictly advance")
+            }
         }
     }
 }

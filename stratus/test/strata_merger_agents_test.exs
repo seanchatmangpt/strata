@@ -203,6 +203,31 @@ defmodule Strata.MergerAgentsTest do
       assert work.plan
     end
 
+    test "A11 classifies a failed leaf result as :saga_abort, never :saga_start/:saga_join" do
+      # Positive control: this shape was previously misclassified as
+      # :saga_start (fail-open) because classify/2 never read result.ok.
+      assert :saga_abort = Strata.Merger.Agents.Tier3.A11SagaBoundary.classify({:ok, %{agent: :a12, cell: "leaf", ok: false}}, nil)
+      assert :saga_abort = Strata.Merger.Agents.Tier3.A11SagaBoundary.classify({:ok, %{agent: :a12, cell: "leaf", ok: false}}, "saga-1")
+    end
+
+    test "A11 build_plan fails the whole boundary closed on a failed leaf and execute/1 keeps it failed" do
+      l = lease("r-a11-fail", :a11)
+
+      results = [%{agent: :a12, cell: "good-leaf", ok: true}, %{agent: :a13, cell: "bad-leaf", ok: false}]
+
+      assert {:ok, work} = Strata.Merger.Agents.Tier3.A11SagaBoundary.admit(%{lease: l, results: results})
+      assert work.plan.aborted
+
+      boundaries = Enum.map(work.plan.plan, & &1.boundary)
+      assert boundaries == [:saga_start, :saga_abort]
+
+      # Recompute path: execute/1 re-classification must not resurrect the
+      # failed leaf into a success class.
+      assert {:ok, exec} = Strata.Merger.Agents.Tier3.A11SagaBoundary.execute(work)
+      assert exec.aborted
+      assert Enum.any?(exec.plan, &(&1.boundary == :saga_abort))
+    end
+
     test "A12 dispatch admits a lease carrying a guest leaf" do
       l = lease("r-a12", :a12, leaf: :hhi_calc)
       assert {:ok, work} = Strata.Merger.Agents.Tier3.A12TemprunDispatch.admit(%{lease: l})

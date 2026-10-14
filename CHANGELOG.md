@@ -4,6 +4,14 @@
 
 ### Added
 
+- `receipt verify` refusal surface closes its fuzz-blind hole: the verb now
+  takes `<pub> <file>` and cryptographically verifies the ML-DSA-65 seal
+  over the receipt's 72B payload (previously any 3381-byte file verified —
+  the check was wire-length-only). New court
+  `strata_protocol/tests/receipt_verify_fuzz_court.rs` (198 cases, fixed
+  seed 0x5EED_BEEF_CAFE_F00D): 197 refused (exit 1 verify-fail / exit 2
+  usage), sealed control exit 0; 3 new hand-written refusal tests in
+  `strata_cli_test.rs` (45 total).
 - `strata query` verb: SPARQL SELECT over an RDF graph via oxrdfio +
   oxigraph (pinned 0.5.9), TSV results, zero-entropy typed refusals
   (n18-sidechannel court extended to 5 tests with a path-interpolation
@@ -28,7 +36,7 @@
 - DAO extension table `dao_full.rs` + Elixir mirror (`ChainDelegate 0x92`
   / `AckDelegation 0x93`) closing the G2 `0x0800 DELEGATION_PENDING`
   orphan place; protocol 399/0 across 40 suites.
-- DAO parity court `stratus/test/dao_parity_court.exs` (Elixir mirror
+- DAO parity court `stratus/test/dao_parity_court_test.exs` (Elixir mirror
   vs `dao_full.rs` table, typed EXEMPT vacuity disposition) + Stratus
   resource courts `stratus/test/stratus/resources/` (`no_authority`,
   `no_authority_attack`, `refusal_binding`, `valve_state`) closing the
@@ -82,6 +90,12 @@
 - Saga-telemetry court `stratus/test/stratus_saga_telemetry_test.exs`
   (3 tests, per-event witness counts > 0 anti-vacuity) closing the dead
   `[:stratus, :merger, :saga, *]` telemetry surface.
+- sign-refusal fuzz court `strata_protocol/tests/sign_refusal_fuzz_court.rs`
+  (crypto-boundary `sign` verb; 114 real-subprocess cases, 113 refused /
+  1 valid control) + receipt-verify fuzz court
+  `strata_protocol/tests/receipt_verify_fuzz_court.rs` (same real-subprocess
+  law over the `strata receipt verify` surface; ML-DSA-65-sealed 3381B wire,
+  bitflip/arg-shape mutation classes, EX_VERIFY_FAIL/EX_USAGE vocabulary).
 
 ### Changed
 
@@ -169,6 +183,23 @@
   reconciled; N05 chain refreshed to KG-N05 FAIL-HONEST disposition;
   verify-first receipts pass (L156 owner-tag fix, M16 count corrected);
   shared valve reset around `pdu_layout_test` ingestion.
+- Port-bridge liveness timers (T25): `init_bridge` (30 s) and
+  `bridge_stall` (60 s) timeouts on the temprun worker port-bridge
+  lifecycle + timeout court; closes the two T15 liveness gaps (init
+  indefinite wait, unbounded pending on a silent bridge).
+- KG-SX1/E-M19 ledger hardening: `record_burn` bounded by an
+  init-fixed per-pk burn ceiling (`:burn_ceiling_exceeded`, zero side
+  effects, exactly-at-ceiling positive control) and admit-path refuses
+  malformed digests instead of silently skipping.
+- Receipts-hygiene docs wave: `docs/RECEIPTS_DIRS.md` directory
+  convention; receipts-hygiene audit closeout (glob sidecar ignores,
+  dir-law citation, stale-row fix); `docs/PN64_RECEIPTS.md` post-wave-2
+  index (L150/L153/L156, M04/M09/M16, N01-N20); README CLI exit-code
+  contract (0/1/EX_VERIFY_FAIL/2/EX_USAGE) + refreshed protocol test
+  counts (101 binaries / 879 `#[test]` fns); post-wave session work
+  recorded in `docs/RELEASE_TRAIN_v26.10.12.md` §3 (sagas positivity
+  guard, telemetry crash-path fix, pn64 mirror court, pn_frame
+  15-vector, `shacl_guard` integration, sign/receipt fuzz courts).
 
 ## 26.10.11 — 2026-10-11 (release, tag v26.10.11 @ e0e7f19)
 

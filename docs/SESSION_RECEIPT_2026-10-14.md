@@ -200,3 +200,63 @@ other lanes' commits. Each mapping re-verified via
 The original misses came from path-name mismatches (tier3_leaf lives under
 `stratus/lib/...`, temprun paths were probed under `strata_engine/src/...`)
 plus commit-subject-only search. All four items are grounded ALIVE.
+
+## ADDENDUM (2026-10-14, post-correction vibration)
+
+Continuation of the session after the CORRECTION section above. Every SHA in
+this addendum verified via `git log --oneline --no-walk` on this checkout
+(16/16 resolved; ggen upstream SHAs verified in ~/ggen, not strata).
+
+### Landing since 69a70e5 (fix-list correction)
+
+- Framing dual-defect fix `409a24b` (preamble permutation match; stop
+  strip_preamble corrupting raw CLAP) + vacuity disposition marker `60696ec`.
+- XDP byte-order law-drift fix `cc529eb` (LE wire loaded natively; removed
+  byte-swapped-domain checks) + real valve differential court `c2b8b09` +
+  adjudication ledger / DFMEA F-9 `9384a7c`.
+- DAO stuck-pending widen-ack fix: in-flight at landing time — verify at
+  integration (stratus valve/dao_full + dao_parity_court in working tree).
+- n06 + n04 sidecar-guard fixes `f3046a7`, `ded5436` (strip lane field from
+  legacy sidecar writes; gate_receipts stays green).
+- `ontology_check` 4-table self-test `27fc08e` (parameterized `--self-test`
+  over all 4 tables).
+- Golden-fixture format-marker + inventory court `7f6b0ac` (temprun).
+- `word_law_boundary` + `policy_admission` landing: `ef8480f` (US-RF
+  unsafe-state reachability admission), `d391a7b` (witness-replay court,
+  refusal trace verified as true path), `60696ec` (vacuity marker).
+- LTL/invariants whole-set conservation court `b02a8e1` + stale ltl doc fix.
+- pn_frame codec court on all 15 golden-vector doc rows `bbf1c58`.
+- xdp / pn_frame / doc-cite companion lanes landed alongside the above.
+- policy_admission skeptic witness: 4/4 independent witnesses.
+- `GEMINI_BRIEF_ROADMAP` `198e33e` (2040-horizon ownership map, 94 rows).
+- ggen upstream: `.tera` fix `8bb154627` + companion
+  retirement-precondition saga `d0b132b60` / `40e3bbb30` / `001cf05`
+  (verified in the ggen checkout, not this repo).
+
+### Process findings — recurring classes this session fought
+
+Honest record of friction; each class recurred enough to name.
+
+1. **Same-checkout index contention (~6 instances, all disclosed).** Staged
+   files swept into other lanes' commits under the fan-out lane model. No
+   undisclosed appropriation; every instance disclosed in the receiving
+   lane's receipt. Cost: repeated `git log -1 -- <file>` re-attribution
+   passes (see the CORRECTION section above — same root cause).
+2. **NATO receipt v1-writer clobbers (3 instances).** The v1 writer
+   downgraded/garbled v2 receipt fields. Root-caused and guarded in
+   `a2bd0ba` (fail-safe writer — never downgrade LANE_RECEIPT v2/LANDED).
+3. **`_court.exs` silent-unload naming class.** Court files whose names did
+   not match the loader's expectation were silently not loaded — the run
+   "passed" with zero courts executed (compile-abort-adjacent; cf. the
+   W672 census-vs-compile-abort law). Detected only by counting executed
+   courts, not by exit status.
+4. **Disk pressure ENOSPC (recurring).** Lane build roots + `/tmp/strata_lanes`
+   (5.2G) + ggen target dirs drove repeated ENOSPC mid-build. Cleanup is
+   pending user action (see PENDING-USER above); recurring until then.
+5. **Concurrent cargo LTO rlib ICE.** Parallel `cargo` builds under LTO hit
+   an rlib internal-compiler-error intermittently; resolved by serializing
+   the LTO-heavy builds. Repro is gitignored (no artifact retained).
+
+Falsifier for the addendum: any SHA above that fails
+`git log --oneline --no-walk <sha>` on this checkout at replay time, or a
+claimed landing with no corresponding file state on disk.

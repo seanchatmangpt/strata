@@ -1,7 +1,7 @@
 # PN64_DOCS_INDEX
 
 One row per PN64 doc in `docs/`. Every row verified on disk via
-`ls -l docs/` (2026-10-11, branch `fix/kg-42-status-code`). Mtimes are the
+`ls docs/*.md` (2026-10-13, branch `fix/kg-42-status-code`). Mtimes are the
 last-updated evidence; see the receipts doc for landed-work evidence.
 
 ## Index
@@ -27,6 +27,28 @@ last-updated evidence; see the receipts doc for landed-work evidence.
 | docs/PN64_DOD.md | Gate-by-gate Definition of Done, release v26.10.11, evidence-backed statuses. | Release / coordinator | 2026-10-11 01:19 |
 | docs/PN64_RECEIPTS.md | Index of landed lane receipts, derived only from `docs/pn64_LANES.md`. | Coordinator / auditors | 2026-10-11 01:13 |
 | docs/pn64_LANES.md | Lane partition ledger for the 20-lane fan-out on the canonical checkout. | Coordinator / lane owners | 2026-10-11 01:19 |
+| docs/ADJUDICATION_LEDGER.md | Generated lane artifact reconciling the dossier's claims row by row. | Auditors | 2026-10-13 23:23 |
+| docs/ARD.md | Architecture-risk register: non-ambient authority and the other standing risk clauses. | Architects / reviewers | 2026-10-13 17:11 |
+| docs/ash-tier-scope.md | GO/DEFER proposal for PRD FR-4 (Ash/AshR2RML SELECT-only tier). | Coordinator | 2026-10-10 04:33 |
+| docs/cas.md | Lane S4: content-addressed store (`strata_protocol/src/cas.rs`) for decentralized persistence. | Implementers | 2026-10-13 17:14 |
+| docs/CI.md | The `just ci` verification ladder, recipe by recipe. | CI / gate runners | 2026-10-13 23:26 |
+| docs/CI_VERIFIED.md | Local receipt of a full `ci.yml` ladder run (2026-10-10). | CI / gate runners | 2026-10-10 05:13 |
+| docs/COURT_ADJUDICATIONS.md | Ledger of probe-court results, finalized 2026-10-10. | Reviewers / auditors | 2026-10-13 23:23 |
+| docs/COURT_INVENTORY.md | Generated inventory of all courts (`scripts/gen_court_inventory.py`); regenerate on additions. | Reviewers / auditors | 2026-10-13 23:24 |
+| docs/DFMEA.md | Repo-wide DFMEA; every remediation cite verified on disk at authoring time. | Reviewers / auditors | 2026-10-10 11:18 |
+| docs/DOD_TOLLGATE_VERIFICATION.md | Tollgate-by-tollgate DoD verification; SUPERSEDED banner 2026-10-13 — read before citing verdicts. | Release / coordinator | 2026-10-13 17:14 |
+| docs/GAUGE_RR.md | Real DfLSS Gauge R&R study over the temprun arena admission path. | Perf / process owners | 2026-10-10 11:21 |
+| docs/INTEGRATION_QUEUE.md | Integration queue derived from `git status --porcelain` ground truth at a pinned HEAD. | Coordinator | 2026-10-13 18:38 |
+| docs/NFR3_PRD_REVISION.md | Operator-adjudicated revision of PRD NFR-3, with companion ledger. | Coordinator | 2026-10-13 17:29 |
+| docs/PN64_FUZZ_LOG.md | One row per fuzz-type court (lane L132, wave 2). | Reviewers / auditors | 2026-10-11 01:20 |
+| docs/POKA_YOKE_CONTROLS.md | Formalization of the six mechanical error-proofing gates. | Reviewers / auditors | 2026-10-10 21:23 |
+| docs/PRD.md | Product requirements: the sovereign-execution-runtime problem statement. | Coordinator / new engineer | 2026-10-10 11:19 |
+| docs/PRD_TRACEABILITY.md | Every PRD requirement mapped to its enforcing court/probe and verdict. | Reviewers / auditors | 2026-10-12 04:40 |
+| docs/RELEASE.md | `MIX_ENV=prod mix release stratus` procedure, incl. stale-config recovery. | Release | 2026-10-10 04:45 |
+| docs/SOAK_LOG.md | Append-per-run soak ledger (temprun harness, Cp/Cpk per run). | Perf owners | 2026-10-10 04:35 |
+| docs/SPC_CAPABILITY.md | Real per-transition latency dataset (N=1000 admissions) and capability stats. | Perf owners | 2026-10-10 11:19 |
+| docs/temprun.md | The temprun bridge connecting the stratus BEAM cohort to the Rust courts. | Systems / BEAM plane | 2026-10-12 00:39 |
+| docs/PN64_DOCS_INDEX.md | This index (41 top-level docs in `docs/`, one row each). | New engineer | 2026-10-13 (this edit) |
 
 ## Reading order (new engineer)
 

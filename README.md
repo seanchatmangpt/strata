@@ -32,11 +32,17 @@ as a witness artifact only; it is deliberately not landed into the tree.
 Every command below was executed and verified on 2026-10-10.
 
 ```sh
+# One command: the full verification ladder (test, wasm, lint, gates, stratus)
+just ci
+
 # Protocol crate (note the hyphenated package id: strata-protocol)
 cargo test -p strata-protocol --no-fail-fast
 
 # Elixir valve
 cd stratus && mix test
+
+# Elixir valve incl. heavy courts (fuzz, concurrency, wasmtime; excluded by default)
+just test-stratus-full
 
 # Soak / process-capability harness (default 10^6 cycles; override: --cycles N)
 # --release is required: the dev-profile build fails the Cp/Cpk gates
@@ -45,7 +51,13 @@ cargo run -p temprun --release --bin soak
 # wasm32 arena + imports gate
 just test-wasm
 just check-wasm-imports
+
+# no_std pn_kernel wasm32 cdylib (standalone workspace)
+just pn-kernel-wasm
 ```
+
+No `mix deps.get` needed for the stratus valve: `stratus/deps` is committed
+to the tree.
 
 Known-red as of this writing: the N05 dudect court
 (`n05_dudect_timing`, FAIL-HONEST — accepted ~1-cycle valid-vs-refusal

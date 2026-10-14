@@ -1,7 +1,7 @@
 # PN64_MATRIX
 
 Court x law coverage matrix. Rows = laws, cells cite real test files and
-`fn` names verified by grep (2026-10-11, branch `fix/kg-42-status-code`).
+`fn` names verified by grep (2026-10-13, branch `fix/kg-42-status-code`).
 Citation only — nothing was run.
 
 Legend: `covers` = dedicated court(s) prove the law; `partial` = incidental
@@ -14,7 +14,9 @@ coverage only; `open` = no court found by grep.
 | Conformance low-byte | `pn_fuzz_court.rs :: law_conformance`; `xlang_pn_vector_court.rs :: conformance_law_vectors` | covers |
 | Enablement | `pn_fuzz_court.rs :: law_enablement`; `ronr_court.rs :: every_ronr_entry_fires_from_pre_and_fails_closed_from_zero` | covers |
 | Forbidden-bit invariant | `pn_fuzz_court.rs :: law_forbidden_bit`; `rule_lowering_court.rs :: negation_as_failure_forbidden_bit_law`; `kernel_parity_court.rs :: high_invariant_mask_bits_are_inert_in_both` | covers |
-| Monotonic tick | `tick_wrap_court.rs :: exhaustive_8bit_pair_census_exactly_the_successor_law`; `pn64_court.rs :: tick_guard_sequential_ok_replay_rejected`; `adversarial_pn_court.rs :: court1_replay_full_chain_tick_monotonic` | covers |
+| Monotonic tick | `tick_wrap_court.rs :: exhaustive_8bit_pair_census_exactly_the_successor_law`; `pn64_court.rs :: tick_guard_sequential_ok_replay_rejected`; `adversarial_pn_court.rs :: court1_replay_full_chain_tick_monotonic`; `monotonic_tick_court.rs :: court1_100k_real_clock_samples_never_regress`, `court2_unsorted_vector_refused_with_typed_regression` | covers |
+| Cross-runtime DAO/RONR parity | `stratus/test/dao_parity_court.exs :: ontology has exactly 15 pn:Dao* Transition rows (drift tripwire)`, `DaoFull.lookup matches every ontology row bit-exactly (15 rows)` (parses `ontology.ttl` as single source) | covers |
+| No-DO-authority (SELECT-only resources) | `stratus/test/stratus/resources/no_authority_test.exs :: can?(:create) is false on both resources`, `DataLayer.update/2 errors :no_do_authority`; `no_authority_attack_test.exs :: update that reaches DataLayer.update/2 errors :no_do_authority even with authorize?: false` | covers |
 | Precedence | `precedence_court.rs :: precedence_error_wins_over_token_starvation`; `precedence_property_court.rs :: census_2048_cells_total_monotone_consistent`; `pnabi_order_court.rs :: eight_class_precedence_census_over_canonical_six`; `ronr_court.rs :: precedence_rank_ordering` | covers |
 | Token conservation / terminal exemption | `pn64_court.rs :: hundred_firings_conserve_tokens`; `fr9_conservation_test.rs :: fr9_conservation_holds_over_100_transitions`; `net_consistency_court.rs :: deadlock_verdicts_agree_across_terminal_policies` | covers |
 | Trace chain | `pn_trace_attest_court.rs :: flipped_bit_in_trace_file_breaks_attestation`; `cli_pn_court.rs :: one_bit_flip_in_entry_k_pn_word_refuses_at_step_k_for_each_k`; `cli_pn_court.rs :: truncation_ladder_refuses_every_partial_tail` | covers |

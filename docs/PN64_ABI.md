@@ -78,6 +78,18 @@ All under `strata_protocol/src/`, declared in `strata_protocol/src/lib.rs`:
 | `dao_vocab.rs`| DAO verb/noun vocabulary (`action` = verb<<8 \| noun)       |
 | `rehydrate.rs`| OCEL64 words -> OCEL 2.0 events -> canonical JSON           |
 | `logsink.rs`  | append-only log entries + trace verification (`verify_trace`)|
+| `register.rs` | frame register: parent-digest chain tip + epoch-nonce high-water mark |
+
+## Frame Register
+
+`strata_protocol/src/register.rs` holds the protocol-level chain state a
+frame ingest advances. The chain tip is a BLAKE3 commitment over the exact
+frame bytes (`Register::parent`, 32 B). With a register present, a frame
+whose declared parent digest does not match the tip is a replay and a frame
+whose epoch nonce does not strictly advance the `nonce_high_water` mark is
+an inversion; both refuse with the typed `Invalid` verdict
+(`Register::ingest`). A fresh (`None`) register accepts any well-formed
+frame as the seed.
 
 ## RONR Canonical Six
 
@@ -141,6 +153,10 @@ trace-ok         1 steps
 $ strata pn rehydrate --file v01.pnlog
 {"ocel:events":{"e_0":{"ocel:activity":1, ...,"ocel:tick":16}}}
 ```
+
+`strata query` runs read-only SPARQL over the committed `ontology.ttl`
+(TSV out; golden court `strata_protocol/tests/query_golden_court.rs` parses
+the real binary and matches the committed snapshot byte-for-byte).
 
 ## Verification
 

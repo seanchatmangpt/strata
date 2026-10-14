@@ -37,6 +37,15 @@ defmodule Stratus.PduLayoutTest do
 
   alias Stratus.Valve
 
+  # These tests ingest into the shared application (named) valve, which is
+  # global state across the suite. Reset to genesis before and after so this
+  # file neither consumes nor leaves cross-file register leakage.
+  setup do
+    Stratus.Valve.reset()
+    on_exit(fn -> Stratus.Valve.reset() end)
+    :ok
+  end
+
   # ---- Rust normative layout (transcribed from pdu.rs) --------------------
 
   @rust_magic <<0x43, 0x4C, 0x41, 0x50>>

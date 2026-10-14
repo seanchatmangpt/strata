@@ -24,10 +24,28 @@
       "LAWFUL-DEAD_lawful_but_different": 97529,
       "SDC": 0,
       "HALT": 0,
-      "exhaustive_adjacent": {"total": 168000, "REFUSED": 51000, "LAWFUL-DEAD": 117000, "SDC": 0},
-      "bypass": {"total": 40000, "REFUSED": 38731, "admitted_lawful": 1269, "SDC": 0},
-      "random_nonadjacent": {"total": 292000, "REFUSED": 126701, "LAWFUL-DEAD": 165299, "SDC": 0},
-      "word_targets": {"pn": 270164, "ocel": 229836}
+      "exhaustive_adjacent": {
+        "total": 168000,
+        "REFUSED": 51000,
+        "LAWFUL-DEAD": 117000,
+        "SDC": 0
+      },
+      "bypass": {
+        "total": 40000,
+        "REFUSED": 38731,
+        "admitted_lawful": 1269,
+        "SDC": 0
+      },
+      "random_nonadjacent": {
+        "total": 292000,
+        "REFUSED": 126701,
+        "LAWFUL-DEAD": 165299,
+        "SDC": 0
+      },
+      "word_targets": {
+        "pn": 270164,
+        "ocel": 229836
+      }
     },
     "sdc_rate": "0.000%",
     "bypass_court": "Every pre[16..=31] x INVARIANT_MASK(bit 4) simultaneous pair constructed explicitly; masked bit forced to SET (the only bypass-capable direction), pre flip direction LCG-chosen. 38,731/40,000 typed-refused; 1,269 landed LAWFUL-DEAD (lawful image of the corrupted word — the flipped pre bits were dead w.r.t. enablement); 0 SDC. The forbidden-bit check survives the simultaneous pre-flip in every case.",
@@ -41,5 +59,9 @@
     }
   ],
   "started_at": "2026-10-12T00:00:00Z",
-  "finished_at": "2026-10-12T00:00:00Z"
+  "finished_at": "2026-10-12T00:00:00Z",
+  "builder_lane": "N10",
+  "grader_exemption": {
+    "reason": "No independent grader lane of record at landing: receipt predates the LANE_RECEIPT v2 grading fields (builder_lane/grader_lane). Backfilled 2026-10-13 with this typed exemption rather than a fabricated grader; grading enforcement applies to receipts minted after this changeset."
+  }
 }

@@ -13,7 +13,8 @@
     "exit": 0,
     "tests_passed": 6,
     "tests_failed": 0,
-    "run_tail": "test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.39s"
+    "run_tail": "test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.39s",
+    "output_digest": "sha256:71cadfd48aff7692b40d7db726a3848c769c3ce3dee4e2a2035f20bb403fd641"
   },
   "scoping_law": {
     "spec_mandate": "N15: model-check (Erlang TLC or Elixir property equivalent) box-diamond-admitted under weak fairness",
@@ -27,7 +28,12 @@
       "full_net": {
         "reachable_markings": 40,
         "liveness_violations": 4,
-        "traps": ["0x0884", "0x2084", "0x4884", "0x6084"],
+        "traps": [
+          "0x0884",
+          "0x2084",
+          "0x4884",
+          "0x6084"
+        ],
         "trap_structure": "RECESS_PENDING and/or POINT_OF_ORDER_RAISED with DEBATABLE cleared and no resolving arc in the table — a modeled-vocabulary gap (the net has no recess-end / ruling arc), reachable only through the non-admission interrupt verbs 0x09/0x0B",
         "witness_path": "0x0081 -0x01-> 0x0082 -0x02-> 0x008C -0x09-> 0x0884 (and -0x0B-> 0x2084)",
         "verdict": "□◇disposition holds on 36/40 markings; the 4 counterexamples are typed and pinned — any ronr::RONR change that adds/removes a trap or resizes the reachable set fails the court"
@@ -63,5 +69,9 @@
   },
   "deviations": [],
   "started_at": "2026-10-12T00:00:00Z",
-  "finished_at": "2026-10-12T00:30:00Z"
+  "finished_at": "2026-10-12T00:30:00Z",
+  "builder_lane": "N15",
+  "grader_exemption": {
+    "reason": "No independent grader lane of record at landing: receipt predates the LANE_RECEIPT v2 grading fields (builder_lane/grader_lane). Backfilled 2026-10-13 with this typed exemption rather than a fabricated grader; grading enforcement applies to receipts minted after this changeset."
+  }
 }

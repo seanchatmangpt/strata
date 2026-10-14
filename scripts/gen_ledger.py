@@ -10,7 +10,20 @@ is written.
 
 Usage:
   python3 scripts/gen_ledger.py <receipts_dir> [out.md]
+  python3 scripts/gen_ledger.py <receipts_dir> out.md --check   # exit 0 iff out.md already identical
   python3 scripts/gen_ledger.py --selftest
+
+SCOPE NOTE (deliberate, 2026-10-13): this generator emits the STATUS TABLE
+only. docs/innovation/ERRC2_mutation_ledger.md's Verdict Table, Survivors,
+Findings, Gate Output, and Totals sections are hand-maintained evidence
+prose and are NOT generated or clobbered by this script. Re-run
+`python3 scripts/gen_ledger.py docs/receipts docs/innovation/ledger_status_table.md`
+to refresh the generated table; the ledger prose stays manual.
+
+Non-receipt JSON files (e.g. cleanup-plan.json, which lacks a `lane` field)
+are SKIPPED with a disclosed note, not refused — they are out of the lane-
+receipt domain, not invalid receipts. Files that HAVE a `lane` field but
+fail validation are still REFUSED with a typed error.
 
 Determinism: rows sorted by (lane, started_at, source filename); no
 timestamps, paths, or environment values enter the output.
@@ -32,17 +45,32 @@ TEST_COUNT_RE = re.compile(r"(\d+)\s*/\s*(\d+)")
 
 
 def load_receipts(receipts_dir):
-    """Load + validate every *.json in dir. Returns list of (filename, dict).
-    Raises TypedRefusal on any invalid receipt."""
+    """Load + validate every *.json in dir. Returns (receipts, skipped).
+    Receipts are (filename, dict); skipped is a list of disclosed
+    non-receipt filenames (JSON without a `lane` field = not in the
+    lane-receipt domain, e.g. cleanup-plan.json); corrupt is a list of
+    (filename, error) for files corrupt beyond JSON parsing — reported
+    and skipped, never rewritten. Raises TypedRefusal on any
+    parseable-but-invalid lane receipt."""
     files = sorted(p for p in Path(receipts_dir).glob("*.json"))
     if not files:
         raise TypedRefusal("EMPTY_INPUT", f"no *.json receipts in {receipts_dir}")
     out = []
+    skipped = []
+    corrupt = []
     for p in files:
         try:
             r = json.loads(p.read_text())
-        except (OSError, json.JSONDecodeError) as exc:
+        except json.JSONDecodeError as exc:
+            # Corrupt beyond parsing: reported and skipped (task constraint —
+            # receipt content is evidence and is never rewritten).
+            corrupt.append((p.name, str(exc)))
+            continue
+        except OSError as exc:
             raise TypedRefusal("UNREADABLE", f"{p.name}: {exc}")
+        if not isinstance(r, dict) or "lane" not in r:
+            skipped.append(p.name)
+            continue
         engine = "jsonschema" if HAVE_JSONSCHEMA else "structural-fallback"
         errs = structural_errors(r, json.loads(DEFAULT_SCHEMA.read_text()))
         if errs:
@@ -51,7 +79,7 @@ def load_receipts(receipts_dir):
                 f"{p.name} refused by receipt_validate ({engine}):\n    "
                 + "\n    ".join(errs))
         out.append((p.name, r))
-    return out
+    return out, skipped, corrupt
 
 
 class TypedRefusal(Exception):
@@ -73,6 +101,10 @@ def extract_tests(verification):
 
 
 def render_deviation(d):
+    # Legacy string deviations (v1 receipts) are treated as SCOPE_NOTE by
+    # the validator's dev_notes(); rendered with their historical form kept.
+    if isinstance(d, str):
+        return f"SCOPE_NOTE(legacy): {d}"
     return f"{d.get('kind', '?')}: {d.get('note', '')}"
 
 
@@ -163,16 +195,33 @@ def main(argv=None):
         print(__doc__, file=sys.stderr)
         return 2
     receipts_dir = argv[0]
-    out_path = argv[1] if len(argv) > 1 else None
+    rest = [a for a in argv[1:] if a != "--check"]
+    check = "--check" in argv
+    out_path = rest[0] if rest else None
+    if check and not out_path:
+        print("REFUSED [USAGE] --check requires an output path")
+        return 2
     try:
-        receipts = load_receipts(receipts_dir)
+        receipts, skipped, corrupt = load_receipts(receipts_dir)
     except TypedRefusal as exc:
         print(f"REFUSED [{exc.kind}] {exc.detail}")
         return 1
+    for name in skipped:
+        print(f"SKIPPED (not a lane receipt — no `lane` field): {name}")
+    for name, err in corrupt:
+        print(f"SKIPPED (CORRUPT — unparseable JSON, reported not rewritten): {name}: {err}")
     receipts.sort(key=lambda fr: (fr[1]["lane"], fr[1]["started_at"], fr[0]))
     md = render_table(receipts)
     if out_path:
-        Path(out_path).write_text(md)
+        p = Path(out_path)
+        if check:
+            existing = p.read_text() if p.exists() else None
+            if existing == md:
+                print(f"CHECK OK: {out_path} identical to regenerated output ({len(receipts)} receipts)")
+                return 0
+            print(f"CHECK FAIL: {out_path} differs from regenerated output")
+            return 1
+        p.write_text(md)
         print(f"WROTE {out_path} ({len(receipts)} receipts, {len(md)} bytes)")
     else:
         sys.stdout.write(md)

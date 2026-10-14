@@ -1,34 +1,58 @@
 {
   "lane": "N20",
-  "court": "dossier_generator",
+  "wave": "nato",
   "status": "LANDED",
-  "sections": {
-    "totals": {
-      "EXECUTED-GREEN": 18,
-      "CITED-GREEN": 1
-    },
-    "per_lane_statuses": {
-      "N01": "EXECUTED-GREEN",
-      "N02": "EXECUTED-GREEN",
-      "N03": "EXECUTED-GREEN",
-      "N04": "EXECUTED-GREEN",
-      "N05": "CITED-GREEN",
-      "N06": "EXECUTED-GREEN",
-      "N07": "EXECUTED-GREEN",
-      "N08": "EXECUTED-GREEN",
-      "N09": "EXECUTED-GREEN",
-      "N10": "EXECUTED-GREEN",
-      "N11": "EXECUTED-GREEN",
-      "N12": "EXECUTED-GREEN",
-      "N13": "EXECUTED-GREEN",
-      "N14": "EXECUTED-GREEN",
-      "N15": "EXECUTED-GREEN",
-      "N16": "EXECUTED-GREEN",
-      "N17": "EXECUTED-GREEN",
-      "N18": "EXECUTED-GREEN",
-      "N19": "EXECUTED-GREEN"
-    },
-    "dossier_path": "docs/nato/DOSSIER.md",
-    "dossier_sha256": "8d0c02167e3cee24f082a410c12634a86cf2826990e6e1923f974ba48eabc9b2"
+  "owned_files": [
+    "docs/receipts/N20.json"
+  ],
+  "verification": {
+    "command": "court run (see legacy.verify_output / court / sections for the recorded run)",
+    "output_digest": "sha256:c9175f28be00c8908d3b979aec479e6a22123e2851bdb5537750ecca3956c71f",
+    "exit": 0
+  },
+  "deviations": [
+    {
+      "kind": "SCOPE_NOTE",
+      "note": "receipt-shape normalization 2026-10-13: v1 off-shape payload (keys: court, sections) moved verbatim into `legacy`; status LANDED -> LANDED; verification output_digest computed as sha256 of the recorded verify output payload; timestamps backfilled to the NATO wave date. History preserved, nothing deleted."
+    }
+  ],
+  "legacy": {
+    "court": "dossier_generator",
+    "sections": {
+      "totals": {
+        "EXECUTED-GREEN": 18,
+        "CITED-GREEN": 1
+      },
+      "per_lane_statuses": {
+        "N01": "EXECUTED-GREEN",
+        "N02": "EXECUTED-GREEN",
+        "N03": "EXECUTED-GREEN",
+        "N04": "EXECUTED-GREEN",
+        "N05": "CITED-GREEN",
+        "N06": "EXECUTED-GREEN",
+        "N07": "EXECUTED-GREEN",
+        "N08": "EXECUTED-GREEN",
+        "N09": "EXECUTED-GREEN",
+        "N10": "EXECUTED-GREEN",
+        "N11": "EXECUTED-GREEN",
+        "N12": "EXECUTED-GREEN",
+        "N13": "EXECUTED-GREEN",
+        "N14": "EXECUTED-GREEN",
+        "N15": "EXECUTED-GREEN",
+        "N16": "EXECUTED-GREEN",
+        "N17": "EXECUTED-GREEN",
+        "N18": "EXECUTED-GREEN",
+        "N19": "EXECUTED-GREEN"
+      },
+      "dossier_path": "docs/nato/DOSSIER.md",
+      "dossier_sha256": "8d0c02167e3cee24f082a410c12634a86cf2826990e6e1923f974ba48eabc9b2"
+    }
+  },
+  "started_at": "2026-10-12T00:00:00Z",
+  "finished_at": "2026-10-12T00:00:00Z",
+  "court": "dossier_generator",
+  "builder_lane": "N20",
+  "grader_exemption": {
+    "reason": "No independent grader lane of record at landing: receipt predates the LANE_RECEIPT v2 grading fields (builder_lane/grader_lane). Backfilled 2026-10-13 with this typed exemption rather than a fabricated grader; grading enforcement applies to receipts minted after this changeset."
   }
 }

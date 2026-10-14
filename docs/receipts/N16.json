@@ -7,7 +7,7 @@
   ],
   "disclosed_touches": [
     "strata_protocol/Cargo.toml: appended [[test]] target n16_zero_recursion (append-only; tests/nato/ subdirectory is not auto-discovered by cargo — required to run the owned file)"
-],
+  ],
   "verification": {
     "command": "CARGO_TARGET_DIR=/tmp/strata_lanes/target_N16 cargo test -p strata-protocol --test n16_zero_recursion --release",
     "exit": 0,
@@ -50,5 +50,9 @@
   },
   "deviations": [],
   "started_at": "2026-10-11T00:00:00Z",
-  "finished_at": "2026-10-11T23:59:00Z"
+  "finished_at": "2026-10-11T23:59:00Z",
+  "builder_lane": "N16",
+  "grader_exemption": {
+    "reason": "No independent grader lane of record at landing: receipt predates the LANE_RECEIPT v2 grading fields (builder_lane/grader_lane). Backfilled 2026-10-13 with this typed exemption rather than a fabricated grader; grading enforcement applies to receipts minted after this changeset."
+  }
 }

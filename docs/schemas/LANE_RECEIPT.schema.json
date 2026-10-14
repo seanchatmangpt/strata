@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://strata.local/schemas/LANE_RECEIPT.schema.json",
-  "title": "Lane Receipt",
-  "description": "Structured lane receipt for strata fleet waves (E51/C1). Replaces free-prose entries in docs/waves/WAVES_3_9.md.",
+  "title": "Lane Receipt (v2 — grading fields)",
+  "description": "Structured lane receipt for strata fleet waves (E51/C1), extended 2026-10-13 with builder/grader lanes and legacy admission. v1 receipts are admitted with their real fields preserved; history is never deleted.",
   "type": "object",
   "properties": {
     "lane": {
@@ -12,71 +12,244 @@
     },
     "wave": {
       "type": "string",
-      "pattern": "^W[0-9]+$",
-      "description": "Owning wave, e.g. W3."
+      "pattern": "^(W[0-9]+|nato|NATO|mutation)$",
+      "description": "Owning wave, e.g. W3; 'nato' and 'mutation' are admitted legacy wave values (N05 schema finding, WAVES_3_9.md)."
     },
     "status": {
-      "enum": ["LANDED", "PARTIAL_ALIVE", "BLOCKED", "REFUSED"],
-      "description": "Standing vocabulary; PENDING/RUNNING are pre-receipt states and are not valid on a receipt."
+      "enum": [
+        "LANDED",
+        "PARTIAL_ALIVE",
+        "BLOCKED",
+        "REFUSED",
+        "DRAFT"
+      ],
+      "description": "Standing vocabulary; DRAFT = genuinely ungraded/pre-landing receipt. PENDING/RUNNING remain invalid on a receipt."
     },
     "owned_files": {
       "type": "array",
-      "items": { "type": "string" },
+      "items": {
+        "type": "string"
+      },
       "minItems": 1,
       "uniqueItems": true,
       "description": "Files the lane owned per the lane map. Paths are repo-relative."
     },
+    "builder_lane": {
+      "type": "string",
+      "pattern": "^[A-Z]+[0-9]+(-P[0-9]+)?$",
+      "description": "Lane that built the delivered subject. Defaults to `lane` when absent; must differ from grader_lane (validator refuses SELF_GRADED)."
+    },
+    "grader_lane": {
+      "type": "string",
+      "pattern": "^[A-Z]+[0-9]+(-P[0-9]+)?$",
+      "description": "Independent lane that witnessed/graded the run (skeptic lanes do not grade their own builders)."
+    },
+    "grader_exemption": {
+      "type": "object",
+      "properties": {
+        "reason": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "reason"
+      ],
+      "additionalProperties": false,
+      "description": "Typed exemption from the grader_lane requirement; empty reason refuses."
+    },
+    "legacy": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "v1 off-shape payload preserved verbatim during the 2026-10-13 backfill; historical record, never deleted."
+    },
     "disclosed_touches": {
       "type": "array",
-      "items": { "type": "string" },
-      "uniqueItems": true,
-      "description": "Files touched outside owned_files (compile-freeze SLA unblocks, seams), each disclosed."
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true
+    },
+    "disclosed_touches_note": {
+      "type": "string"
+    },
+    "court": {
+      "type": [
+        "string",
+        "object"
+      ]
+    },
+    "scoping_law": {
+      "type": [
+        "string",
+        "object"
+      ]
+    },
+    "findings": {
+      "type": [
+        "string",
+        "object"
+      ]
+    },
+    "latency_table": {
+      "type": "object"
+    },
+    "measured_table_ns_per_call": {
+      "type": "object"
+    },
+    "mutants": {
+      "type": "object",
+      "description": "Mutants array (killed/survivors/detail) — also serves as vacuity-gate receipt coverage evidence."
     },
     "verification": {
       "type": "object",
       "properties": {
-        "command": { "type": "string", "minLength": 1 },
+        "command": {
+          "type": "string",
+          "minLength": 1
+        },
         "output_digest": {
           "type": "string",
-          "pattern": "^sha256:[0-9a-f]{64}$",
-          "description": "sha256 of the verification command output."
+          "pattern": "^sha256:[0-9a-f]{16,64}",
+          "description": "sha256 of the verification output; v1 receipts may carry a 16-hex truncation or a parenthetical annotation after the digest."
         },
-        "tests_passed": { "type": "integer", "minimum": 0 },
-        "tests_failed": { "type": "integer", "minimum": 0 }
+        "exit": {
+          "type": "integer"
+        },
+        "run_tail": {
+          "type": "string"
+        },
+        "stability": {
+          "type": "string"
+        },
+        "output_digest_tail4_sha256": {
+          "type": "string"
+        },
+        "tests_passed": {
+          "type": [
+            "integer",
+            "string"
+          ]
+        },
+        "tests_failed": {
+          "type": [
+            "integer",
+            "string"
+          ]
+        }
       },
-      "required": ["command", "output_digest"],
+      "required": [
+        "command",
+        "output_digest"
+      ],
       "additionalProperties": false
     },
     "deviations": {
       "type": "array",
       "items": {
-        "type": "object",
-        "properties": {
-          "kind": {
-            "enum": [
-              "DISCLOSED_TOUCH",
-              "HONEST_MISS",
-              "SUPERSEDED",
-              "RULING",
-              "SCOPE_NOTE"
-            ]
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "enum": [
+                  "DISCLOSED_TOUCH",
+                  "HONEST_MISS",
+                  "SUPERSEDED",
+                  "RULING",
+                  "SCOPE_NOTE",
+                  "DISCLOSURE"
+                ]
+              },
+              "note": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "kind",
+              "note"
+            ],
+            "additionalProperties": false
           },
-          "note": { "type": "string", "minLength": 1 }
-        },
-        "required": ["kind", "note"],
-        "additionalProperties": false
+          {
+            "type": "string",
+            "minLength": 1,
+            "description": "legacy string deviations preserved verbatim; validator treats as SCOPE_NOTE."
+          }
+        ]
       },
-      "description": "Typed deviations: honest misses, coordinator rulings, superseded entries, disclosed touches."
+      "description": "Typed deviations; legacy string form preserved."
     },
     "fix_owner": {
       "type": "string",
-      "pattern": "^[A-Z]+[0-9]+(-P[0-9]+)?$",
-      "description": "Lane responsible for an open finding, if any."
+      "pattern": "^[A-Z]+[0-9]+(-P[0-9]+)?$"
     },
-    "started_at": { "type": "string", "format": "date-time" },
-    "finished_at": { "type": "string", "format": "date-time" }
+    "started_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "finished_at": {
+      "type": "string",
+      "format": "date-time"
+    }
   },
-  "required": ["lane", "wave", "status", "owned_files", "verification", "started_at", "finished_at"],
+  "required": [
+    "lane",
+    "wave",
+    "status",
+    "owned_files",
+    "verification",
+    "started_at",
+    "finished_at"
+  ],
   "additionalProperties": false,
-  "$comment": "finished_at >= started_at is enforced by the validator (structurally), not by JSON Schema."
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "LANDED"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "anyOf": [
+          {
+            "required": [
+              "grader_lane"
+            ]
+          },
+          {
+            "required": [
+              "grader_exemption"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "DRAFT"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "not": {
+          "required": [
+            "grader_lane"
+          ]
+        }
+      }
+    }
+  ],
+  "$comment": "finished_at >= started_at, builder_lane == grader_lane (typed SELF_GRADED refusal), and grader_exemption reason presence are enforced by the validator's cross-field layer, not by JSON Schema."
 }

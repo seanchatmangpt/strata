@@ -11,8 +11,11 @@
 # TRANSITION_LAW.md) verbatim. Violation-condition lines ("!=") are
 # error-map semantics, not restatements — out of scope.
 #
-# Scope: the four primary sites (start scope, per TRANSITION_LAW.md).
-# Full 12-site coverage is a follow-up (E55 census).
+# Scope: the four primary sites plus the full E55 12-site census
+# (TRANSITION_LAW.md census list): XDP_INTEGRATION, DOCS_INDEX, CROSS_LANG,
+# pn64.ex, temprun/pn.rs, branchless.rs, xlang_pn_vector_court.rs, PRD.md,
+# PN64_KERNEL_VECTORS.md. Coverage ratchet via COVERAGE- lines in
+# TRANSITION_LAW.md.
 #
 # bash 3.2-safe: no assoc arrays, no ${var,,}, no mapfile.
 # Exit: 0 = green, 1 = DOC_LAW_DRIFT / structural refusal, 2 = usage.
@@ -107,6 +110,9 @@ if [ "$MODE" = "--self-test" ]; then
     else
         echo "SELF-TEST T3 OK: canonical-law edit -> DOC_LAW_DRIFT"
     fi
+    # Restore the pristine canonical law (T3 mutates it in place; later
+    # tests must run against the real law).
+    cp "$ROOT/docs/laws/TRANSITION_LAW.md" "$lawf"
 
     # T4 (M18 hole): delete the invariant restatement entirely — the
     # completeness (COVERAGE) check must catch the loss even though no
@@ -132,6 +138,33 @@ if [ "$MODE" = "--self-test" ]; then
         fail=1
     else
         echo "SELF-TEST T5 OK: apostrophe-drop mutant -> DOC_LAW_DRIFT"
+    fi
+
+    # T6 (E55 scope extension): drop the m' apostrophe on a site carrying
+    # the ALIAS-Invariant tokening '(m' & invariant_mask) == 0' — the bare
+    # 'invariant_mask' token keeps the line law-bearing, the mutated line
+    # matches no accepted formula, so only the drift check kills it.
+    rebuild_fixture
+    fixture2="$tmp/docs/PN64_DOCS_INDEX.md"
+    {
+        echo '# Fixture kernel-vectors doc'
+        echo "ALIAS restatement: (m' & invariant_mask) == 0"
+    } > "$fixture2"
+    out=$(run_gate 2>&1); rc=$?
+    if [ "$rc" -ne 0 ]; then
+        echo "SELF-TEST T6a FAIL: alias-invariant site refused pristine (rc=$rc):"
+        echo "$out"
+        fail=1
+    else
+        sed "s/(m' \& invariant_mask) == 0/(m \& invariant_mask) == 0/" "$fixture2" > "$fixture2.m" \
+            && mv "$fixture2.m" "$fixture2"
+        out=$(run_gate 2>&1); rc=$?
+        if [ "$rc" -eq 0 ]; then
+            echo "SELF-TEST T6 FAIL: alias-invariant apostrophe-drop NOT caught"
+            fail=1
+        else
+            echo "SELF-TEST T6 OK: alias-invariant apostrophe-drop -> DOC_LAW_DRIFT"
+        fi
     fi
 
     if [ "$fail" -ne 0 ]; then
@@ -184,10 +217,16 @@ if [ "$nform" -eq 0 ]; then
 fi
 echo "== accepted formulas: $nform (canonical + alias)"
 
-# Scope: the four primary sites (start scope, per TRANSITION_LAW.md).
-SCOPE="docs/PN64_ABI.md docs/PN64_QUICKSTART.md docs/PN64_VECTORS.md docs/PN64_ARCHITECTURE.md"
+# Scope: four primary sites + E55 census (per TRANSITION_LAW.md).
+# Two tiers: prose sites get the per-line drift scan; code sites carry the
+# formula (comment/callable), so they get the per-site COVERAGE ratchet.
+PROSE_SCOPE="docs/PN64_ABI.md docs/PN64_QUICKSTART.md docs/PN64_VECTORS.md docs/PN64_ARCHITECTURE.md \
+docs/PN64_XDP_INTEGRATION.md docs/PN64_DOCS_INDEX.md docs/PN64_CROSS_LANG.md \
+docs/PRD.md docs/PN64_KERNEL_VECTORS.md"
+CODE_SCOPE="stratus/lib/stratus/valve/pn64.ex temprun/src/pn.rs \
+strata_protocol/src/branchless.rs strata_protocol/tests/xlang_pn_vector_court.rs"
 
-for f in $SCOPE; do
+for f in $PROSE_SCOPE; do
     path="$ROOT/$f"
     if [ ! -f "$path" ]; then
         echo "SKIP: $f absent"
@@ -203,23 +242,25 @@ for f in $SCOPE; do
             *) continue ;;
         esac
         # Violation walkthroughs ("-> <ERROR>") and vector entries
-        # ("- V12: ...") are error-map semantics, same out-of-scope class
-        # as "!=" lines.
+        # ("- V12: ...", "| V12 |" table rows) are error-map semantics,
+        # same out-of-scope class as "!=" lines.
         case "$line" in
             *"-> "*) continue ;;
         esac
         case "$line" in
-            *"- V"*[0-9]*": "*) continue ;;
+            *"- V"*[0-9]*": "*|*"| V"*[0-9]*" |"*) continue ;;
         esac
         # Violation-condition lines ("!=") are error-map semantics, not
         # restatements.
         case "$line" in
             *"!= "*) continue ;;
         esac
-        case "$line" in
-            *"W−"*|*"M'"*|*"m'"*|*"tick("*|*"activity(ocel)"*|*mask*) : ;;
-            *) continue ;;
-        esac
+        # Law-token gate (standalone-token rule): a token hit inside a
+        # larger identifier (pn_pre_mask, mask16, invariant_mask vs mask)
+        # is code vocabulary, not a restatement token.
+        if ! printf '%s' "$line" | grep -q -E 'W−|M'"'"'|m'"'"'|tick\(|activity\(ocel\)|(^|[^A-Za-z0-9_])(mask|invariant_mask)([^A-Za-z0-9_]|$)'; then
+            continue
+        fi
         # Must contain an accepted formula verbatim (fixed-string).
         ok=0
         while IFS= read -r fm; do

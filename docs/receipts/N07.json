@@ -40,21 +40,21 @@
         "storm_max_ns": 16000.0,
         "storm_mean_ns": 21.6,
         "ratio_max": 1.41,
-        "ratio_mean": 1.00,
+        "ratio_mean": 1.0,
         "conservation": "bit-exact"
       },
       {
         "run": 2,
         "idle_max_ns": 8000.0,
         "storm_max_ns": 28458.0,
-        "ratio_mean": 1.00,
+        "ratio_mean": 1.0,
         "conservation": "bit-exact"
       },
       {
         "run": 3,
         "idle_max_ns": 6250.0,
         "storm_max_ns": 33167.0,
-        "ratio_mean": 1.00,
+        "ratio_mean": 1.0,
         "conservation": "bit-exact"
       }
     ],
@@ -72,5 +72,9 @@
     "<=4.5 ns spec latency figure not claimed under contention; measured idle/storm table delivered instead (per operator honest-scoping law)"
   ],
   "started_at": "2026-10-11T00:00:00Z",
-  "finished_at": "2026-10-12T00:00:00Z"
+  "finished_at": "2026-10-12T00:00:00Z",
+  "builder_lane": "N07",
+  "grader_exemption": {
+    "reason": "No independent grader lane of record at landing: receipt predates the LANE_RECEIPT v2 grading fields (builder_lane/grader_lane). Backfilled 2026-10-13 with this typed exemption rather than a fabricated grader; grading enforcement applies to receipts minted after this changeset."
+  }
 }

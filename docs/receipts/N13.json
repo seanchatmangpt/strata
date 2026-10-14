@@ -24,14 +24,46 @@
     "static_table": {
       "pnabi_validate_and_advance_per_exit_class": {
         "columns": "loads/stores/shifts/adds/ands/xors/ors/negs/cmps/branches/popcnts",
-        "malformed": {"shifts": 1, "ands": 3, "cmps": 1, "branches": 1, "total": 6},
-        "token_starvation": {"shifts": 2, "ands": 5, "cmps": 2, "branches": 2, "total": 11},
-        "invariant_violation": {"shifts": 3, "ands": 8, "xors": 1, "ors": 1, "cmps": 3, "branches": 3, "total": 19},
-        "commit": {"shifts": 5, "ands": 12, "xors": 2, "ors": 2, "cmps": 4, "branches": 3, "total": 28},
+        "malformed": {
+          "shifts": 1,
+          "ands": 3,
+          "cmps": 1,
+          "branches": 1,
+          "total": 6
+        },
+        "token_starvation": {
+          "shifts": 2,
+          "ands": 5,
+          "cmps": 2,
+          "branches": 2,
+          "total": 11
+        },
+        "invariant_violation": {
+          "shifts": 3,
+          "ands": 8,
+          "xors": 1,
+          "ors": 1,
+          "cmps": 3,
+          "branches": 3,
+          "total": 19
+        },
+        "commit": {
+          "shifts": 5,
+          "ands": 12,
+          "xors": 2,
+          "ors": 2,
+          "cmps": 4,
+          "branches": 3,
+          "total": 28
+        },
         "note": "source-level op budget (LLVM CSE may only lower it — conservative direction, disclosed)"
       },
       "branchless_step_branchless": {
-        "shifts": 6, "ands": 14, "xors": 6, "ors": 6, "negs": 3,
+        "shifts": 6,
+        "ands": 14,
+        "xors": 6,
+        "ors": 6,
+        "negs": 3,
         "total_alu_ops": 35,
         "branches": 0,
         "loads_stores": 0,
@@ -39,8 +71,16 @@
         "depth_derivation": "token chain (m&w)^w -> NEG -> OR -> SHIFT -> XOR = 6; valid adds 2 AND levels after deepest predicate (inv chain depth 8 -> valid depth 9); mask = 0-valid = 10; select = 12",
         "spec_figure": "depth 12 <= 12 cycles at 1 ALU op/cycle on any in-order single-issue core — THE '<= 12 cycles' figure, derived"
       },
-      "quota_admit": {"total": 135, "branches": 20, "note": "pnabi commit row + PN64 pack + fixed 16-iteration per-place loop + popcount leg; all loop counts data-independent"},
-      "sequencer_next": {"total": 3, "branches": 0, "note": "LOAD cycle + wrapping ADD + STORE back; Sequence::order (alloc+sort, data-sized) is OUT of kernel scope and not claimed bounded"}
+      "quota_admit": {
+        "total": 135,
+        "branches": 20,
+        "note": "pnabi commit row + PN64 pack + fixed 16-iteration per-place loop + popcount leg; all loop counts data-independent"
+      },
+      "sequencer_next": {
+        "total": 3,
+        "branches": 0,
+        "note": "LOAD cycle + wrapping ADD + STORE back; Sequence::order (alloc+sort, data-sized) is OUT of kernel scope and not claimed bounded"
+      }
     },
     "targets_measured": "6 canonical RONR opcodes (0x01-0x06) x {pnabi branched path, branchless kernel} + quota_admit + sequencer_next = 14 targets, worst-case inputs (maximal popcounts, worst masks: invariant mask full-width, flags/tick 0xFF), 100k batch-means x 1024 calls each",
     "tests": {
@@ -52,10 +92,34 @@
   "measured_table_ns_per_call": {
     "calibration": "0.4475 ns/cycle (dependent-add chain median, CALIB_BATCHES=401); TIMER_MARGIN=64; corrupted-batch threshold 25x median, max tolerated fraction 0.5% (observed <= 0.001%)",
     "rows": [
-      {"target": "pnabi_commit", "ops": 28, "mean": 2.51, "max": 16.89, "bound": 801.94},
-      {"target": "branchless_commit", "ops": 35, "mean": 2.16, "max": 26.94, "bound": 1002.42},
-      {"target": "quota_admit", "ops": 135, "mean": 2.87, "max": 21.57, "bound": 3866.48},
-      {"target": "sequencer_next", "ops": 3, "mean": 1.44, "max": 19.49, "bound": 85.92}
+      {
+        "target": "pnabi_commit",
+        "ops": 28,
+        "mean": 2.51,
+        "max": 16.89,
+        "bound": 801.94
+      },
+      {
+        "target": "branchless_commit",
+        "ops": 35,
+        "mean": 2.16,
+        "max": 26.94,
+        "bound": 1002.42
+      },
+      {
+        "target": "quota_admit",
+        "ops": 135,
+        "mean": 2.87,
+        "max": 21.57,
+        "bound": 3866.48
+      },
+      {
+        "target": "sequencer_next",
+        "ops": 3,
+        "mean": 1.44,
+        "max": 19.49,
+        "bound": 85.92
+      }
     ],
     "note": "pnabi/branchless rows are per opcode 0x01-0x06 (means within 0.01 ns across all six, max variance is scheduler noise); worst observed max (55.50 ns, pnabi op 0x05) still 14x under its bound"
   },
@@ -65,5 +129,9 @@
   },
   "deviations": [],
   "started_at": "2026-10-11T00:00:00Z",
-  "finished_at": "2026-10-12T00:00:00Z"
+  "finished_at": "2026-10-12T00:00:00Z",
+  "builder_lane": "N13",
+  "grader_exemption": {
+    "reason": "No independent grader lane of record at landing: receipt predates the LANE_RECEIPT v2 grading fields (builder_lane/grader_lane). Backfilled 2026-10-13 with this typed exemption rather than a fabricated grader; grading enforcement applies to receipts minted after this changeset."
+  }
 }

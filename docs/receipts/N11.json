@@ -12,7 +12,8 @@
     "command": "CARGO_TARGET_DIR=/tmp/strata_lanes/target_N11 cargo test -p strata-protocol --test n11_torn_write_fuzz --release",
     "output_digest_tail4_sha256": "c03fb275a85611887314f14f58fea377228d36a018378cefd4e10286cffbde18",
     "tests_passed": 4,
-    "tests_failed": 0
+    "tests_failed": 0,
+    "output_digest": "sha256:c03fb275a85611887314f14f58fea377228d36a018378cefd4e10286cffbde18"
   },
   "court": {
     "spec_mandate": "(1) model-level: every interleaving of (word, checksum, seq) partial states — 3! orderings x every truncated prefix x bit-flip corruption of each field — read(expected_seq) never returns a torn word; (2) hammer-level: 4 writers x 4 readers x 1M ops with random writer abort mid-sequence — readers never observe checksum-valid garbage; slot recovers after abandon; (3) zero torn words admitted, typed refusals only",
@@ -31,5 +32,9 @@
     }
   ],
   "started_at": "2026-10-11T00:00:00Z",
-  "finished_at": "2026-10-11T00:00:00Z"
+  "finished_at": "2026-10-11T00:00:00Z",
+  "builder_lane": "N11",
+  "grader_exemption": {
+    "reason": "No independent grader lane of record at landing: receipt predates the LANE_RECEIPT v2 grading fields (builder_lane/grader_lane). Backfilled 2026-10-13 with this typed exemption rather than a fabricated grader; grading enforcement applies to receipts minted after this changeset."
+  }
 }

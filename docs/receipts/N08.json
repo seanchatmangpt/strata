@@ -34,5 +34,9 @@
     "SCOPE_NOTE: profile identity is cross-payload-class exact match with a structural read-window derivation, not a hardware power-trace Hamming-distance measurement (DPA/CPA-grade power profiling = documented follow-up)."
   ],
   "started_at": "2026-10-11T00:00:00Z",
-  "finished_at": "2026-10-12T00:00:00Z"
+  "finished_at": "2026-10-12T00:00:00Z",
+  "builder_lane": "N08",
+  "grader_exemption": {
+    "reason": "No independent grader lane of record at landing: receipt predates the LANE_RECEIPT v2 grading fields (builder_lane/grader_lane). Backfilled 2026-10-13 with this typed exemption rather than a fabricated grader; grading enforcement applies to receipts minted after this changeset."
+  }
 }

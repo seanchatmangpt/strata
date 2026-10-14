@@ -40,5 +40,9 @@
     "SCOPE_NOTE: delivered same-host two-run determinism; 3-environment cross-toolchain identity NOT-RUN (no Linux hosts in-repo) — documented follow-up per docs/nato/N19_BUILD_RECEIPT.md."
   ],
   "started_at": "2026-10-12T00:00:00Z",
-  "finished_at": "2026-10-12T02:51:06Z"
+  "finished_at": "2026-10-12T02:51:06Z",
+  "builder_lane": "N19",
+  "grader_exemption": {
+    "reason": "No independent grader lane of record at landing: receipt predates the LANE_RECEIPT v2 grading fields (builder_lane/grader_lane). Backfilled 2026-10-13 with this typed exemption rather than a fabricated grader; grading enforcement applies to receipts minted after this changeset."
+  }
 }

@@ -1060,3 +1060,62 @@ Moving-HEAD window convention per addenda 11-13 applies.
 **Session falsifier** (standing): any cited SHA failing
 `git log --no-walk` in its owning repo at replay, or session count
 drifting without a superseding addendum.
+
+## Addendum-15 — wave-13 dedupe pass vs addenda 5-14 (append-only)
+
+Every SHA in the wave-13 dispatch was verified resolving
+(`git log --no-walk --oneline`, strata unless noted) and cross-checked
+against addenda 5-14 by on-disk grep before this addendum was written.
+Result: the wave-13 landing list is almost entirely already receipted.
+
+### New this addendum
+
+| Item | SHA | Repo | Verification |
+|---|---|---|---|
+| Addendum-14 receipt commit itself (the only commit after `bb157f5` at write) | `88d5d8b` | strata | resolves (HEAD `88d5d8b`); 0 prior mentions |
+
+No other zero-prior-mention objects exist in `548a0bf..HEAD` at write.
+
+### Covered by addenda 5-14 (deduped, no expansion — all verified resolving)
+
+- receipts-hygiene closure `fa6a228` + receipts-hygiene doc `1c1d053`
+  (addendum-14 covered list, lines 1027-1028).
+- record_burn ceiling `40f6155` + 4/4 witness + skeptic no-defects
+  (addendum-14 covered list, line 1021).
+- dao widen-ack consequence-audit asks `9eb1de5` + pn::step untyped-verdict
+  candidate `3763b8b` (addendum-14 covered list, line 1030).
+- sign-fuzz court `51f9799`; RELEASE_TRAIN §3 + drift fix
+  `d018014`/`7d9c64d`; exit-code contract `ba40b42`; README counts
+  `e344d3d`; receipts index `20f9329`; CHANGELOG sweep `545303d`
+  (addendum-14: `545303d` new-row, rest covered list).
+- graphlaw SHACL-recursion fix `085e878` (`~/graphlaw`): addendum-13's
+  MISSING falsifier was discharged by addendum-14's "Falsifier resolution —
+  SHACL-recursion root cause" section (lines 1004-1012); cited there, not
+  re-expanded here. ggen shacl_guard integration witness 3/3 rides the same
+  root cause; witness standing per the repo clause (lane did not grade its
+  own builder).
+- E48/E50 skeptic scope-law xdp note `9f1ce49`: 1 prior mention —
+  addendum-13 line 906 ("landed since addendum-12" sweep). Deduped.
+- semantics tier1/tier2/tier4 landing `f0b7c1b` (merger vacuity court,
+  empty-corpus refusal A03/A06): 1 prior mention — addendum-13 line 968
+  (F-10/F-11 pair). Deduped.
+- Witness-lane results (framing 6/6, dao 3/3 + 7/7, positivity 3/3,
+  policy_admission 4/4, shacl_guard ggen 3/3; rehydrate/idmap skeptic
+  clean) are statuses over already-receipted subjects, not new objects.
+
+### In flight at write
+
+- supervisor/pn_frame audit — IN-FLIGHT (owning lane).
+- worker.ex lifecycle (SX7 F1-F4 folded, gates green) — still no worker.ex
+  commit in `548a0bf..HEAD` at write (addendum-14 in-flight note stands).
+- ocel_xml audit, reactor-final audit, graphlaw health check — IN-FLIGHT.
+
+### Totals
+
+Session range `git log --oneline 548a0bf..HEAD | wc -l` = **138** at write
+(HEAD `88d5d8b`); post-commit total 139 with this receipt commit.
+Moving-HEAD window convention per addenda 11-14 applies.
+
+**Session falsifier** (standing, unchanged): any cited SHA failing
+`git log --no-walk` in its owning repo at replay, or session count
+drifting without a superseding addendum.

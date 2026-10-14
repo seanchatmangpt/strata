@@ -136,6 +136,28 @@ fn civil_from_days(z: i64) -> (i64, u32, u32) {
     (if m <= 2 { y + 1 } else { y }, m, d)
 }
 
+/// Escape an arbitrary string for safe emission inside a JSON string literal.
+///
+/// `OcelEvent::id` is a public field and may carry arbitrary caller text;
+/// raw emission would allow JSON injection (quote/backslash/control chars).
+fn json_escape(s: &str) -> String {
+    let mut out = String::with_capacity(s.len());
+    for c in s.chars() {
+        match c {
+            '"' => out.push_str("\\\""),
+            '\\' => out.push_str("\\\\"),
+            '\n' => out.push_str("\\n"),
+            '\r' => out.push_str("\\r"),
+            '\t' => out.push_str("\\t"),
+            c if (c as u32) < 0x20 => {
+                out.push_str(&format!("\\u{:04x}", c as u32));
+            }
+            c => out.push(c),
+        }
+    }
+    out
+}
+
 /// Emit an OCEL 2.0 JSON document (manual emission — offline tier, no deps).
 ///
 /// Shape:
@@ -162,7 +184,8 @@ pub fn to_ocel_json_with_opts(events: &[OcelEvent], opts: RehydrateOptions) -> S
         }
         out.push_str(&format!(
             "\"{}\":{{\"ocel:activity\":{},\"ocel:relationships\":[",
-            ev.id, ev.activity
+            json_escape(&ev.id),
+            ev.activity
         ));
         for (j, (oid, qual)) in ev.objects.iter().enumerate() {
             if j > 0 {
@@ -355,5 +378,37 @@ mod tests {
         assert_eq!(a, b);
         // And the epochless path is stable across calls too.
         assert_eq!(to_ocel_json(&rehydrate_log(&words)), to_ocel_json(&rehydrate_log(&words)));
+    }
+
+    /// Court: a caller-constructed OcelEvent with hostile id text must be
+    /// JSON-escaped, not emitted raw (JSON-injection class).
+    #[test]
+    fn json_escapes_hostile_event_ids() {
+        let ev = OcelEvent {
+            id: "x\",\"inj\":{\"a\":1".to_string(),
+            activity: 1,
+            objects: vec![(1, 0)],
+            tick: 0,
+            time_secs: 0,
+        };
+        let json = to_ocel_json(&[ev]);
+        // The injected quote must not terminate the id string.
+        assert!(json.contains("\\\"inj\\\""), "quotes escaped: {json}");
+        assert!(!json.contains("\"inj\":{"), "no raw injection: {json}");
+        // Backslash and control chars.
+        let ev2 = OcelEvent {
+            id: "a\\b\nc\td\u{1}".to_string(),
+            activity: 1,
+            objects: vec![],
+            tick: 0,
+            time_secs: 0,
+        };
+        let j2 = to_ocel_json(&[ev2]);
+        assert!(j2.contains("a\\\\b\\nc\\td\\u0001"), "{j2}");
+        // Escaping is injective: distinct hostile ids -> distinct JSON.
+        assert_ne!(
+            to_ocel_json(&[OcelEvent { id: "a\"b".into(), activity: 1, objects: vec![], tick: 0, time_secs: 0 }]),
+            to_ocel_json(&[OcelEvent { id: "ab".into(), activity: 1, objects: vec![], tick: 0, time_secs: 0 }])
+        );
     }
 }

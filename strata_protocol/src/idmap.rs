@@ -44,6 +44,15 @@ pub enum IdMapError {
         index_b: usize,
         name_b: String,
     },
+    /// More than `u16::MAX` distinct names requested: ids are `1..=n` over a
+    /// 16-bit space, so the (n+1)-th name would wrap to id 0 and break the
+    /// bijection. Typed refusal, never a silent wrap.
+    Overflow {
+        /// Number of names requested.
+        requested: usize,
+        /// `u16::MAX` — the hard capacity.
+        capacity: usize,
+    },
 }
 
 /// Deterministic name → `u16` id map for the offline tier.
@@ -70,6 +79,12 @@ impl IdMap {
     /// pointing at the same name (a duplicate is the degenerate collision:
     /// same name, same digest — it would break bijectivity identically).
     pub fn build(names: &[&str]) -> Result<IdMap, IdMapError> {
+        if names.len() > u16::MAX as usize {
+            return Err(IdMapError::Overflow {
+                requested: names.len(),
+                capacity: u16::MAX as usize,
+            });
+        }
         let mut entries: Vec<(u16, String)> = Vec::with_capacity(names.len());
         for (i, name) in names.iter().enumerate() {
             for (j, existing) in entries.iter().enumerate() {
@@ -220,6 +235,7 @@ mod tests {
                 assert_eq!((index_a, name_a.as_str()), (0, "dup"));
                 assert_eq!((index_b, name_b.as_str()), (2, "dup"));
             }
+            other => panic!("expected Collision, got {other:?}"),
         }
     }
 
@@ -251,6 +267,7 @@ mod tests {
                 assert_eq!(name_a, generated[i]);
                 assert_eq!(name_b, generated[j]);
             }
+            other => panic!("expected Collision, got {other:?}"),
         }
         // The colliding pair alone is refused directly, too.
         assert!(matches!(
@@ -281,6 +298,27 @@ mod tests {
         let (a, b) = found.expect("collision pair must exist");
         assert_eq!(collision_risk(&[a, b]), 1);
         assert!(IdMap::build(&[a, b]).is_err());
+    }
+
+    /// Court: >u16::MAX names is a typed Overflow refusal, never a silent
+    /// wrap to id 0.
+    ///
+    /// Positive control for the gate not over-refusing is
+    /// [`ids_are_first_seen_input_order_not_hash_order`] /
+    /// [`roundtrip_over_100_deterministic_names`] (builds well under the
+    /// bound proceed normally); a full 65,535-name boundary build is the
+    /// O(n^2) sentinel loop (~2^31 blake3 invocations) and is deliberately
+    /// not run as a unit court.
+    #[test]
+    fn overflow_beyond_u16_max_is_typed_refusal_not_wrap() {
+        let err = IdMap::build(&["a"; u16::MAX as usize + 1]).unwrap_err();
+        match err {
+            IdMapError::Overflow { requested, capacity } => {
+                assert_eq!(requested, u16::MAX as usize + 1);
+                assert_eq!(capacity, u16::MAX as usize);
+            }
+            _ => panic!("expected Overflow, got {err:?}"),
+        }
     }
 
     #[test]

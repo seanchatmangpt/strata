@@ -842,3 +842,58 @@ satisfied).
 `git log --oneline --no-walk` at replay time, or the session commit count
 drifting from the figure above minus receipt commits, without a superseding
 addendum.
+
+## Addendum-12 — wave-10 landings, dedupe pass vs addenda 5-11 (append-only)
+
+Append-only. **Dedupe**: every SHA in the wave-10 item list was re-verified
+this session via `git log --oneline --no-walk` (all 26 resolve) and
+cross-checked against addenda 5-11 by on-disk grep: 25 of 26 are already
+recorded (dao widen-ack `33f6705`/`0dba165` + dual witnesses, xdp pre-mask
+`a12d7cd`, xdp differential `c2b8b09`, idmap Overflow/rehydrate `3979ba0`,
+n17 `68906b2`, pn64 Rust-mirror `2d07251`, pn_frame 15-vector `bbf1c58`,
+ltl/invariants `b02a8e1`, sagas `6213662`, telemetry `76bffdc`,
+policy_admission/word_law `ef8480f`/`d391a7b`/`60696ec` + 4/4 witness,
+framing `409a24b` + 6/6 witness, mutation-hook `52e6274`, quad `03ada53`,
+root src/ `7dc9576`, doc_cite `3763015`, sidecar gitignores, LeaseLedger
+durability design `4077911`, A02/card `66015a0`, sign-fuzz `51f9799`,
+RELEASE_TRAIN `d018014`, receipts-hygiene `1c1d053`/`fa6a228`). One new:
+
+### New this addendum — landed after addendum-11 (`2a8ab52`)
+
+| Item | SHA | Verification |
+|---|---|---|
+| LeaseLedger digest-drop fix: refuse malformed digest at admit, no silent skip (E-M19 under-apply); record_burn ceiling design lane still in flight | `9989190` | `git log --no-walk --oneline` resolves; zero prior mentions in this receipt |
+
+Also landed in the window but recorded here for completeness (not in the
+wave-10 prompt list): pn::step untyped-refusal ABI finding, CANDIDATE doc
+`3763b8b`; skill-projection card fix `162885d` (in-flight lane edits
+`bin/generate_nato_dossier.sh`, `merger/{card,lease_ledger}.ex`,
+`temprun/worker.ex` visible in the working tree at write time — other
+lanes' property, disclosed, immutable-commit rule applies).
+
+### Defect-series standing
+
+15+ (defect-lattice): LeaseLedger digest-drop `9989190`, A02 partial-admit
+(swept `66015a0`), quad layout `03ada53`, framing pair `409a24b` — the last
+three already recorded; the series count moves 12+ → 15+ with the
+digest-drop as the fourth new member of the wave-10 cohort.
+
+### Session status
+
+**SATURATED-for-wave** (unchanged from addendum-11): discovery rate remains
+halved vs the addendum-5 peak; loop continues per
+`docs/RELEASE_TRAIN_v26.10.12.md` and operator mandate.
+
+### Totals at addendum-12 time
+
+- Session range: `git log --oneline 548a0bf..HEAD | wc -l` = **124**
+  at write (addendum-11 correction recorded a 120 post-commit total;
+  delta +3 = content `3763b8b`, `9989190`, `162885d`, plus this lane's
+  addendum-12 receipt commit → post-commit total 125). HEAD moved during
+  prior lanes' writes before (`fa6a228` → `9989190` window); figures are
+  as-of-write, receipt commits additive by convention per addenda 5-11.
+
+**Session falsifier**: any SHA cited in this receipt failing
+`git log --oneline --no-walk` at replay time, or the session commit count
+drifting from the figure above minus receipt commits, without a superseding
+addendum.

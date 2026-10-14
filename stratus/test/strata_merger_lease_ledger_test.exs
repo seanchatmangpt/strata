@@ -150,9 +150,12 @@ defmodule Strata.Merger.LeaseLedgerTest do
     assert {:ok, _} = LeaseLedger.settle(ledger, lease(run_id: "append-c"))
     assert {:error, :lease_invalid} = LeaseLedger.settle(ledger, lease(run_id: "absent"))
 
-    # the earlier digest is intact and conservation still holds
-    assert {:ok, Lease.digest(lease(run_id: "append-a"))} ==
-             LeaseLedger.settle(ledger, lease(run_id: "append-a"))
+    # the earlier digest is intact and conservation still holds.
+    # Reuse the ADMITTED lease `a`: `lease/1` regenerates `expiry_ms` from
+    # the wall clock, and `Lease.digest/1` covers `expiry_ms`, so a fresh
+    # lease here hashes a different expiry and mismatches under load
+    # (the full-suite flake: >1ms elapsed between the two clock reads).
+    assert {:ok, ^d_a} = LeaseLedger.settle(ledger, a)
 
     assert :ok == LeaseLedger.verify_conservation(ledger, lease(run_id: "append-a"), d_a)
   end

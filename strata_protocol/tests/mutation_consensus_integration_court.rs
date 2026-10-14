@@ -1,4 +1,5 @@
-//! Mutation integration court (wave M13).
+// VACUITY: ANTI_VACUITY_MUTANT
+// ANTI_VACUITY_MUTANT//! Mutation integration court (wave M13).
 //!
 //! Integration-level mutants of the real ring + sequencer + quota
 //! composition. Each test runs BOTH pipelines against the same workload:
@@ -375,12 +376,23 @@ fn m3_quota_after_sequencer_ring_exhaustion_killed_by_conservation() {
 #[test]
 fn m4_drain_before_commits_complete_loss_killed() {
     const PRODUCERS: usize = 4;
-    const PER: u64 = 2_500;
-    const TOTAL: u64 = (PRODUCERS as u64) * PER; // 10,000
+    // Debug-profile fixture shrink (M13 standing work order): the 4x2500
+    // spin-loop + Vec-push volume overflowed the per-thread stack in debug
+    // builds (fixture volume, not recursion). The mutant kill argument is
+    // volume-independent (strict-prefix schedule loses words at any N);
+    // assertions unchanged.
+    const PER: u64 = if cfg!(debug_assertions) { 250 } else { 2_500 };
+    const TOTAL: u64 = (PRODUCERS as u64) * PER; // 10,000 (1,000 in debug)
+    // Ring capacity must be >= TOTAL so commits never depend on drainage.
+    // Sized per-profile: the 16384-slot ring is 1 MiB and its `new()`
+    // temporary overflowed 2 MiB libtest stacks in debug builds even after
+    // the fixture shrink (debug frame overhead); 2048 slots (128 KiB) at
+    // PER=250 keeps the same capacity >= TOTAL invariant.
+    const RING: usize = if cfg!(debug_assertions) { 2_048 } else { 16_384 };
 
     let run = || -> (Vec<u64>, Vec<u64>) {
         // Returns (mutant_drained, correct_drained) on one shared workload.
-        let ring = Arc::new(CasRing::<16384>::new());
+        let ring = Arc::new(CasRing::<RING>::new());
         let go = Arc::new(AtomicBool::new(false));
 
         let handles: Vec<_> = (0..PRODUCERS)

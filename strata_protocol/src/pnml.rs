@@ -229,7 +229,7 @@ fn parse_place(sc: &mut Scanner, doc: &mut NetDoc) -> Result<(), PnmlError> {
     let tag_start = sc.pos;
     sc.eat(b"<place")?;
     let id = attr_value(sc.s_full(), tag_start, "id")?.to_string();
-    if doc.places.iter().any(|p| *p == id) {
+    if doc.places.contains(&id) {
         return Err(PnmlError::Malformed); // duplicate place id
     }
     if doc.places.len() >= MAX_PLACES {

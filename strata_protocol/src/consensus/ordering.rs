@@ -113,9 +113,9 @@ mod tests {
 
     #[test]
     fn key_order_tick_dominant_then_slot_then_tie() {
-        let hi = total_order_key(1, u64::MAX & SLOT_MAX, u64::MAX).unwrap();
+        let hi = total_order_key(1, SLOT_MAX, u64::MAX).unwrap();
         assert!(total_order_key(2, 0, 0).unwrap() > hi);
-        let mid = total_order_key(1, 1, u64::MAX & TIE_MASK).unwrap();
+        let mid = total_order_key(1, 1, TIE_MASK).unwrap();
         assert!(total_order_key(1, 2, 0).unwrap() > mid);
         let lo = total_order_key(1, 1, 1).unwrap();
         assert!(total_order_key(1, 1, 2).unwrap() > lo);

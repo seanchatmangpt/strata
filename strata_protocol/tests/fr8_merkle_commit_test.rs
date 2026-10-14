@@ -8,10 +8,10 @@
 //!    `"<type> <len>\0<payload>"`; the 20-byte oid is SHA-1 over the raw
 //!    bytes. BLAKE3 appears only as the dual-anchor digest embedded in the
 //!    commit header and the wormhole snapshot state hash.
-//!    - blob   = content-addressed quad segment(s) (32-byte quads)
-//!    - tree   = coordinate partition grouping blob oids (Git name order)
-//!    - commit = epoch state: tree oid + parent commit oid + strata-epoch
-//!      + strata-anchor (BLAKE3) + ML-DSA-65 signature header
+//!   - blob   = content-addressed quad segment(s) (32-byte quads)
+//!   - tree   = coordinate partition grouping blob oids (Git name order)
+//!   - commit = epoch state: tree oid + parent commit oid + strata-epoch
+//!   + strata-anchor (BLAKE3) + ML-DSA-65 signature header
 //!
 //! 2. Full object graph per admitted transition: every quad is reachable —
 //!    quad -> blob oid listed in the tree, tree oid in the commit, and the
@@ -60,7 +60,7 @@ fn commit_transition(
         tree_hex: tree.oid_hex(),
         parent_hex,
         anchor_hex: anchor.iter().map(|b| format!("{b:02x}")).collect(),
-        ml_dsa_65_signature: vec![0xAB; 2420],
+        ml_dsa_65_signature: vec![0xAB; 3309],
     });
     Ok((blob, tree, commit))
 }

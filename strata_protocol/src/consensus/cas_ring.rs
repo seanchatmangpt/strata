@@ -229,7 +229,7 @@ impl<const N: usize> CasRing<N> {
     /// the API surfaces recovery through the typed `abandon`, not through a
     /// counter indistinguishable from `claimed_count` (E29 vacuity refusal).
     pub fn abandoned_count(&self) -> usize {
-        self.abandoned.0.load(Ordering::Relaxed) as usize as usize
+        self.abandoned.0.load(Ordering::Relaxed) as usize
     }
 }
 
@@ -458,7 +458,7 @@ mod tests {
         let leaked = ring.claim().expect("slot 1");
         let s2 = ring.claim().expect("slot 2");
         ring.commit(s2, 7).expect("commit");
-        drop(leaked); // leak: no commit, no abandon
+        let _ = leaked; // leak: no commit, no abandon (SlotId is Copy; non-commit is the leak)
         ring.drain_into(&mut |_| {}); // takes 7; leaked slot stays CLAIMED
         assert_eq!(ring.claimed_count(), 1, "leaked slot pinned in CLAIMED");
         assert_eq!(ring.abandoned_count(), 0);
@@ -654,7 +654,7 @@ mod tests {
                                 }
                                 std::hint::spin_loop();
                             };
-                            ring.commit(idx, 1).ok().expect("commit");
+                            ring.commit(idx, 1).expect("commit");
                         }
                     })
                 })

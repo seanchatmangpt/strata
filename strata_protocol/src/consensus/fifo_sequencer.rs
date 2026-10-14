@@ -10,12 +10,12 @@
 //! Branch-light: the only data-dependent branch is the single `tick < tick`
 //! comparison in the sort comparator; nothing else inspects payload values.
 //!
-//! Zero heap allocation on the tick path (`next()` is a counter read + wrap).
+//! Zero heap allocation on the tick path (`next_tick()` is a counter read + wrap).
 
 /// Deterministic sequencer state: a monotonic 64-bit cycle tick.
 ///
 /// The tick is a pure counter. It is not derived from time, entropy, or the
-/// scheduler. `next()` is `wrapping_add`, so after `u64::MAX` the counter
+/// scheduler. `next_tick()` is `wrapping_add`, so after `u64::MAX` the counter
 /// wraps to 0 and continues — this wrap is **documented, defined behavior**,
 /// not an overflow panic (compile-time overflow checks are arithmetic on the
 /// literal path only; the runtime path is explicitly `wrapping_add`).
@@ -44,7 +44,7 @@ impl Sequence {
     /// increasing values, except across the single documented wrap at
     /// `u64::MAX -> 0` (see [`Sequence::starting_at`]).
     #[inline]
-    pub fn next(&mut self) -> u64 {
+    pub fn next_tick(&mut self) -> u64 {
         let tick = self.cycle;
         // Documented wrap (not a panic): 2^64 - 1 -> 0. Deterministic: the
         // wrap point is a function of the counter alone.
@@ -79,7 +79,7 @@ impl Sequence {
         }
         // Stable sort: equal ticks keep ascending source index. The only
         // data-dependent branch in this module lives in this closure.
-        idx.sort_by(|lhs, rhs| lhs.0.cmp(&rhs.0));
+        idx.sort_by_key(|e| e.0);
         idx.into_iter()
             .map(|(_, i)| events[i].1)
             .collect()
@@ -141,16 +141,16 @@ mod tests {
         assert_eq!(twice, once, "ordering is idempotent on its own output");
     }
 
-    /// Tick wrap at `u64::MAX` is documented, defined behavior: `next()`
+    /// Tick wrap at `u64::MAX` is documented, defined behavior: `next_tick()`
     /// returns `u64::MAX` then wraps to 0 and continues monotonically.
     /// No panic, no saturation — a defined wrap.
     #[test]
     fn tick_wraps_at_u64_max_as_documented() {
         let mut seq = Sequence::starting_at(u64::MAX);
         assert_eq!(seq.peek(), u64::MAX);
-        assert_eq!(seq.next(), u64::MAX, "pre-wrap tick");
-        assert_eq!(seq.next(), 0, "documented wrap to 0");
-        assert_eq!(seq.next(), 1, "monotonic continuation after wrap");
+        assert_eq!(seq.next_tick(), u64::MAX, "pre-wrap tick");
+        assert_eq!(seq.next_tick(), 0, "documented wrap to 0");
+        assert_eq!(seq.next_tick(), 1, "monotonic continuation after wrap");
         assert_eq!(seq.peek(), 2);
     }
 
@@ -158,9 +158,9 @@ mod tests {
     #[test]
     fn next_is_strictly_monotonic() {
         let mut seq = Sequence::new();
-        let mut prev = seq.next();
+        let mut prev = seq.next_tick();
         for _ in 0..100_000 {
-            let t = seq.next();
+            let t = seq.next_tick();
             assert!(t > prev, "strictly increasing");
             prev = t;
         }

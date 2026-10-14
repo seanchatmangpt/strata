@@ -350,7 +350,7 @@ fn slo_gasless_admit() {
             let x = (i as u64)
                 .wrapping_mul(6364136223846793005)
                 .wrapping_add(1442695040888963407);
-            (PRE | ((x >> 48) as u16 & 0xFFF1)) // keep bit 1 (PRE) set
+            PRE | ((x >> 48) as u16 & 0xFFF1) // keep bit 1 (PRE) set
         })
         .collect();
     // Admitted-path witness on every corpus entry (fail-closed).

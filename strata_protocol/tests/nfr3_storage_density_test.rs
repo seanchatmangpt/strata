@@ -25,13 +25,13 @@
 //!
 //! TWO MEASUREMENTS, both real:
 //!   A. PER-OBJECT LOOSE (actual shipped topology): sum of each epoch
-//!      delta-blob's emitted zlib size via `cas::emit_blob` +
-//!      `cas::stored_bytes`, plus Wormhole index overhead
-//!      (100 epochs x 8-byte delta tags).
+//!   delta-blob's emitted zlib size via `cas::emit_blob` +
+//!   `cas::stored_bytes`, plus Wormhole index overhead
+//!   (100 epochs x 8-byte delta tags).
 //!   B. SIMULATED PACK (git-pack analog, not implemented in strata):
-//!      concatenate all epoch delta payloads (raw 32-byte quads) and
-//!      deflate the whole stream once — the footprint a real packfile
-//!      would achieve given cross-object redundancy.
+//!   concatenate all epoch delta payloads (raw 32-byte quads) and
+//!   deflate the whole stream once — the footprint a real packfile
+//!   would achieve given cross-object redundancy.
 //!
 //! WHY THE BOUND IS UNREACHABLE WITH ZLIB (independently cross-checked
 //! against a Python zlib probe over six vocabulary sizes, 64..256 pools,
@@ -181,6 +181,43 @@ fn nfr3_packed_second_surface_holds_operator_bound() {
         packed_per_quad_millis % 1000,
         raw_first.loose_bytes * 1000 / TOTAL_QUADS / 1000,
         raw_first.loose_bytes * 1000 / TOTAL_QUADS % 1000,
+    );
+}
+
+/// Step-0 measurement (print-only, no assertion): per-field min/max/universe
+/// of the same corpus, and the implied Elias-Fano floor in B/quad:
+///   bits = 4 fields x 2n (EF overhead) + sum of u_i (payload width)
+///   floor = (bits/8 + 13B framing) / n quads
+/// Decision rule: floor <= ~2.3 B/quad -> implement EF; else re-adjudicate.
+#[test]
+fn nfr3_step0_elias_fano_floor_measurement() {
+    let mut mn = [u64::MAX; 4];
+    let mut mx = [0u64; 4];
+    let mut n: u64 = 0;
+    for epoch in 0..EPOCHS {
+        for q in epoch_quads(epoch) {
+            let vals = [q.s, q.p, q.o, q.g];
+            for (i, v) in vals.iter().enumerate() {
+                mn[i] = mn[i].min(*v);
+                mx[i] = mx[i].max(*v);
+            }
+            n += 1;
+        }
+    }
+    assert_eq!(n, TOTAL_QUADS);
+    let uni: Vec<u64> = mn.iter().zip(&mx).map(|(a, b)| b - a + 1).collect();
+    let sum_u: u64 = uni.iter().sum();
+    let ef_bits = 4 * 2 * n + sum_u;
+    let ef_bytes = ef_bits.div_ceil(8) + 13;
+    let per_quad_millis = ef_bytes * 1000 / n;
+    eprintln!(
+        "NFR-3 step-0 EF floor measurement:\n  field  min      max      universe (u)\n    s    {:>8} {:>8} {:>8}\n    p    {:>8} {:>8} {:>8}\n    o    {:>8} {:>8} {:>8}\n    g    {:>8} {:>3} {:>8}\n  n = {} quads, sum(u_i) = {} bits (payload), EF overhead 4x2n = {} bits, total {} bits = {} B + 13 B framing = {} B\n  EF floor = {}.{:03} B/quad",
+        mn[0], mx[0], uni[0],
+        mn[1], mx[1], uni[1],
+        mn[2], mx[2], uni[2],
+        mn[3], mx[3], uni[3],
+        n, sum_u, 8 * n, ef_bits, ef_bits.div_ceil(8), ef_bytes,
+        per_quad_millis / 1000, per_quad_millis % 1000,
     );
 }
 

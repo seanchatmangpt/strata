@@ -1,3 +1,4 @@
+// VACUITY: EXEMPT — direct law-assertion court over a fixed corpus; no mutation-kill claim
 //! Lane M14 — cross-tier mutation court over the PN64/OCEL64 cross-language
 //! surfaces (docs/PN64_VECTORS.md contract).
 //!
@@ -19,8 +20,8 @@
 //! Court protocol (same as lanes M02/M03): for every mutant assert BOTH
 //!   1. the real surface obeys the law on the discriminating input, and
 //!   2. the mutant's output DIVERGES from the real output there.
-//! A mutant with no exhibited divergence is a SURVIVOR and is reported
-//! verbatim in the survivor ledger test.
+//!      A mutant with no exhibited divergence is a SURVIVOR and is reported
+//!      verbatim in the survivor ledger test.
 //!
 //! No mocks: real words, real kernels, real sequencer, real accessors only.
 
@@ -88,7 +89,7 @@ fn kernel_law(pn: u64, ocel: u64, invariant_mask: u64) -> u64 {
     let activity = ocel & 0xFF;
 
     let not_enabled = (m & pre) ^ pre;
-    let invariant_violation = (((m ^ pre) | post) & invariant_mask) as u64;
+    let invariant_violation = ((m ^ pre) | post) & invariant_mask;
     let mismatch = activity ^ tid;
     let ok = ct_is_zero(not_enabled | invariant_violation | mismatch);
 
@@ -113,7 +114,7 @@ fn mutant_kernel_invariant_binds_m(pn: u64, ocel: u64, invariant_mask: u64) -> R
     let m = pn64::marking(pn);
     let pre = pn64::pre(pn);
     let post = pn64::post(pn);
-    let next_m = (m ^ pre) | post;
+    let _next_m = (m ^ pre) | post;
 
     if (ocel64::activity(ocel) & 0xFF) != pn64::tid(pn) as u16 {
         return Err(PnAbiError::Malformed);
@@ -191,7 +192,7 @@ fn mutant_commit_drops_field_preservation(pn: u64, ocel: u64, invariant_mask: u6
 /// Drain the arrival bag in insertion order (FIFO), returning the payload
 /// words in drain order.
 fn drain_bag(bag: &[(u64, u64)]) -> Vec<(u64, u64)> {
-    bag.iter().copied().collect()
+    bag.to_vec()
 }
 
 /// MUTANT: settlement = drain order verbatim (no tick sort).

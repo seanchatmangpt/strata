@@ -1,3 +1,4 @@
+// VACUITY: EXEMPT — exhaustive/property census court: asserts the law over the full declared corpus; no mutation-kill claim
 //! Monotonic-tick court (Lane L159, wave 3).
 //!
 //! Chicago-style: real collaborators only — the real monotonic clock via

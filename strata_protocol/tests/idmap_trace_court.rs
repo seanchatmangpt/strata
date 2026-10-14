@@ -1,3 +1,4 @@
+// VACUITY: EXEMPT — direct law-assertion court over a fixed corpus; no mutation-kill claim
 //! Cross-module integration court (lane L120, wave 2). Zero mocks.
 //!
 //! Wires four real modules together end to end:

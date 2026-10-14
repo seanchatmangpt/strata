@@ -23,11 +23,25 @@ pub const FRAME_LEN: usize = 16;
 /// refused with `Error::Invalid`. No semantic validation is performed —
 /// the decoded words are opaque (see module docs).
 pub fn parse(buf: &[u8]) -> Result<(u64, u64), crate::Error> {
-    if buf.len() != FRAME_LEN {
-        return Err(Error::Invalid);
+    // `try_into` to `[u8; FRAME_LEN]` is infallible-by-length here: a
+    // mismatched length is a typed `Err`, never a panic branch. No
+    // `expect`/`unwrap` on external input.
+    match <&[u8; FRAME_LEN]>::try_from(buf) {
+        Ok(fixed) => parse_exact(fixed),
+        Err(_) => Err(Error::Invalid),
     }
-    let pn = u64::from_le_bytes(buf[0..8].try_into().expect("len checked"));
-    let ocel = u64::from_le_bytes(buf[8..16].try_into().expect("len checked"));
+}
+
+/// Parse an exactly-16-byte frame by reference to a fixed-size array.
+///
+/// Panic-branch-free: the `[u8; FRAME_LEN]` type proves the length, so
+/// `parse_exact` contains no bounds-check fallback and no `expect`. Prefer
+/// this on hot paths where the frame arrived in a fixed-len buffer;
+/// `parse` delegates here after its length gate.
+pub fn parse_exact(buf: &[u8; FRAME_LEN]) -> Result<(u64, u64), crate::Error> {
+    let b = *buf;
+    let pn = u64::from_le_bytes([b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7]]);
+    let ocel = u64::from_le_bytes([b[8], b[9], b[10], b[11], b[12], b[13], b[14], b[15]]);
     Ok((pn, ocel))
 }
 
@@ -127,5 +141,26 @@ mod tests {
             write(pn, ocel, &mut buf).unwrap();
             assert_eq!(parse(&buf), Ok((pn, ocel)));
         }
+    }
+
+    #[test]
+    fn parse_exact_matches_parse_on_golden_and_edges() {
+        for &(pn, ocel) in GOLDEN.iter().chain(
+            [
+                (0u64, u64::MAX),
+                (u64::MAX, 0),
+                (0x8000_0000_0000_0001, !0x8000_0000_0000_0001),
+            ]
+            .iter(),
+        ) {
+            let mut buf = [0u8; FRAME_LEN];
+            write(pn, ocel, &mut buf).unwrap();
+            assert_eq!(parse_exact(&buf), Ok((pn, ocel)));
+            assert_eq!(parse_exact(&buf), parse(&buf));
+        }
+        // parse_exact is total over its input class: any [u8; 16] parses,
+        // no length refusal path exists at the type level.
+        let junk: [u8; FRAME_LEN] = core::array::from_fn(|i| (i * 17 + 3) as u8);
+        assert!(parse_exact(&junk).is_ok());
     }
 }

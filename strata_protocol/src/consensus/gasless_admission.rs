@@ -337,7 +337,7 @@ mod tests {
                 return Err(AdmissionError::CapacityExceeded);
             }
         }
-        if (next.count_ones() as u32) > total_cap as u32 {
+        if next.count_ones() > u32::from(total_cap) {
             return Err(AdmissionError::CapacityExceeded);
         }
         Ok(next)

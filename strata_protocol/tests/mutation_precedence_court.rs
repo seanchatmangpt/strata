@@ -1,4 +1,5 @@
-//! C05 mutation court for the RONR precedence law (Lane M06).
+// VACUITY: ANTI_VACUITY_MUTANT
+// ANTI_VACUITY_MUTANT//! C05 mutation court for the RONR precedence law (Lane M06).
 //!
 //! Proves the precedence court set (`precedence_court.rs`,
 //! `precedence_property_court.rs`) is non-vacuous: five hand-written mutants

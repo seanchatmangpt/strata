@@ -1,4 +1,5 @@
-//! Mutation court M09 — finite-trace LTL operator laws (lane M09, wave 2).
+// VACUITY: ANTI_VACUITY_MUTANT
+// ANTI_VACUITY_MUTANT//! Mutation court M09 — finite-trace LTL operator laws (lane M09, wave 2).
 //!
 //! Subject under mutation: `ltl::eval` (strata_protocol/src/ltl.rs). Each
 //! mutant is an in-test reimplementation of the real evaluator with ONE
@@ -51,7 +52,7 @@ fn base5() -> Vec<LogEntry> {
 /// -> debate (3) -> vote (4) -> adopt (5, marking bit 0b0100) -> adjourn (6).
 fn meeting6() -> Vec<LogEntry> {
     let mut ticks = 0u8;
-    let mut step = |mark: u16, tid: u8, activity: u16, ticks: &mut u8| {
+    let step = |mark: u16, tid: u8, activity: u16, ticks: &mut u8| {
         let e = entry(mark, tid, activity, *ticks);
         *ticks = ticks.wrapping_add(1);
         e
@@ -119,9 +120,9 @@ fn fin_with_mut_x(iter: EntryIter<'_>, f: &Formula) -> bool {
 /// Mutant 1: `G` evaluates the FINAL position only (the universal quantifier
 /// collapses to "the last entry is clean").
 fn eval_mut1_g_final_only(iter: EntryIter<'_>, f: &Formula) -> bool {
-    let mut it = iter;
+    let it = iter;
     let mut last: Option<LogEntry> = None;
-    while let Some(e) = it.next() {
+    for e in it {
         last = Some(e);
     }
     match last {

@@ -1,4 +1,5 @@
-//! M11 mutation court for the offline rehydration tier (`rehydrate.rs` +
+// VACUITY: ANTI_VACUITY_MUTANT
+// ANTI_VACUITY_MUTANT//! M11 mutation court for the offline rehydration tier (`rehydrate.rs` +
 //! `ocel_xml.rs`).
 //!
 //! Proves the rehydrate acceptance surface is non-vacuous: for each of the 5

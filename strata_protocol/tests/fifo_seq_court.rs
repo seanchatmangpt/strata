@@ -1,3 +1,4 @@
+// VACUITY: EXEMPT — direct law-assertion court over a fixed corpus; no mutation-kill claim
 //! FIFO sequencer courts (Lane L149).
 //!
 //! Chicago-style: real `consensus::fifo_sequencer` and `consensus::CasRing`
@@ -112,9 +113,9 @@ fn court2_tie_break_equal_ticks_preserve_input_order() {
 fn court3_wraparound_order_across_u64_max_boundary() {
     // (a) Counter behavior: starting_at(u64::MAX) emits MAX, then 0, then 1.
     let mut seq = Sequence::starting_at(u64::MAX);
-    assert_eq!(seq.next(), u64::MAX, "pre-wrap tick");
-    assert_eq!(seq.next(), 0, "documented wrap to 0");
-    assert_eq!(seq.next(), 1, "monotonic continuation after wrap");
+    assert_eq!(seq.next_tick(), u64::MAX, "pre-wrap tick");
+    assert_eq!(seq.next_tick(), 0, "documented wrap to 0");
+    assert_eq!(seq.next_tick(), 1, "monotonic continuation after wrap");
 
     // (b) Ordering across the boundary: events emitted by a wrapped counter
     // (ticks u64::MAX, 0, 1, 2) order per raw-u64 comparison — 0,1,2 before

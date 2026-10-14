@@ -17,6 +17,25 @@
 
 use core::sync::atomic::{AtomicU64, Ordering};
 
+/// Domain-separation tag for the owner-tagged seal (hard owner-tag check,
+/// L156 follow-up to F-A01-1: stale-SlotId payload substitution across an
+/// abandon/reclaim boundary). The 64-bit slot carries no spare bits to STORE
+/// an owner, so the owner is bound into the seal instead: a payload written
+/// under owner A fails the interlock for any reader presenting owner B —
+/// the substitution is detected at the slot read, typed fail-closed `None`.
+const OWNER_DOMAIN: &[u8] = b"STRATA-SLOT-OWNER-v1";
+
+#[inline]
+fn seal_owned(owner: u64, seq: u64, word: u64) -> u64 {
+    let mut h = blake3::Hasher::new();
+    h.update(OWNER_DOMAIN);
+    h.update(&owner.to_le_bytes());
+    h.update(&seq.to_le_bytes());
+    h.update(&word.to_le_bytes());
+    let d = h.finalize();
+    u64::from_le_bytes(d.as_bytes()[0..8].try_into().unwrap())
+}
+
 /// One 64-byte-aligned slot: seq / word / checksum interlock.
 #[repr(C, align(64))]
 pub struct Slot {
@@ -76,6 +95,34 @@ impl Slot {
     /// cache line with 64-byte alignment.
     pub const fn is_aligned() -> bool {
         core::mem::size_of::<Slot>() == 64 && core::mem::align_of::<Slot>() == 64
+    }
+
+    /// HARD OWNER-TAG WRITE: seal binds (owner, seq, word). A delayed/retried
+    /// commit from a previous owner (the F-A01-1 stale-SlotId substitution
+    /// channel) cannot satisfy a later owner's interlock.
+    pub fn write_owned(&self, seq: u64, word: u64, owner: u64) {
+        let c = seal_owned(owner, seq, word);
+        self.word.store(word, Ordering::Relaxed);
+        self.checksum.store(c, Ordering::Relaxed);
+        self.seq.store(seq, Ordering::Release);
+    }
+
+    /// HARD OWNER-TAG READ: refuses unless the slot currently holds
+    /// `expected_seq` AND the owner-bound checksum verifies. A payload
+    /// committed under a different owner (stale SlotId after abandon/reclaim)
+    /// returns typed fail-closed `None` — the substitution is detected, never
+    /// silently accepted as the new owner's.
+    pub fn read_owned(&self, expected_seq: u64, owner: u64) -> Option<u64> {
+        let s = self.seq.load(Ordering::Acquire);
+        if s != expected_seq {
+            return None;
+        }
+        let w = self.word.load(Ordering::Acquire);
+        let c = self.checksum.load(Ordering::Acquire);
+        if seal_owned(owner, s, w) != c {
+            return None;
+        }
+        Some(w)
     }
 }
 
@@ -191,5 +238,75 @@ mod tests {
             slot.read(400_001),
             Some(400_001u64.wrapping_mul(0x9E37_79B9_7F4A_7C15))
         );
+    }
+
+    /// F-A01-1 / L156 kill: the delayed in-flight commit from a PREVIOUS
+    /// owner (stale SlotId after abandon/reclaim) must not read as the new
+    /// owner's payload. Same seq, different owner => typed `None`.
+    #[test]
+    fn stale_owner_substitution_refused() {
+        let slot = Slot::new();
+        const OLD_OWNER: u64 = 0x1111;
+        const NEW_OWNER: u64 = 0x2222;
+        // T2's lawful reclaim + commit under its own tag.
+        slot.write_owned(7, 0xAAAA, NEW_OWNER);
+        assert_eq!(slot.read_owned(7, NEW_OWNER), Some(0xAAAA));
+        // T1's delayed in-flight commit lands the adversarial word into the
+        // slot (physical overwrite, as in the real race)...
+        slot.write_owned(7, 0xDEAD_BEEF, OLD_OWNER);
+        // ...and the substitution is DETECTED: the new owner's read refuses.
+        assert_eq!(slot.read_owned(7, NEW_OWNER), None);
+        // The old owner's own read still verifies (the seal is consistent) —
+        // detection is owner-scoped, not data loss.
+        assert_eq!(slot.read_owned(7, OLD_OWNER), Some(0xDEAD_BEEF));
+    }
+
+    /// The ownerless seal and the owner-bound seal are distinct domains: an
+    /// owner-tagged payload must not verify through the plain interlock.
+    #[test]
+    fn ownerless_read_refuses_owned_payload() {
+        let slot = Slot::new();
+        slot.write_owned(9, 42, 0xC0FFEE);
+        assert_eq!(slot.read(9), None, "ownerless read must refuse owned payload");
+        assert_eq!(slot.read_owned(9, 0xC0FFEE), Some(42));
+
+        slot.write(11, 7);
+        assert_eq!(slot.read_owned(11, 0xC0FFEE), None, "owned read must refuse plain payload");
+    }
+
+    /// Cross-owner hammer: 2 writers per (owner, seq) stream; readers verify
+    /// strictly under their own owner tag. A cross-owner overwrite can only
+    /// surface as a typed refusal, never as a wrong-payload acceptance.
+    #[test]
+    fn cross_owner_torn_write_hammer() {
+        let slot = Arc::new(Slot::new());
+        let mut joins = Vec::new();
+        slot.write_owned(0, 0, 0xAAAA);
+
+        for owner in [0xAAAAu64, 0xBBBB] {
+            let slot = Arc::clone(&slot);
+            joins.push(std::thread::spawn(move || {
+                for i in 0..50_000u64 {
+                    slot.write_owned(i + 1, i + 1, owner);
+                }
+            }));
+        }
+        for owner in [0xAAAAu64, 0xBBBB] {
+            let slot = Arc::clone(&slot);
+            joins.push(std::thread::spawn(move || {
+                let mut seen: u64 = 0;
+                while seen < 100_001 {
+                    seen = seen.wrapping_add(1);
+                    // Any accepted read must carry THIS owner's mapping
+                    // (word == seq); anything else refuses typed.
+                    if let Some(w) = slot.read_owned(seen, owner) {
+                        assert_eq!(w, seen, "owner-bound read returned wrong word");
+                    }
+                }
+            }));
+        }
+        for j in joins {
+            j.join().expect("owner hammer thread panicked");
+        }
     }
 }

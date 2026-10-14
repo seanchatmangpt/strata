@@ -1,4 +1,5 @@
-//! M07 mutation court for the log MAC / hash chain (`src/logchain.rs`).
+// VACUITY: ANTI_VACUITY_MUTANT
+// ANTI_VACUITY_MUTANT//! M07 mutation court for the log MAC / hash chain (`src/logchain.rs`).
 //!
 //! For each candidate mutant, the mutant chain / verify logic is recomputed
 //! IN-TEST over the real `logchain` + `signer` surfaces (src is never
@@ -63,7 +64,7 @@ fn mutant1_step_omits_tick(h: [u8; 32], e: &LogEntry) -> [u8; 32] {
 fn m07_1_tick_omission_is_an_equivalent_mutant() {
     let trace = valid_trace();
     let signer = Signer::from_seed([11u8; 32]);
-    let pk = signer.public_key();
+    let _pk = signer.public_key();
 
     // Digests DO differ: the preimage really lost the tick bytes.
     let real_head = chain_head(&trace);

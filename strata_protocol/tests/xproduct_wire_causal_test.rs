@@ -160,7 +160,7 @@ fn stacked_verdict(k: u8, case: &CausalCase) -> (bool, bool) {
         parent: [0u8; 32],
         message: b"xproduct".to_vec(),
     };
-    let out = temprun::run(&mut inp, FuelLease::new(3));
+    let out = temprun::run(&mut inp, FuelLease::new(3), &mut temprun::ParentLedger::new());
     if out.admitted {
         assert_eq!(out.receipt.len(), RECEIPT_LEN);
     }
@@ -181,7 +181,7 @@ fn causal_oracle(case: &CausalCase) -> bool {
         parent: [0u8; 32],
         message: b"oracle".to_vec(),
     };
-    temprun::run(&mut inp, FuelLease::new(3)).admitted
+    temprun::run(&mut inp, FuelLease::new(3), &mut temprun::ParentLedger::new()).admitted
 }
 
 // ---- (1) conforming trace encoded in every layout admits: 6 × admit ----

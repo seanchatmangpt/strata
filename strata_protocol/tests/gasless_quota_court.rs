@@ -1,3 +1,4 @@
+// VACUITY: EXEMPT — exhaustive/property census court: asserts the law over the full declared corpus; no mutation-kill claim
 //! Gasless quota admission courts (L152, rev 2 per-place law) — zero-mock,
 //! exhaustive classification.
 //!
@@ -73,7 +74,7 @@ fn naive_admit(
             return Err(AdmissionError::CapacityExceeded);
         }
     }
-    if (next.count_ones() as u32) > total_cap as u32 {
+    if next.count_ones() > total_cap as u32 {
         return Err(AdmissionError::CapacityExceeded);
     }
     Ok(next)

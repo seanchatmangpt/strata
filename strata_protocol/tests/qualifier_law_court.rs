@@ -1,3 +1,4 @@
+// VACUITY: EXEMPT — exhaustive/property census court: asserts the law over the full declared corpus; no mutation-kill claim
 //! Algebraic proof court for the rehydrate relationship-qualifier convention.
 //!
 //! Convention (strata_protocol/src/rehydrate.rs, "Relationship qualifier
@@ -25,7 +26,7 @@ use strata_protocol::rehydrate::rehydrate;
 
 /// The whole qualifier domain: all 256 byte values.
 fn all_qualifiers() -> impl Iterator<Item = u8> {
-    (0..=u8::MAX).map(|q| q)
+    0..=u8::MAX
 }
 
 /// Court 1 — exhaustiveness: for every qualifier, source and target rows are
@@ -149,12 +150,12 @@ fn court_05_width_guard_eight_bit_assumption_pinned()
     // collision the 8-bit width prevents.
     let mask7: u8 = 0x7F;
     assert_eq!(
-        0x00u8 & mask7,
+        0x00u8,
         0x80u8 & mask7,
         "7-bit qualifier domain collapses 0x00 and 0x80"
     );
     assert_ne!(
-        0x00u8 ^ mask,
+        mask,
         0x80u8 ^ mask,
         "at the real 8-bit width the same pair stays distinguishable"
     );

@@ -83,31 +83,57 @@ pub mod mask {
 /// `Err(step_index)` for the first failing step (0-based; a chain break
 /// between step t and t+1 reports t+1).
 pub fn verify_trace(entries: &[LogEntry], invariant_mask: u64) -> Result<(), usize> {
+    verify_iter(entries.iter().copied(), invariant_mask)
+}
+
+/// The single implementation of the replay-verify law (marking chain, tid
+/// match, monotonic ticks — [`mask`] bits, 0-based first-failing-step index).
+///
+/// There is exactly one verify loop in the crate. [`crate::trace_slice::
+/// verify_trace_bytes`] and [`verify_trace`] are both thin adapters over this
+/// function; neither reimplements the checks. Uses the same one-entry
+/// lookahead the byte iterator already needs, so the `&[LogEntry]` path
+/// requires no random access.
+pub fn verify_iter(mut iter: impl Iterator<Item = LogEntry>, invariant_mask: u64) -> Result<(), usize> {
     use crate::ocel64;
     use crate::pn64;
 
     let mut prev_tick: u8 = 0;
-    for (i, e) in entries.iter().enumerate() {
+    let mut i: usize = 0;
+    // `peeked` is the entry at index `i` (None past the end).
+    let mut peeked = iter.next();
+    while let Some(e) = peeked {
         // TID match: transition id must equal the event's activity low byte.
-        if invariant_mask & mask::TID_MATCH != 0 && pn64::tid(e.pn) != (ocel64::activity(e.ocel) & 0xFF) as u8 {
+        if invariant_mask & mask::TID_MATCH != 0
+            && pn64::tid(e.pn) != (ocel64::activity(e.ocel) & 0xFF) as u8
+        {
             return Err(i);
         }
         // Monotonic ticks: non-decreasing over steps (cumulative tick field).
-        if invariant_mask & mask::TICKS_MONOTONIC != 0 && i > 0 && ocel64::tick(e.ocel) < prev_tick {
+        if invariant_mask & mask::TICKS_MONOTONIC != 0 && i > 0 && ocel64::tick(e.ocel) < prev_tick
+        {
             return Err(i);
         }
         prev_tick = ocel64::tick(e.ocel);
 
         // Marking chain: firing step i must produce step i+1's marking,
-        // and step i must be enabled to fire at all.
+        // and step i must be enabled to fire at all. Lookahead: after the
+        // last step `iter.next()` yields None, matching the tail behavior of
+        // the previous `entries.get(i + 1)` form.
         if invariant_mask & mask::MARKING_CHAIN != 0 {
-            if let Some(next) = entries.get(i + 1) {
+            if let Some(next) = iter.next() {
                 match pn64::fire(e.pn) {
                     Some(fired) if pn64::marking(fired) == pn64::marking(next.pn) => {}
                     _ => return Err(i + 1),
                 }
+                peeked = Some(next);
+                i += 1;
+                continue;
             }
         }
+
+        peeked = iter.next();
+        i += 1;
     }
     Ok(())
 }

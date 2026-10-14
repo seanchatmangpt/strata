@@ -1,4 +1,5 @@
-//! Court for `src/parquet_out.rs` (A07: first-ever test coverage).
+// VACUITY: ANTI_VACUITY_MUTANT
+// ANTI_VACUITY_MUTANT//! Court for `src/parquet_out.rs` (A07: first-ever test coverage).
 //!
 //! Primary contract is DIRECT correctness (Chicago):
 //! 1. row alignment — every emitted TSV row has exactly 5 fields, and
@@ -144,7 +145,8 @@ fn tsv_roundtrip_field_by_field_against_source_events() {
     let rows = parse_rows(&tsv);
 
     // Repackage the flat rows back into per-event groups (in file order).
-    let mut grouped: Vec<(String, u16, u8, Vec<(u16, u8)>)> = Vec::new();
+    type Grouped = Vec<(String, u16, u8, Vec<(u16, u8)>)>;
+    let mut grouped: Grouped = Vec::new();
     for (id, act, oid, q, tick) in rows {
         if grouped.last().map(|(gid, ..)| gid != &id).unwrap_or(true) {
             grouped.push((id, act, tick, Vec::new()));

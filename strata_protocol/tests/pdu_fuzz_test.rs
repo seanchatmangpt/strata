@@ -5,16 +5,16 @@
 //!
 //! Invariants under test:
 //!   F1: any single-byte mutation of a golden valid frame either parses Ok
-//!       (byte in a don't-care position) or returns Err(Invalid) — never
-//!       panics, never UB.
+//!   (byte in a don't-care position) or returns Err(Invalid) — never
+//!   panics, never UB.
 //!   F2: reserved bytes 6..8 must stay zero: a mutation there must refuse.
 //!   F3: round-trip to_bytes -> from_bytes -> to_bytes == identity for
-//!       random valid headers (permutation <= PDU_PERMUTATION_MAX).
+//!   random valid headers (permutation <= PDU_PERMUTATION_MAX).
 //!   F4: segment_len() == 32*(N+M) computed in u64 — no overflow is
-//!       reachable (max ~2^33 * 32 < 2^38), so from_bytes length checks
-//!       are the only overflow guard needed; frames whose claimed counts
-//!       imply huge segment_len still parse the 64-byte header fine (the
-//!       segment payload, not the header, is where truncation bites).
+//!   reachable (max ~2^33 * 32 < 2^38), so from_bytes length checks
+//!   are the only overflow guard needed; frames whose claimed counts
+//!   imply huge segment_len still parse the 64-byte header fine (the
+//!   segment payload, not the header, is where truncation bites).
 //!   F5: every prefix of the golden frame shorter than 64 bytes refuses.
 
 use strata_protocol::pdu::{PduHeader, PDU_HEADER_LEN, PDU_PERMUTATION_MAX};

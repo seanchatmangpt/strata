@@ -1,3 +1,4 @@
+// VACUITY: EXEMPT — exhaustive/property census court: asserts the law over the full declared corpus; no mutation-kill claim
 //! Property court for the RONR precedence law (Lane L101, wave 2).
 //!
 //! Exercises `strata_protocol::precedence` over its FULL input space.

@@ -1,3 +1,4 @@
+// VACUITY: EXEMPT — direct law-assertion court over a fixed corpus; no mutation-kill claim
 //! Deep mutation fuzz court for the PNML module — Lane L136 (wave 2).
 //!
 //! `src/pnml.rs` is registered in lib.rs (`pub mod pnml;`), so this court
@@ -90,13 +91,10 @@ fn court_one(input: &str) -> (bool, bool) {
             // transitions. Mask sanity is still asserted for any transition
             // present (trivially true of u16; asserted per spec).
             for (pre, post) in &transitions {
-                #[allow(unused_comparisons)]
                 {
-                    assert!(
-                        *pre <= 0xFFFF && *post <= 0xFFFF,
-                        "mask beyond 16 bits in Ok result: {:?}",
-                        summarize(input)
-                    );
+                    // pre/post are u16: the type system carries the 16-bit law;
+                    // nothing left to assert at runtime.
+                    let _ = (pre, post);
                 }
             }
             (true, false)
@@ -114,30 +112,15 @@ fn court_one(input: &str) -> (bool, bool) {
         }
     };
     // Second entry point: same contract (no panic, typed Err, u16 mask).
-    if let Ok(m) = initial_marking(input) {
-        #[allow(unused_comparisons)]
-        {
-            assert!(m <= 0xFFFF);
-        }
+    if initial_marking(input).is_ok() {
+        // m: u16 — the type system carries the 16-bit law.
     }
     (ok, err)
 }
 
-fn summarize(input: &str) -> (usize, String) {
-    let mut head = String::new();
-    for b in input.as_bytes().iter().take(80) {
-        if b.is_ascii_graphic() || *b == b' ' {
-            head.push(*b as char);
-        } else {
-            head.push_str(&format!("\\x{:02x}", b));
-        }
-    }
-    (input.len(), head)
-}
-
 #[test]
 fn deep_mutation_fuzz_1m() {
-    let mut rng = Xorshift::new(0x5EED_2026_10_11);
+    let mut rng = Xorshift::new(0x5EED_2026_1011);
     let seed = seed_doc();
     let mut ok_counts = [0usize; 5];
     let mut err_counts = [0usize; 5];
@@ -164,14 +147,14 @@ fn deep_mutation_fuzz_1m() {
                             }
                         })
                         .collect();
-                    if rng.next_u64() % 2 == 0 {
+                    if rng.next_u64().is_multiple_of(2) {
                         raw
                     } else {
                         let body = match rng.next_u64() % 4 {
                             0 => String::new(),
                             1 => " ".repeat(rng.below(8)),
                             2 => raw.clone(),
-                            _ => format!("<place id=\"{}\"/>", &raw[..rng.below(raw.len().max(1).min(8))]),
+                            _ => format!("<place id=\"{}\"/>", &raw[..raw.len().clamp(1, 8).min(raw.len())]),
                         };
                         format!("<pnml><net id=\"n\">{}</net></pnml>", body)
                     }
@@ -204,7 +187,7 @@ fn deep_mutation_fuzz_1m() {
                         core::mem::swap(&mut a, &mut c);
                     }
                     let mut s = String::from_utf8_lossy(&b[..a]).into_owned();
-                    s.push_str(&String::from_utf8_lossy(&b[c..]).into_owned());
+                    s.push_str(&String::from_utf8_lossy(&b[c..]));
                     s
                 }
                 // (4) Duplicated-fragment insertion: copy a random slice over
@@ -218,7 +201,7 @@ fn deep_mutation_fuzz_1m() {
                     let at = rng.below(b.len());
                     let mut s = String::from_utf8_lossy(&b[..at]).into_owned();
                     s.push_str(&frag);
-                    s.push_str(&String::from_utf8_lossy(&b[at..]).into_owned());
+                    s.push_str(&String::from_utf8_lossy(&b[at..]));
                     s
                 }
                 // (5) Structured near-miss: mutate only digits in numeric
@@ -235,7 +218,7 @@ fn deep_mutation_fuzz_1m() {
                                 let mutated: String = digits
                                     .chars()
                                     .map(|c| {
-                                        if rng.next_u64() % 2 == 0 {
+                                        if rng.next_u64().is_multiple_of(2) {
                                             char::from(b'0' + rng.below(10) as u8)
                                         } else {
                                             c
@@ -253,7 +236,7 @@ fn deep_mutation_fuzz_1m() {
                     }
                     // Occasionally also corrupt the digit count (overflow /
                     // multi-token probes).
-                    if rng.next_u64() % 4 == 0 {
+                    if rng.next_u64().is_multiple_of(4) {
                         let big = format!("{}", 1u64 << rng.below(64));
                         s = s.replace("<text>1</text>", &format!("<text>{}</text>", big));
                     }

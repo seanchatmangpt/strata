@@ -1,3 +1,4 @@
+// VACUITY: EXEMPT — exhaustive/property census court: asserts the law over the full declared corpus; no mutation-kill claim
 //! End-to-end PNML ingestion court (Lane L95).
 //!
 //! Exercises the crate's registered modules directly (`src/pnml.rs` is now

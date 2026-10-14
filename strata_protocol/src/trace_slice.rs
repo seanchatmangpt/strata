@@ -14,9 +14,11 @@
 //! The alternative `ptr::slice_from_raw_parts` route was rejected: it would
 //! require an 8-byte alignment check and `unsafe` blocks this lane forbids.
 
-use crate::logsink::{self, LogEntry};
-use crate::ocel64;
-use crate::pn64;
+use crate::logsink::LogEntry;
+#[cfg(test)]
+use crate::logsink;
+#[cfg(test)]
+use crate::{ocel64, pn64};
 
 /// Safe iterator over `LogEntry` values decoded from a raw byte buffer.
 ///
@@ -67,7 +69,7 @@ impl<'a> ExactSizeIterator for EntryIter<'a> {}
 /// without `unsafe` transmute, so this returns the owned iterator
 /// `EntryIter<'a>` instead — same entries, same order, zero allocation.
 pub fn entries_from_bytes(buf: &[u8]) -> Result<EntryIter<'_>, crate::Error> {
-    if buf.len() % 16 != 0 {
+    if !buf.len().is_multiple_of(16) {
         return Err(crate::Error::Invalid);
     }
     Ok(EntryIter { rest: buf })
@@ -75,58 +77,15 @@ pub fn entries_from_bytes(buf: &[u8]) -> Result<EntryIter<'_>, crate::Error> {
 
 /// Replay-verify a raw log buffer without materializing a `Vec<LogEntry>`.
 ///
-/// Semantics are byte-for-byte the same law as `logsink::verify_trace`
-/// (marking chain, tid match, monotonic ticks — same mask bits, same
-/// 0-based first-failing-step index), reimplemented over [`EntryIter`] with a
-/// one-entry lookahead window because `logsink::verify_trace` is `&[LogEntry]`
-/// -bound. Equality with the `Vec` path is pinned by the differential test
-/// below (10k random entries, all mask combinations).
+/// Thin adapter: decodes [`EntryIter`] and delegates to the single law
+/// implementation `logsink::verify_iter`. Malformed length (not a multiple of
+/// 16) returns `Err(usize::MAX)` — not a step index — before the law runs.
 pub fn verify_trace_bytes(buf: &[u8], invariant_mask: u64) -> Result<(), usize> {
-    use crate::logsink::mask;
-
-    let mut iter = match entries_from_bytes(buf) {
+    let iter = match entries_from_bytes(buf) {
         Ok(it) => it,
         Err(_) => return Err(usize::MAX), // malformed length: not a step index
     };
-
-    let mut prev_tick: u8 = 0;
-    let mut i: usize = 0;
-    // `peeked` is the entry at index `i` (None past the end).
-    let mut peeked = iter.next();
-    while let Some(e) = peeked {
-        // TID match: transition id must equal the event's activity low byte.
-        if invariant_mask & mask::TID_MATCH != 0
-            && pn64::tid(e.pn) != (ocel64::activity(e.ocel) & 0xFF) as u8
-        {
-            return Err(i);
-        }
-        // Monotonic ticks: non-decreasing over steps (cumulative tick field).
-        if invariant_mask & mask::TICKS_MONOTONIC != 0 && i > 0 && ocel64::tick(e.ocel) < prev_tick
-        {
-            return Err(i);
-        }
-        prev_tick = ocel64::tick(e.ocel);
-
-        // Marking chain: firing step i must produce step i+1's marking,
-        // and step i must be enabled to fire at all. Needs a one-entry
-        // lookahead; `iter.next()` after the loop's last step yields None,
-        // matching `entries.get(i + 1)` at the tail.
-        if invariant_mask & mask::MARKING_CHAIN != 0 {
-            if let Some(next) = iter.next() {
-                match pn64::fire(e.pn) {
-                    Some(fired) if pn64::marking(fired) == pn64::marking(next.pn) => {}
-                    _ => return Err(i + 1),
-                }
-                peeked = Some(next);
-                i += 1;
-                continue;
-            }
-        }
-
-        peeked = iter.next();
-        i += 1;
-    }
-    Ok(())
+    crate::logsink::verify_iter(iter, invariant_mask)
 }
 
 #[cfg(test)]
@@ -213,12 +172,13 @@ mod tests {
         );
     }
 
-    /// Differential pin: byte path == Vec path over 10k random entries for
-    /// every mask combination. This is the guard against the reimplemented
-    /// verify loop drifting from `logsink::verify_trace`.
+    /// Wiring court: byte path == Vec path over a small random corpus for
+    /// every mask combination. Both paths now run the single law
+    /// (`logsink::verify_iter`), so this pins the adapter wiring (decode ->
+    /// law vs. slice -> law), not a second implementation.
     #[test]
-    fn differential_10k_byte_path_equals_vec_path_all_masks() {
-        let n = 10_000;
+    fn wiring_byte_path_equals_vec_path_all_masks() {
+        let n = 512;
         let raw = fill_random(0xC0FFEE, n);
         let entries: Vec<LogEntry> = entries_from_bytes(&raw).unwrap().collect();
         assert_eq!(entries.len(), n);

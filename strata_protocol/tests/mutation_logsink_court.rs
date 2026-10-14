@@ -1,4 +1,5 @@
-//! M08 mutation court: proves the logsink/invariants verification surfaces
+// VACUITY: ANTI_VACUITY_MUTANT
+// ANTI_VACUITY_MUTANT//! M08 mutation court: proves the logsink/invariants verification surfaces
 //! (`logsink::verify_trace`, `invariants::reachable_bitset`,
 //! `invariants::has_deadlock_excluding`, `invariants::is_reachable`) are
 //! non-vacuous.
@@ -36,10 +37,11 @@ fn valid_trace() -> Vec<LogEntry> {
 fn verify_trace_mutant(entries: &[LogEntry], invariant_mask: u64, drop: u64) -> Result<(), usize> {
     let mut prev_tick: u8 = 0;
     for (i, e) in entries.iter().enumerate() {
-        if invariant_mask & logsink::mask::TID_MATCH != 0 && drop != logsink::mask::TID_MATCH {
-            if pn64::tid(e.pn) != (ocel64::activity(e.ocel) & 0xFF) as u8 {
-                return Err(i);
-            }
+        if invariant_mask & logsink::mask::TID_MATCH != 0
+            && drop != logsink::mask::TID_MATCH
+            && pn64::tid(e.pn) != (ocel64::activity(e.ocel) & 0xFF) as u8
+        {
+            return Err(i);
         }
         if invariant_mask & logsink::mask::TID_MATCH != 0 && drop == logsink::mask::TID_MATCH {
             // dropped: recompute the comparison against the entry itself so the
@@ -48,10 +50,10 @@ fn verify_trace_mutant(entries: &[LogEntry], invariant_mask: u64, drop: u64) -> 
         }
         if invariant_mask & logsink::mask::TICKS_MONOTONIC != 0
             && drop != logsink::mask::TICKS_MONOTONIC
+            && i > 0
+            && ocel64::tick(e.ocel) < prev_tick
         {
-            if i > 0 && ocel64::tick(e.ocel) < prev_tick {
-                return Err(i);
-            }
+            return Err(i);
         }
         prev_tick = ocel64::tick(e.ocel);
 
@@ -252,8 +254,8 @@ fn m06_is_reachable_off_by_one_is_killed() {
         "mutant misses reachable 0x0002"
     );
     // The real surface answers differently on the same set — killed.
-    assert_eq!(invariants::is_reachable(&set, 0x0002), true);
-    assert_eq!(is_reachable_mutant_off_by_one(&set, 0x0002), false);
+    assert!(invariants::is_reachable(&set, 0x0002));
+    assert!(!is_reachable_mutant_off_by_one(&set, 0x0002));
     assert_ne!(
         invariants::is_reachable(&set, 0x0002),
         is_reachable_mutant_off_by_one(&set, 0x0002)

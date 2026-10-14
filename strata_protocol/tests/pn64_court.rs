@@ -1,3 +1,4 @@
+// VACUITY: EXEMPT — direct law-assertion court over a fixed corpus; no mutation-kill claim
 //! PN64 + OCEL64 + pnabi integration court (Lane L11).
 //!
 //! Chicago-style: real collaborators only — every test drives the real

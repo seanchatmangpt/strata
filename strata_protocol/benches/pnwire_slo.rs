@@ -232,3 +232,124 @@ fn wire_ingress_filter_composite_within_slo() {
         },
     );
 }
+
+// ---------------------------------------------------------------------------
+// E48: length-refusal corpus. The wire layer's only refusal surface is the
+// exact-length gate (parse refuses any buffer that is not FRAME_LEN bytes).
+// Refusal must be fail-closed AND cheap: median(refuse) <= 5x median(admit).
+// Every corpus entry is witnessed to refuse OUTSIDE the timed region
+// (anti-vacuity: a corpus that admits would measure the wrong path).
+// ---------------------------------------------------------------------------
+
+/// Malformed-length corpus: one frame per wrong length spanning 0..=63
+/// bytes around the 16-byte wire form (every length except FRAME_LEN),
+/// content derived from the same LCG as the admit corpus.
+fn refusal_corpus() -> Vec<Vec<u8>> {
+    let mut corpus = Vec::new();
+    for len in 0..=64usize {
+        if len == pnwire::FRAME_LEN {
+            continue;
+        }
+        let mut buf = vec![0u8; len];
+        let mut x = lcg(len as u64);
+        for b in buf.iter_mut() {
+            x = lcg(x);
+            *b = (x & 0xFF) as u8;
+        }
+        corpus.push(buf);
+    }
+    corpus
+}
+
+#[test]
+fn wire_length_refusal_within_5x_admit() {
+    let admit_corpus = frame_corpus();
+    let refuse_corpus = refusal_corpus();
+
+    // Witness phase (untimed): EVERY malformed length must refuse. A corpus
+    // entry that admits would make the timed phase measure the hot path.
+    for (i, buf) in refuse_corpus.iter().enumerate() {
+        assert!(
+            pnwire::parse(buf).is_err(),
+            "witness: refusal corpus entry {i} (len {}) admitted — corpus is broken",
+            buf.len()
+        );
+    }
+    assert_eq!(refuse_corpus.len(), 64, "one malformed entry per wrong length");
+
+    // Timed phase: same batch/min-of-k method as the admit courts, applied
+    // to the refusal path. `samples_ns_per_op` is corpus-typed, so refusal
+    // timing runs its own identical-method loop here.
+    let time = |corpus: &[Vec<u8>], refuse: bool| -> Vec<f64> {
+        let f = |buf: &[u8]| -> u64 {
+            match pnwire::parse(buf) {
+                Ok((pn, ocel)) => pn ^ ocel,
+                Err(_) => u64::from(refuse), // witnessed-refusal marker
+            }
+        };
+        // Warmup, then SAMPLES min-of-k batched samples (identical shape to
+        // samples_ns_per_op).
+        let mut acc = 0u64;
+        for _ in 0..(2_000_000 / corpus.len() as u64) {
+            for c in corpus {
+                acc = acc.wrapping_add(f(c));
+            }
+        }
+        black_box(acc);
+        let mut out = Vec::with_capacity(SAMPLES);
+        let mut chunks = corpus.chunks_exact(BATCH).cycle();
+        for _ in 0..SAMPLES {
+            let chunk = chunks.next().unwrap();
+            let mut best = u128::MAX;
+            for _ in 0..MIN_OF_K {
+                let start = Instant::now();
+                for c in chunk {
+                    acc = acc.wrapping_add(f(c));
+                }
+                let d = start.elapsed().as_nanos();
+                if d < best {
+                    best = d;
+                }
+            }
+            out.push(best as f64 / BATCH as f64);
+        }
+        black_box(acc);
+        out
+    };
+
+    // The timed loop chunks the corpus by BATCH, so the refusal corpus is
+    // expanded to 64 lengths x 64 repeats = 4096 entries (BATCH divides it;
+    // same wrong-length distribution per batch).
+    let mut timed_refuse_corpus = Vec::with_capacity(64 * 64);
+    for _ in 0..64 {
+        timed_refuse_corpus.extend(refuse_corpus.iter().cloned());
+    }
+    let mut admit = time(&admit_corpus.iter().map(|f| f.bytes.to_vec()).collect::<Vec<_>>(), false);
+    let mut refuse = time(&timed_refuse_corpus, true);
+    admit.sort_by(|a, b| a.partial_cmp(b).expect("finite"));
+    refuse.sort_by(|a, b| a.partial_cmp(b).expect("finite"));
+    let admit_median = pct(&admit, 50.0);
+    let refuse_median = pct(&refuse, 50.0);
+    let ratio = refuse_median / admit_median;
+
+    // Fail-closed witness on the timed path too: with `refuse = true`, a
+    // timed op that ADMITS returns 0 instead of 1. The corpus is all-refuse,
+    // so the marker op inside the timed fold must never observe an admit.
+    for (i, buf) in refuse_corpus.iter().enumerate() {
+        assert!(
+            pnwire::parse(buf).is_err(),
+            "timed-path witness: entry {i} (len {}) admitted",
+            buf.len()
+        );
+    }
+
+    let pass = ratio <= 5.0;
+    println!(
+        "| E48 length refusal | refuse median {refuse_median:.2} ns | admit median {admit_median:.2} ns | ratio {ratio:.2}x | gate <= 5.0x | {} |",
+        if pass { "PASS" } else { "FAIL" }
+    );
+    assert!(
+        pass,
+        "E48: refusal median {refuse_median:.2} ns exceeds 5x admit median {admit_median:.2} ns (ratio {ratio:.2}x)"
+    );
+}

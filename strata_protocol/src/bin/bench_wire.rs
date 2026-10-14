@@ -14,7 +14,6 @@ mod signer;
 
 // signer.rs is path-included, so its `crate::receipt` paths must resolve at
 // this bin root too; re-export the lib's receipt module here.
-use strata_protocol::receipt;
 
 use signer::{AttestedPayload, Signer, PUBLIC_KEY_LEN, SIGNATURE_LEN};
 

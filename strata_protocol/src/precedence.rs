@@ -134,9 +134,8 @@ mod tests {
     // tid 0x02 = non-subsidiary (rank None per ronr::precedence_rank); enabled.
     const PN_NONSUB: u64 = 0x0002_000C_0002_0082;
     // activity low byte matches each word's tid; tick 0x41.
-    const OCEL_TID5: u64 = 0x41_00_0046_0055_0105;
-    const OCEL_TID3: u64 = 0x41_00_0046_0055_0103;
-    const OCEL_TID2: u64 = 0x41_00_0046_0055_0102;
+    const OCEL_TID5: u64 = 0x4100_0046_0055_0105;
+    const OCEL_TID3: u64 = 0x4100_0046_0055_0103;
 
     #[test]
     fn none_pending_always_admits() {
@@ -204,7 +203,7 @@ mod tests {
     fn delegation_malformed_unchanged() {
         // Rank admissible (None pending); conformance violated: activity low
         // byte 0x04 != tid 0x02.
-        let ocel_bad = 0x41_00_0046_0055_0104;
+        let ocel_bad = 0x4100_0046_0055_0104;
         assert_eq!(
             validate_with_precedence(PN_NONSUB, ocel_bad, None),
             Err(PrecedenceError::Malformed)

@@ -1,4 +1,5 @@
-//! Mutation court for `consensus::cas_ring.rs` (lane F-CASRING).
+// VACUITY: ANTI_VACUITY_MUTANT
+// ANTI_VACUITY_MUTANT//! Mutation court for `consensus::cas_ring.rs` (lane F-CASRING).
 //!
 //! Method: in-test mutant twins of the CasRing algorithm. `MutantRing<_, 0>`
 //! is the byte-faithful control and must pass the full court; each mutant
@@ -258,7 +259,7 @@ fn probe_sentinel_drain<R: RingLike>(ring: &R) -> Result<(), String> {
     let leaked = ring
         .claim()
         .ok_or_else(|| "P3: claim refused on empty ring".to_string())?;
-    std::mem::forget(leaked); // leave the slot CLAIMED, uncommitted
+    let _ = leaked; // SlotId is Copy; leaving the claim uncommitted is the leak
     let mut got = Vec::new();
     ring.drain_into(&mut |w| guarded_push(&mut got, 0, w));
     if !got.is_empty() {
@@ -477,33 +478,33 @@ fn panic_msg(e: &Box<dyn std::any::Any + Send>) -> String {
 #[test]
 fn control_real_ring_and_faithful_twin_pass_full_court() {
     // The real ring must pass the entire court.
-    court_verdict(|| CasRing::<1024>::new()).expect("control: real CasRing passes full court");
+    court_verdict(CasRing::<1024>::new).expect("control: real CasRing passes full court");
     // The faithful twin (MUTANT=0) must be indistinguishable — this is what
     // makes every mutant verdict below attributable to its single mutation.
-    court_verdict(|| MutantRing::<1024, 0>::new()).expect("control: faithful twin passes full court");
+    court_verdict(MutantRing::<1024, 0>::new).expect("control: faithful twin passes full court");
 }
 
 #[test]
 fn m1_claim_swap_double_claim_is_killed() {
-    let verdict = court_verdict(|| MutantRing::<1024, 1>::new());
+    let verdict = court_verdict(MutantRing::<1024, 1>::new);
     assert!(verdict.is_err(), "SURVIVOR M1: {:?}", verdict);
 }
 
 #[test]
 fn m2_commit_swap_phantom_word_is_killed() {
-    let verdict = court_verdict(|| MutantRing::<1024, 2>::new());
+    let verdict = court_verdict(MutantRing::<1024, 2>::new);
     assert!(verdict.is_err(), "SURVIVOR M2: {:?}", verdict);
 }
 
 #[test]
 fn m3_drain_skips_sentinel_check_is_killed() {
-    let verdict = court_verdict(|| MutantRing::<1024, 3>::new());
+    let verdict = court_verdict(MutantRing::<1024, 3>::new);
     assert!(verdict.is_err(), "SURVIVOR M3: {:?}", verdict);
 }
 
 #[test]
 fn m4_abandon_relaxed_orderings_killed_or_reported() {
-    let verdict = court_verdict(|| MutantRing::<1024, 4>::new());
+    let verdict = court_verdict(MutantRing::<1024, 4>::new);
     match verdict {
         Err(v) => println!("M4 (Relaxed abandon orderings) KILLED: {v}"),
         Ok(()) => {
@@ -517,6 +518,6 @@ fn m4_abandon_relaxed_orderings_killed_or_reported() {
 
 #[test]
 fn m5_capacity_mask_off_by_one_is_killed() {
-    let verdict = court_verdict(|| MutantRing::<1024, 5>::new());
+    let verdict = court_verdict(MutantRing::<1024, 5>::new);
     assert!(verdict.is_err(), "SURVIVOR M5: {:?}", verdict);
 }

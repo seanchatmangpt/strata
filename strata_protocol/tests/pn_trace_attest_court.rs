@@ -1,3 +1,4 @@
+// VACUITY: EXEMPT — direct law-assertion court over a fixed corpus; no mutation-kill claim
 //! PN64 trace attestation court (Lane L60, wave 2).
 //!
 //! Integrates the PN64 tier with the existing attestation capital

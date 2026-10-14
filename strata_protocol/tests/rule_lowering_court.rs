@@ -1,3 +1,4 @@
+// VACUITY: EXEMPT — direct law-assertion court over a fixed corpus; no mutation-kill claim
 //! Rule-lowering court (Lane L67).
 //!
 //! The ggen pipeline's compile-time contract, tested in Rust: a Horn-clause

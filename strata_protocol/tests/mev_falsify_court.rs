@@ -1,3 +1,4 @@
+// VACUITY: EXEMPT — direct law-assertion court over a fixed corpus; no mutation-kill claim
 //! MEV falsify court (Wave 3 tollgate, lane L150).
 //!
 //! Proves transaction reordering is UNREPRESENTABLE in the strata-protocol
@@ -37,7 +38,7 @@
 //!
 //! ```text
 //! $ grep -nE "priority|gas_|fee|tip|bribe" \
-//!     strata_protocol/src/consensus/{cas_ring.rs,fifo_sequencer.rs} || true
+//!   strata_protocol/src/consensus/{cas_ring.rs,fifo_sequencer.rs} || true
 //! (no matches)
 //! $ grep -n "pub fn" strata_protocol/src/consensus/cas_ring.rs
 //! 57: pub fn new()
@@ -246,7 +247,7 @@ fn mev_front_running_unrepresentable() {
     // randomize the value field — the settled ORDER PATTERN is identical.
     let n = 100_000;
     let ticks: Vec<u64> = (0..n).map(|i| (i * 2_654_435_761u64) % 9_977).collect();
-    let values_a: Vec<u64> = (0..n).map(|i| mix(i)).collect();
+    let values_a: Vec<u64> = (0..n).map(mix).collect();
     let values_b: Vec<u64> = (0..n).map(|i| mix(i ^ 0x5EED)).collect();
     let ev_a: Vec<(u64, u64)> = ticks.iter().zip(&values_a).map(|(t, v)| (*t, *v)).collect();
     let ev_b: Vec<(u64, u64)> = ticks.iter().zip(&values_b).map(|(t, v)| (*t, *v)).collect();

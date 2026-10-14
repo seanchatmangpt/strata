@@ -1,3 +1,4 @@
+// VACUITY: EXEMPT — direct law-assertion court over a fixed corpus; no mutation-kill claim
 //! Whole-net behavioral equivalence court (N implementations of one calculus).
 //!
 //! Two independently-built net graphs over one calculus (16-bit place-mask
@@ -32,7 +33,7 @@ const FULL: std::ops::RangeInclusive<u8> = 0x01u8..=0x0C;
 
 /// Build the net graph from dispatch's 12 seeded entries (independent source).
 fn dispatch_net() -> Vec<(u16, u16)> {
-    FULL.filter_map(|op| dispatch::lookup(op)).collect()
+    FULL.filter_map(dispatch::lookup).collect()
 }
 
 /// Build the net graph from all 12 ronr transitions (independent source).

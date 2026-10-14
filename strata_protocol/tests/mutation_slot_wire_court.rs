@@ -1,4 +1,5 @@
-//! Lane M10 — mutation court for `consensus::slot` + `pnwire`.
+// VACUITY: ANTI_VACUITY_MUTANT
+// ANTI_VACUITY_MUTANT//! Lane M10 — mutation court for `consensus::slot` + `pnwire`.
 //!
 //! Each mutant is implemented IN-TEST as an executable alternative semantics
 //! (src/ untouched). For every mutant we assert two things against the REAL
@@ -6,8 +7,8 @@
 //!   1. the real surface obeys the law on the discriminating input, and
 //!   2. the mutant DIVERGES from the real behavior there (non-vacuous pin —
 //!      the assertion would fail if src were mutated to the mutant semantics).
-//! A mutant whose divergence cannot be exhibited is a SURVIVOR, reported
-//! verbatim.
+//!      A mutant whose divergence cannot be exhibited is a SURVIVOR, reported
+//!      verbatim.
 //!
 //! No mocks: real `Slot`, real `pnwire`, real blake3, real byte buffers.
 
@@ -188,7 +189,7 @@ fn mutant3_length_gate_allows_15_bytes_is_killed() {
         "pin sanity: real surface refuses 15 bytes"
     );
     // Boundary intact on the real surface: 14 refused, 16 admitted.
-    assert_eq!(pnwire::parse(&vec![0u8; 14]), Err(strata_protocol::Error::Invalid));
+    assert_eq!(pnwire::parse(&[0u8; 14]), Err(strata_protocol::Error::Invalid));
     let mut full = [0u8; 16];
     pnwire::write(1, 2, &mut full).unwrap();
     assert_eq!(pnwire::parse(&full), Ok((1, 2)));

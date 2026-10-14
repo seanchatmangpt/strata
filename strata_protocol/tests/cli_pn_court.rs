@@ -1,3 +1,4 @@
+// VACUITY: EXEMPT — direct law-assertion court over a fixed corpus; no mutation-kill claim
 //! Lane L24 court: end-to-end `pn` CLI subcommands over real 16-byte/entry
 //! binary traces. Chicago discipline — every case spawns the real `strata`
 //! binary (`CARGO_BIN_EXE_strata`) against real files in a real temp dir and

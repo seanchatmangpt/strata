@@ -1,4 +1,5 @@
-//! Mutation court M01: PN64 law (Lane M01).
+// VACUITY: ANTI_VACUITY_MUTANT
+// ANTI_VACUITY_MUTANT//! Mutation court M01: PN64 law (Lane M01).
 //!
 //! Chicago-style: real collaborators only. Mutant variants of the PN64 law
 //! are built as in-test functions (src/pn64.rs is never edited); each is run
@@ -117,8 +118,8 @@ struct Div {
 fn fire_divergences(mutant_fire: fn(u64) -> Option<u64>) -> Vec<Div> {
     let mut divs = Vec::new();
     for g in GOLDEN {
-        let shipped = pn64::fire(g.pn).map(|w| pn64::marking(w));
-        let mutant = mutant_fire(g.pn).map(|w| pn64::marking(w));
+        let shipped = pn64::fire(g.pn).map(pn64::marking);
+        let mutant = mutant_fire(g.pn).map(pn64::marking);
         if shipped != mutant {
             divs.push(Div {
                 vector_id: g.id,
@@ -128,8 +129,8 @@ fn fire_divergences(mutant_fire: fn(u64) -> Option<u64>) -> Vec<Div> {
         }
     }
     for (i, w) in canonical_six_words().into_iter().enumerate() {
-        let shipped = pn64::fire(w).map(|m| pn64::marking(m));
-        let mutant = mutant_fire(w).map(|m| pn64::marking(m));
+        let shipped = pn64::fire(w).map(pn64::marking);
+        let mutant = mutant_fire(w).map(pn64::marking);
         if shipped != mutant {
             divs.push(Div {
                 vector_id: "CANON",
@@ -156,7 +157,7 @@ fn m1_fire_or_instead_of_xor_is_killed() {
     // itself does not match the contract).
     for g in GOLDEN {
         assert_eq!(
-            pn64::fire(g.pn).map(|w| pn64::marking(w)),
+            pn64::fire(g.pn).map(pn64::marking),
             g.fire_marking,
             "{}: shipped fire disagrees with golden expectation",
             g.id

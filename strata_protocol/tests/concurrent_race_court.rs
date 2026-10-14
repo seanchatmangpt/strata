@@ -1,3 +1,4 @@
+// VACUITY: EXEMPT — direct law-assertion court over a fixed corpus; no mutation-kill claim
 //! W3 tollgate concurrent race court (lane L155).
 //!
 //! 100,000 randomized concurrent insertion races over [`CasRing`] — Chicago
@@ -77,7 +78,7 @@ struct Settled {
 ///
 /// Race id and seed are deterministic; scheduling is not — the settled
 /// multiset must be identical regardless.
-fn run_race(race_id: usize, seed: u64) -> Settled {
+fn run_race(_race_id: usize, seed: u64) -> Settled {
     let mut rng = Lcg(seed ^ 0xA5A5_5A5A_0000_0000);
     let producers = 1 + rng.bounded(MAX_PRODUCERS) as usize;
     let consumers = 1 + rng.bounded(MAX_CONSUMERS) as usize;
@@ -114,7 +115,6 @@ fn run_race(race_id: usize, seed: u64) -> Settled {
     for p in 0..producers {
         let ring = Arc::clone(&ring);
         let barrier = Arc::clone(&barrier);
-        let spin_ceiling = spin_ceiling;
         producer_handles.push(std::thread::spawn(move || {
             let mut spin = spin_ceiling;
             barrier.wait();

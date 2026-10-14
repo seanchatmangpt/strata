@@ -1,3 +1,4 @@
+// VACUITY: EXEMPT — direct law-assertion court over a fixed corpus; no mutation-kill claim
 //! Cross-language golden-vector court for the PN64/OCEL64 dual-word ABI.
 //!
 //! The single source of truth is the golden vector table in
@@ -187,10 +188,10 @@ fn tick_guard_vectors() {
     assert!(!pnabi::expected_tick_ok(v[0].ocel, v[0].ocel), "V10 replay");
     assert!(!pnabi::expected_tick_ok(v[0].ocel, v[10].ocel), "V11 skip");
     // Every canonical transition vector advances its tick by exactly +1.
-    for i in 0..6 {
-        let next_tick = ocel64::tick(v[i].ocel).wrapping_add(1);
-        let next_ocel = (v[i].ocel & !0xFF00_0000_0000_0000) | ((next_tick as u64) << 56);
-        assert!(pnabi::expected_tick_ok(v[i].ocel, next_ocel), "{} tick law", v[i].id);
+    for vec in v.iter().take(6) {
+        let next_tick = ocel64::tick(vec.ocel).wrapping_add(1);
+        let next_ocel = (vec.ocel & !0xFF00_0000_0000_0000) | ((next_tick as u64) << 56);
+        assert!(pnabi::expected_tick_ok(vec.ocel, next_ocel), "{} tick law", vec.id);
     }
     // Backwards tick rejected.
     assert!(!pnabi::expected_tick_ok(v[1].ocel, v[0].ocel));

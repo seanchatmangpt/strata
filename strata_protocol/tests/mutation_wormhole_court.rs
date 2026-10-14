@@ -1,4 +1,5 @@
-//! Mutation court for the Knowledge Wormhole tier (`wormhole.rs`) — NFR-3/4.
+// VACUITY: ANTI_VACUITY_MUTANT
+// ANTI_VACUITY_MUTANT//! Mutation court for the Knowledge Wormhole tier (`wormhole.rs`) — NFR-3/4.
 //!
 //! Proves the wormhole acceptance surface is non-vacuous: for each mutant
 //! class, an in-test recomputation encodes the WRONG expectation (the
@@ -22,7 +23,7 @@
 //!    (and a snapshot not covering all deltas). Killed: real surface returns
 //!    `Err(Error::Invalid)`.
 //! 5. `m5_exact_shard_multiple_boundary` — snapshot search uses `s.epoch <
-//!    epoch` (strict), so reconstruct at exactly a snapshot epoch falls back
+//!   epoch` (strict), so reconstruct at exactly a snapshot epoch falls back
 //!    past that snapshot. Killed by reconstruct_at(snap_epoch) ==
 //!    snapshot state even when later deltas exist.
 
@@ -189,7 +190,7 @@ fn m3_hash_drops_last_branch_killed() {
 
 /// MUTANT admission count: the interlock-free surface's predicted delta-log
 /// length (the refused shard ingested anyway).
-fn m4_delta_len(wh: &Wormhole, refused: &WormholeDelta) -> usize {
+fn m4_delta_len(wh: &Wormhole, _refused: &WormholeDelta) -> usize {
     wh.deltas().len() + 1 // mutation: shard pushed regardless of admission
 }
 
@@ -215,7 +216,7 @@ fn m4_cas_interlock_bypassed_killed() {
         Err(strata_protocol::Error::Invalid),
         "SURVIVOR m4: duplicate-epoch shard admitted — interlock vacuous"
     );
-    assert!(!wh.deltas().iter().any(|d| *d == dup), "refused shard must not be ingested");
+    assert!(!wh.deltas().contains(&dup), "refused shard must not be ingested");
     // Backwards epoch: same interlock.
     let back = WormholeDelta { epoch: 1, quads: vec![q(998)] };
     assert_eq!(wh.insert(back), Err(strata_protocol::Error::Invalid));

@@ -1,3 +1,4 @@
+// VACUITY: EXEMPT — exhaustive/property census court: asserts the law over the full declared corpus; no mutation-kill claim
 //! LangSec Type-3 parser court for the PNML module.
 //!
 //! Wave 2 (L137). `src/pnml.rs` is now registered in lib.rs (`pub mod pnml`),
@@ -19,7 +20,6 @@ use strata_protocol::pnml::{initial_marking, parse, PnmlError};
 
 /// Courts 5-6 (lane W4-P3): rejection census for the two fail-closed gaps —
 /// weighted arcs (C1) and attribute-name false-match (C4).
-
 /// Court 5: a weight-2 arc (`<inscription><text>2</text></inscription>`)
 /// must be a typed `WeightedArc` refusal, never a silent weight-1 compile.
 /// This tier is 1-safe only: weighted nets are out of grammar, not truncated.
@@ -147,7 +147,8 @@ fn closure_byte_flips_sampled() {
     let mut flips = 0usize;
     let mut rejected = 0usize;
     let mut accepted_equivalent = 0usize;
-    let mut accepted_different: Vec<(usize, u8, Vec<(u16, u16)>, Vec<(u16, u16)>)> = Vec::new();
+    type AcceptedDiff = Vec<(usize, u8, Vec<(u16, u16)>, Vec<(u16, u16)>)>;
+    let mut accepted_different: AcceptedDiff = Vec::new();
 
     let baseline = parse(&full).expect("baseline parses");
     for &off in &offsets {
@@ -227,7 +228,8 @@ fn injection_census() {
     let mut accepted: Vec<(String, String)> = Vec::new();
 
     // 3 injection sites: place id, arc source, arc target.
-    let sites: [Box<dyn Fn(&str) -> String>; 3] = [
+    type SiteFns = [Box<dyn Fn(&str) -> String>; 3];
+    let sites: SiteFns = [
         Box::new(|p| net3().replace("id=\"p0\"", &format!("id=\"{p}\""))),
         Box::new(|p| net3().replace("source=\"p0\"", &format!("source=\"{p}\""))),
         Box::new(|p| net3().replace("target=\"t0\"", &format!("target=\"{p}\""))),

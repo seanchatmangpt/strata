@@ -1,3 +1,4 @@
+// VACUITY: EXEMPT — direct law-assertion court over a fixed corpus; no mutation-kill claim
 //! Integration court for `consensus::CasRing` (Wave 3, lane L147).
 //!
 //! Chicago discipline: real threads, real contention, zero mocks. Every
@@ -262,5 +263,5 @@ fn fail_closed_errors_carry_zero_payload_entropy() {
     assert_ne!(full, unclaimed);
     // Copy/Debug derive without leaking internals beyond the class name.
     let copied = full;
-    assert!(format!("{copied:?}").len() > 0);
+    assert!(!format!("{copied:?}").is_empty());
 }

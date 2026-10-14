@@ -1,4 +1,5 @@
-//! F-SIGNER mutation court for the ML-DSA-65 attestation signer
+// VACUITY: ANTI_VACUITY_MUTANT
+// ANTI_VACUITY_MUTANT//! F-SIGNER mutation court for the ML-DSA-65 attestation signer
 //! (`src/signer.rs`).
 //!
 //! For each candidate mutant, the mutant logic is recomputed IN-TEST over the

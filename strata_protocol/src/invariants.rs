@@ -81,8 +81,8 @@ pub fn has_deadlock_excluding(
     transitions: &[(u16, u16)],
     terminals: &[u16],
 ) -> Option<u16> {
-    for word in 0..1024usize {
-        let mut bits = set[word];
+    for (word, &bits0) in set.iter().enumerate() {
+        let mut bits = bits0;
         while bits != 0 {
             let low = bits.trailing_zeros();
             let m = ((word as u16) << 6) | (low as u16);

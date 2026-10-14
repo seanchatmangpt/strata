@@ -1,4 +1,5 @@
-//! M?? mutation court for the offline identity/provenance tier (`idmap.rs` +
+// VACUITY: ANTI_VACUITY_MUTANT
+// ANTI_VACUITY_MUTANT//! M?? mutation court for the offline identity/provenance tier (`idmap.rs` +
 //! `provenance.rs`).
 //!
 //! Non-vacuity court: for each of the 5 mutants, an in-test recomputation
@@ -154,7 +155,7 @@ fn m3_killed_by_fail_closed_court() {
     assert_eq!(real, Err(provenance::ProvError::UnmappedId(9)));
     // The mutant emits output where the real surface refuses — that asymmetry
     // is the kill: no fallback string may appear in any real output.
-    assert!(matches!(m3_to_turtle_fallback(&events, &st, "http://example.org/"), Ok(_)));
+    assert!(m3_to_turtle_fallback(&events, &st, "http://example.org/").is_ok());
     // Mapped activities still resolve normally.
     let ok = [ev("e_0", 7, vec![(1, 3)], 9)];
     assert!(provenance::to_turtle(&ok, &st, "http://example.org/")

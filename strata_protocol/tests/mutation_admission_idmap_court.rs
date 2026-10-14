@@ -23,7 +23,7 @@ fn naive_admit(caps: &[u8; 16], mask: u64, total: u16, pre: u16, post: u16, m: u
             return Err(AdmissionError::CapacityExceeded);
         }
     }
-    if next.count_ones() as u32 > total as u32 {
+    if next.count_ones() > u32::from(total) {
         return Err(AdmissionError::CapacityExceeded);
     }
     Ok(next)
@@ -63,7 +63,7 @@ fn mutant_2(caps: &[u8; 16], mask: u64, total: u16, pre: u16, post: u16, m: u16)
             return Err(AdmissionError::CapacityExceeded);
         }
     }
-    if next.count_ones() as u32 > total as u32 {
+    if next.count_ones() > u32::from(total) {
         return Err(AdmissionError::CapacityExceeded);
     }
     Ok(next)

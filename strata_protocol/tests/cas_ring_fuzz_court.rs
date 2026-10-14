@@ -1,3 +1,4 @@
+// VACUITY: EXEMPT — fuzz-corpus court: asserts the law directly over a generated corpus; no mutation-kill claim
 //! Structured-concurrency fuzz court for `CasRing` (Wave 3, lane L164).
 //!
 //! Chicago discipline: real threads over a real `CasRing`, zero mocks, zero
@@ -106,7 +107,7 @@ fn run_race(seed: u64, micro: bool) -> RaceOutcome {
 }
 
 fn drive<const N: usize>(
-    seed: u64,
+    _seed: u64,
     micro: bool,
     producers: usize,
     consumers: usize,
@@ -149,7 +150,7 @@ fn drive<const N: usize>(
     } else {
         for p in 0..producers {
             let ring = Arc::clone(&ring);
-            let drained = Arc::clone(&drained);
+            let _drained = Arc::clone(&drained);
             let aborted_slots = Arc::clone(&aborted_slots);
             let ring_full_hits = Arc::clone(&ring_full_hits);
             let aborts = Arc::clone(&aborts);
@@ -186,7 +187,7 @@ fn drive<const N: usize>(
                         std::hint::spin_loop();
                         // Random producer slowdown: spin a seed-derived
                         // (schedule-varying) number of iterations.
-                        if k % 7 == 0 {
+                        if k.is_multiple_of(7) {
                             for _ in 0..((k * 2654435761) % 512) {
                                 std::hint::spin_loop();
                             }

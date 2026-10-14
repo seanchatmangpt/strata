@@ -190,7 +190,7 @@ fn pipeline(
         Some(v) => violating_input(v, epoch, parent_digest),
         None => conforming_input(epoch, parent_digest),
     };
-    let out: ArenaOutput = temprun::run(&mut inp, FuelLease::new(FUEL_PER_RUN));
+    let out: ArenaOutput = temprun::run(&mut inp, FuelLease::new(FUEL_PER_RUN), &mut temprun::ParentLedger::new());
     assert_eq!(out.receipt.len(), RECEIPT_LEN, "receipt shape is constant");
     if !out.admitted {
         // Refusal: zero objects written. The store is not touched at all.

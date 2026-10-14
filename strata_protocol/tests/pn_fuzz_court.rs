@@ -1,3 +1,4 @@
+// VACUITY: EXEMPT — fuzz-corpus court: asserts the law directly over a generated corpus; no mutation-kill claim
 //! Deterministic structured fuzz court (Lane L55).
 //!
 //! Cross-checks `pnabi::validate_and_advance` (the dual-word transition law)
@@ -174,7 +175,7 @@ impl Strata {
 
     /// B — lawful-shaped: tid == activity low byte, marking == pre.
     fn lawful(r: &mut Rng) -> Input {
-        let tid = (r.next() & 0xFF) as u64;
+        let tid = r.next() & 0xFF;
         let pre = r.next() & 0xFFFF;
         let pn = pre | (pre << 16) | ((r.next() & 0xFFFF) << 32) | (tid << 48);
         let ocel = (r.next() & !0xFFFF) | tid;

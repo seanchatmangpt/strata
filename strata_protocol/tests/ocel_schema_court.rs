@@ -1,3 +1,4 @@
+// VACUITY: EXEMPT — direct law-assertion court over a fixed corpus; no mutation-kill claim
 //! PN64 Gate 2 — structural conformance court of our OCEL 2.0 output.
 //!
 //! HONESTY NOTE: this court checks *shape conformance* — that the documents
@@ -96,11 +97,10 @@ fn xml_well_formed(xml: &str) -> Result<usize, String> {
         if let Some(name) = tag.strip_prefix('/') {
             // closing tag
             depth = depth.checked_sub(1).ok_or("unbalanced close")?;
-            if name.trim() == "ocel:events" && depth == 0 {
-                if rest[p + end + 1..].contains('<') {
+            if name.trim() == "ocel:events" && depth == 0
+                && rest[p + end + 1..].contains('<') {
                     return Err("content after root close".into());
                 }
-            }
         } else if tag.ends_with('/') {
             // self-closing: depth neutral
         } else {

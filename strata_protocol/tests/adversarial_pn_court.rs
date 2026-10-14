@@ -1,3 +1,4 @@
+// VACUITY: EXEMPT — direct law-assertion court over a fixed corpus; no mutation-kill claim
 //! Adversarial PN64 court (Lane L13). Chicago discipline: real inputs, zero mocks.
 //!
 //! Courts:

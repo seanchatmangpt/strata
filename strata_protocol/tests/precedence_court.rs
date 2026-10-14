@@ -1,3 +1,4 @@
+// VACUITY: EXEMPT — direct law-assertion court over a fixed corpus; no mutation-kill claim
 //! Integration court for the RONR precedence law (Lane L72, wave 2).
 //!
 //! Exercises L70's `precedence.rs` over real RONR flows through the real
@@ -80,7 +81,7 @@ fn ocel(pn: u64) -> u64 {
 /// Meeting-state `pending_rank` discipline (see module docs): subsidiary
 /// verbs of rank >= 1 open a pending question; a resolver (0x04/0x06) and
 /// every other verb leave it as the caller sets it.
-fn pending_after(opcode: u8, pending: Option<u8>) -> Option<u8> {
+fn pending_after(opcode: u8, _pending: Option<u8>) -> Option<u8> {
     match ronr::precedence_rank(opcode) {
         Some(r) if r >= 1 => Some(r),
         _ => None,

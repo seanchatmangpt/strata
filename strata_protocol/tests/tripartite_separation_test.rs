@@ -17,18 +17,18 @@
 //! Asymmetries pinned here, on real collaborators (no mocks):
 //!   A1. 100 reconstruct_at reads leave wormhole state bit-identical.
 //!   A2. The sieve is pure: same verdict forever, inputs unmodified, no
-//!       fuel consumed, no CAS object derivable from a refusal.
+//!   fuel consumed, no CAS object derivable from a refusal.
 //!   A3. Only the admitted run's output verifies as CAS-committable; the
-//!       refusal receipt differs from the admit receipt in byte 0 alone
-//!       (0x02 status code, no new object identity) and fails the admit
-//!       gate (refuse iff byte 0 == 0x02).
+//!   refusal receipt differs from the admit receipt in byte 0 alone
+//!   (0x02 status code, no new object identity) and fails the admit
+//!   gate (refuse iff byte 0 == 0x02).
 
 use strata_protocol::cas::{emit_blob, verify_object, GitObject};
 use strata_protocol::quad::Quad;
 use strata_protocol::wormhole::{Wormhole, WormholeDelta};
 use strata_protocol::AttestationReceipt;
 use temprun::conformance::merge_join;
-use temprun::{run, ArenaInput, FuelLease};
+use temprun::{run, ArenaInput, FuelLease, ParentLedger};
 
 fn q(s: u64, p: u64, o: u64, g: u64) -> Quad {
     Quad::new(s, p, o, g)
@@ -158,7 +158,7 @@ fn construct_refusal_creates_no_cas_object() {
     // Refusing run: sieve fails. Its output is a constant-shape refusal
     // receipt — NOT a CAS object, NOT a commit anchor.
     let mut refused_input = arena_input(false);
-    let refused = run(&mut refused_input, FuelLease::new(10));
+    let refused = run(&mut refused_input, FuelLease::new(10), &mut ParentLedger::new());
     assert!(!refused.admitted);
 
     // The refusal receipt is not a valid CAS object: emitting it as a blob
@@ -176,7 +176,7 @@ fn construct_refusal_creates_no_cas_object() {
     // separates the two receipts. The refusal created no new object
     // identity in CAS space; the admit register is the untouched digest.
     let mut admit_input = arena_input(true);
-    let admitted = run(&mut admit_input, FuelLease::new(10));
+    let admitted = run(&mut admit_input, FuelLease::new(10), &mut ParentLedger::new());
     assert!(admitted.admitted);
     assert_eq!(admitted.receipt, admitted.universe_digest, "admit register is the full digest");
     let mut xor = [0u8; 32];
@@ -201,7 +201,7 @@ fn construct_refusal_creates_no_cas_object() {
 #[test]
 fn do_only_admitted_run_binds_cas_commit() {
     let mut admit_input = arena_input(true);
-    let admitted = run(&mut admit_input, FuelLease::new(10));
+    let admitted = run(&mut admit_input, FuelLease::new(10), &mut ParentLedger::new());
     assert!(admitted.admitted);
 
     // The admitted run's universe digest is real CAS-committable state:
@@ -245,7 +245,7 @@ fn do_run_consumes_policy_capability_free_after_admission() {
     // source exists.
     let mut input = arena_input(true);
     assert!(!input.policy.iter().all(|r| r == &[0u64; 4]));
-    let out = run(&mut input, FuelLease::new(10));
+    let out = run(&mut input, FuelLease::new(10), &mut ParentLedger::new());
     assert!(out.admitted);
 
     // Signature-level pin: ArenaOutput carries {receipt, universe_digest,
@@ -267,7 +267,7 @@ fn do_fuel_lease_is_the_actuation_capability_and_it_expires() {
     // DO is capability-metered: actuation requires a fuel lease; an
     // exhausted lease forces constant-time refusal regardless of conformance.
     let mut input = arena_input(true);
-    let out = run(&mut input, FuelLease::new(0));
+    let out = run(&mut input, FuelLease::new(0), &mut ParentLedger::new());
     assert!(!out.admitted, "no capability, no actuation — even with a valid proof");
     assert_eq!(out.receipt[0], temprun::receipt::REFUSED_STATUS);
 }

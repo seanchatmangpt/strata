@@ -1,3 +1,4 @@
+// VACUITY: EXEMPT — direct law-assertion court over a fixed corpus; no mutation-kill claim
 //! FR-05 / NFR-05 court: million-frame logsink round-trip + rehydration.
 //!
 //! Real collaborators, zero mocks: a deterministic LCG drives the six
@@ -42,7 +43,7 @@ fn build_trace(n: usize) -> Vec<logsink::LogEntry> {
 
     for step in 0..n {
         let t = &six[step % 6];
-        let tid = t.opcode as u8;
+        let tid = t.opcode;
         let pn = pn64::pack(mark, t.pre, t.post, tid, 0);
         assert!(pn64::enabled(pn), "step {step}: opcode {:#x} not enabled", t.opcode);
 

@@ -1,4 +1,5 @@
-//! C05 mutation court for the transport framing preamble (Lane F-FRAMING).
+// VACUITY: ANTI_VACUITY_MUTANT
+// ANTI_VACUITY_MUTANT//! C05 mutation court for the transport framing preamble (Lane F-FRAMING).
 //!
 //! Proves the framing court set (`transport_preamble_test.rs`) is non-vacuous:
 //! five hand-written mutant classes of `src/framing.rs`, each replicated

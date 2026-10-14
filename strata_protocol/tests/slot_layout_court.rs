@@ -1,3 +1,4 @@
+// VACUITY: EXEMPT — direct law-assertion court over a fixed corpus; no mutation-kill claim
 //! Integration courts for `consensus::slot::Slot` (lane L157-re).
 //!
 //! Chicago discipline: real threads, real heap addresses, assertions on
@@ -21,7 +22,7 @@ fn layout_one_cacheline_and_adjacent_separation() {
     assert_eq!(core::mem::align_of::<Slot>(), 64);
 
     // Heap verification: the allocator must honor the 64-byte alignment.
-    let mut boxes: Vec<Box<Slot>> = (0..8).map(|_| Box::new(Slot::new())).collect();
+    let boxes: Vec<Box<Slot>> = (0..8).map(|_| Box::new(Slot::new())).collect();
     for (i, b) in boxes.iter().enumerate() {
         let addr = &**b as *const Slot as usize;
         assert_eq!(addr % 64, 0, "heap Slot #{i} not cacheline aligned: {addr:#x}");
@@ -32,8 +33,8 @@ fn layout_one_cacheline_and_adjacent_separation() {
     // cacheline-aligned, no two elements sharing a line.
     let arr: [Slot; 8] = [const { Slot::new() }; 8];
     let base = arr.as_ptr() as usize;
-    for i in 0..8usize {
-        let addr = &arr[i] as *const Slot as usize;
+    for (i, slot) in arr.iter().enumerate() {
+        let addr = slot as *const Slot as usize;
         assert_eq!(addr - base, i * 64, "slot {i} stride != 64");
         assert_eq!(addr % 64, 0, "slot {i} not on a cacheline boundary");
     }

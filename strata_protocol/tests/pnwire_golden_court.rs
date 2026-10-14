@@ -1,3 +1,4 @@
+// VACUITY: EXEMPT — direct law-assertion court over a fixed corpus; no mutation-kill claim
 //! PN64 wire-contract court (zero mocks).
 //!
 //! Pins the 16-byte frame produced by [`pnwire::write`] against
@@ -57,7 +58,7 @@ fn v01_frame_matches_beam_pin() {
         0x01, 0x00, 0xA1, 0x00, 0xB2, 0x00, 0x01, 0x10, // ocel LE
     ];
     assert_eq!(buf, expected, "V01 frame must equal the BEAM-pinned bytes");
-    assert_eq!(pnwire::parse(&expected), Ok((pn, ocel)));
+    assert_eq!(pnwire::parse_exact(&expected), Ok((pn, ocel)));
 }
 
 /// (2) V06 (settle) hand-built from its hex in docs/PN64_VECTORS.md:
@@ -72,7 +73,7 @@ fn v06_frame_matches_hand_built_bytes() {
         0x06, 0x00, 0xA1, 0x00, 0xB2, 0x00, 0x01, 0x15, // ocel LE
     ];
     assert_eq!(buf, expected);
-    assert_eq!(pnwire::parse(&expected), Ok((pn, ocel)));
+    assert_eq!(pnwire::parse_exact(&expected), Ok((pn, ocel)));
 }
 
 /// (2) V14 (tick wrap) hand-built from its hex: pn 0001000200010001,
@@ -87,7 +88,7 @@ fn v14_frame_matches_hand_built_bytes() {
         0x01, 0x00, 0xA1, 0x00, 0xB2, 0x00, 0x01, 0x00, // ocel LE
     ];
     assert_eq!(buf, expected);
-    assert_eq!(pnwire::parse(&expected), Ok((pn, ocel)));
+    assert_eq!(pnwire::parse_exact(&expected), Ok((pn, ocel)));
 }
 
 /// (3) Roundtrip parity: parse(write(w)) == w across all 14 golden vectors.
@@ -96,7 +97,7 @@ fn roundtrip_parity_all_14_golden_vectors() {
     for &(id, pn, ocel) in &VECTORS {
         let mut buf = [0u8; pnwire::FRAME_LEN];
         pnwire::write(pn, ocel, &mut buf).expect("write into 16-byte buf");
-        assert_eq!(pnwire::parse(&buf), Ok((pn, ocel)), "roundtrip failed for {id}");
+        assert_eq!(pnwire::parse_exact(&buf), Ok((pn, ocel)), "roundtrip failed for {id}");
         // Frame length is exactly 16 regardless of vector contents.
         assert_eq!(buf.len(), 16, "frame length drift for {id}");
     }
@@ -122,4 +123,29 @@ fn field_order_pn_then_ocel_little_endian() {
     assert_eq!(buf[7], 0x01);
     assert_eq!(buf[8], 0xA8);
     assert_eq!(buf[15], 0xA1);
+}
+
+/// (5) Fail-closed length law: `parse` on a wrong-length slice must return
+/// a typed `Err` — never panic, never truncate-accept. Covers both short
+/// and long deviations from FRAME_LEN over the runtime-length input class.
+#[test]
+fn wrong_length_input_is_typed_err_not_panic() {
+    for n in 0..pnwire::FRAME_LEN {
+        let short = vec![0xA5u8; n];
+        assert_eq!(
+            pnwire::parse(&short),
+            Err(strata_protocol::Error::Invalid),
+            "short len {n} must be Err, not panic"
+        );
+    }
+    for n in [pnwire::FRAME_LEN + 1, pnwire::FRAME_LEN + 8, 64] {
+        let long = vec![0xA5u8; n];
+        assert_eq!(
+            pnwire::parse(&long),
+            Err(strata_protocol::Error::Invalid),
+            "long len {n} must be Err, not panic"
+        );
+    }
+    // `parse_exact` is unreachable for wrong lengths by construction — the
+    // type system refuses — so the Err surface is `parse`'s alone.
 }

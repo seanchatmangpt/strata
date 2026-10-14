@@ -457,7 +457,7 @@ out.append("  demonstration seed sha256(\"strata-nato-n20-dossier\")[:64]; NOT a
 out.append("- Sidecars: `docs/nato/DOSSIER.sha256`, `docs/nato/DOSSIER.sha256.sig`.")
 out.append("")
 
-dossier_path_full = dossier_path
+dossier_path_full = dossier_path + ".tmp"
 with open(dossier_path_full, "w") as f:
     f.write(body)
 
@@ -495,6 +495,7 @@ PYEOF
         echo "  seed file: /tmp/n20_seed.bin (sha256 of 'strata-nato-n20-dossier')"
         echo "  payload:   /tmp/n20_payload.bin (digest||universe||fuel0)"
     } > "$SIG_FILE"
+    printf 'SIGNING-MANUAL: strata sign failed (see .n20_sign.log); sig file holds manual instructions, NOT a signature, for digest %s.\n' "$digest" > "$SIG_FILE.note"
     return 1
 }
 
@@ -534,10 +535,25 @@ receipt = {
         "dossier_sha256": digest,
     },
 }
-with open("docs/receipts/N20.json", "w") as f:
-    json.dump(receipt, f, indent=2)
-    f.write("\n")
-print("N20 receipt: %s (%s)" % (status, json.dumps(tally)))
+try:
+    old = json.load(open("docs/receipts/N20.json"))
+except Exception:
+    old = None
+if isinstance(old, dict) and "wave" in old:
+    # LANE_RECEIPT v2 on disk: update verification in place, never clobber.
+    old["verification"]["output_digest"] = "sha256:" + digest
+    old["verification"]["tests_passed"] = tally.get("EXECUTED-GREEN", 0)
+    old["verification"]["tests_failed"] = tally.get("FAILED", 0)
+    old.setdefault("legacy", {})["generator_refresh_" + digest[:8]] = receipt
+    with open("docs/receipts/N20.json", "w") as f:
+        json.dump(old, f, indent=2)
+        f.write("\n")
+    print("N20 receipt: v2 updated in place (%s); %s" % (digest[:8], json.dumps(tally)))
+else:
+    with open("docs/receipts/N20.json", "w") as f:
+        json.dump(receipt, f, indent=2)
+        f.write("\n")
+    print("N20 receipt: %s (%s)" % (status, json.dumps(tally)))
 PYEOF
 }
 
@@ -545,6 +561,7 @@ SIGN_STATUS=OK
 main
 DIGEST="$(assemble)" || { echo "ASSEMBLE FAILED" >&2; exit 1; }
 sign_seal "$DIGEST" || SIGN_STATUS=MANUAL
+mv -f "$DOSSIER.tmp" "$DOSSIER" || exit 1
 emit_n20_receipt "$DIGEST"
 echo "dossier: $DOSSIER"
 echo "digest: $DIGEST ($DIGEST_FILE)"

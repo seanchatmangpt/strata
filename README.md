@@ -4,7 +4,7 @@ Non-ambient causal lineage substrate implementing CLAP/1.0 (IEEE OCEL 2.0
 causal lineage, canonical Z_{2^64} quad coordinates, tripartite
 SELECT/CONSTRUCT/DO separation).
 
-## Status (observed 2026-10-10 @ 8eede5c)
+## Status (observed 2026-10-13)
 
 | Component | Standing | Evidence |
 |---|---|---|

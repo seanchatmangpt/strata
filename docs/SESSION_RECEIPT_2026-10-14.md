@@ -982,3 +982,81 @@ verified resolving; doc addendum commit follows.
 **Session falsifier** (standing): any cited SHA failing
 `git log --oneline --no-walk` at replay, or session count drifting without
 a superseding addendum.
+
+## Addendum-14 — wave-11/12 dedupe pass vs addenda 5-13 (append-only)
+
+Addendum-13 landed at `bb157f5` before this lane wrote; numbering advances.
+Every SHA below was verified resolving (`git log --no-walk --oneline` in
+its owning repo) and cross-checked against addenda 5-13 by on-disk grep;
+already-recorded items are deduped, not re-expanded.
+
+### New this addendum — zero prior receipt mentions
+
+| Item | SHA | Repo | Verification |
+|---|---|---|---|
+| Changelog final Unreleased sweep (post-`d018014` work + stale-path fix) | `545303d` | strata | `--no-walk` resolves; 0 prior mentions |
+| Court inventory regen (post-vibration-wave courts) | `150976a` | strata | resolves; 0 prior mentions |
+| temprun dual-encoding + byte-determinism court (wire x sandbox) | `3c34e4d` | strata | resolves; 0 prior mentions |
+| N04 legacy sidecar lane-field strip (out-of-domain skip) | `316da35` | strata | resolves; 0 prior mentions |
+| ggen cli convention resolver accepts `.tera` (same class as engine fix `8bb154627`) | `3dfe19d59` | ggen | `cat-file -t` = commit; engine half `8bb154627` already recorded (line 232) |
+| **graphlaw shacl_guard: restore `MAX_SHACL_VALIDATION_DEPTH` guard lost in the praxis-graphlaw → crates.io migration** | `085e878` | graphlaw | resolves in `~/graphlaw` (dated 2026-10-14); not an object in strata or `~/ggen`, hence addendum-13's MISSING verdict — wrong-repo lookup, now corrected |
+
+### Falsifier resolution — SHACL-recursion root cause
+
+Addendum-13 recorded `085e878` as MISSING (UNVERIFIED). It is an object of
+`~/graphlaw`, and its subject IS the 26.10.12 SHACL-recursion stack-overflow
+root cause: the `MAX_SHACL_VALIDATION_DEPTH` guard was lost in the
+praxis-graphlaw → crates.io migration. **Both prior theories are refuted** —
+the recursion was neither a ggen-side template loop nor an admission-kernel
+regression; it was a dropped migration guard. Addendum-13's falsifier
+condition is discharged by this location, not silently dropped.
+
+### Covered by addenda 5-13 (deduped, no expansion)
+
+dao widen-ack `33f6705`/`0dba165` + dual witnesses; A02 partial-admit
+`66015a0` + card claims `0613eeb` + double witnesses; framing dual-defect
+`409a24b` + 6/6 witness; xdp saga `364b4b9`→`cc529eb`→`c2b8b09` + pre-mask
+valve-law `a12d7cd` + witness + F3 candidate `00bdbd1` + ledgers `9384a7c`;
+idmap/rehydrate `3979ba0`; n17 `68906b2`; pn64 mirror `2d07251`; pn_frame
+`bbf1c58`; ltl `b02a8e1`; record_burn `40f6155` + 4/4 witness; LeaseLedger
+`9989190`; durability design `4077911`; sagas `6213662` + dual witnesses;
+telemetry `76bffdc`; policy_admission/word_law `ef8480f`/`d391a7b`/`60696ec`
++ 4/4 witness; mutation-hook `52e6274`; quad pin `03ada53`; root src/
+`7dc9576`; n06/n04 sidecar guards + gitignores `f3046a7`/`ded5436`/
+`3537abb`; ontology self-test `27fc08e`; fixture markers `7f6b0ac`;
+sign-fuzz `51f9799`; RELEASE_TRAIN `d018014`/`7d9c64d`; receipts-hygiene
+`1c1d053`/`fa6a228`; exit-code contract `ba40b42`; doc_cite `3763015`;
+README counts `e344d3d`; receipts index `20f9329`; GEMINI_BRIEF `198e33e`;
+G2-branch asks `9eb1de5`; pn::step candidate `3763b8b`; ggen `.tera` +
+companion retirement saga `8bb154627`/`d0b132b60`/`40e3bbb30`/`001cf05`;
+court-naming sweep `60285b2`; n06 fresh stamps `30cd170`; n20 `6d02a39`;
+card fix `162885d`; addenda 8-12 themselves (receipt commits per the
+addenda 5-11 convention).
+
+### In flight at write
+
+- worker.ex F1-F4 timer fixes (SX7 lane): the stratus membrane half of SX7
+  landed as `61758d0` (busy_limits_port + typed :busy + rlimit shim); the
+  worker.ex F1-F4 half is still IN-FLIGHT (owning lane; no worker.ex commit
+  in `548a0bf..HEAD` at write).
+- graphlaw 26.10.12 BLOCKER: root cause now identified (`085e878`);
+  pin-bump unblock pending the guard's upstream integration.
+
+### Session status and totals
+
+**SATURATED-for-wave** per the entropic-annealing criterion
+(`entropic-annealing-doctrine` §3): full-wave returns show zero new defects
+on already-audited surfaces; discovery rate remains halved vs the
+addendum-5 peak. Release train next: `docs/RELEASE_TRAIN_v26.10.12.md`
+(rows 7-8 OPEN: CHANGELOG heading + VERSION/tag). Carried forward: the
+10 OPEN adjudication asks (`docs/ADJUDICATION_LEDGER.md`,
+G2-branch asks in `9eb1de5`) + 3 user-pending items. The loop continues
+per operator mandate.
+
+Session range `git log --oneline 548a0bf..HEAD | wc -l` = **137** at write
+(HEAD `bb157f5`); post-commit total 138 with this receipt commit.
+Moving-HEAD window convention per addenda 11-13 applies.
+
+**Session falsifier** (standing): any cited SHA failing
+`git log --no-walk` in its owning repo at replay, or session count
+drifting without a superseding addendum.

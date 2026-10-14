@@ -1,6 +1,8 @@
 # Strata build/verification scaffold.
 # Doctrine: zero mocks, Chicago TDD, wasm Imports = ∅, constant-time refusal.
 
+VERSION := `cat VERSION`
+
 # Deny-by-default workspace guard: without a root Cargo.toml there is no
 # workspace to test — skip with an explicit message, never fail silently.
 _ensure_workspace:
@@ -89,7 +91,7 @@ ci: test test-wasm check-wasm-imports lint gate-pn-fast wasip1 gate-docs test-st
 soak cycles='1000000':
     cargo run --release -p temprun --bin soak -- --cycles {{cycles}}
 
-# Full release verification ladder (26.10.10).
+# Full release verification ladder.
 release-check: _ensure_workspace
     cargo test --workspace
     cd stratus && mix test
@@ -129,4 +131,11 @@ docs-pn:
 # Print the tag command for the operator. Does NOT tag or push.
 release-tag:
     @echo "Run manually after release-check passes:"
-    @echo "  git tag -a v26.10.10 -m 'Strata v26.10.10 (2cbc5d7)' && git push origin v26.10.10"
+    @echo "  git tag -a v{{VERSION}} -m \"Strata v{{VERSION}} ($$(git rev-parse --short HEAD))\" && git push origin v{{VERSION}}"
+
+# Full stratus suite including tags excluded by default (fuzz, concurrency,
+# timeouts, backpressure, mailbox, wasmtime). CI runs the default-excluded
+# suite via ci.yml, not this recipe.
+test-stratus-full:
+    @test -d stratus || { echo "SKIP: stratus/ absent"; exit 0; }
+    cd stratus && mix test --include fuzz --include t26_concurrent --include temprun_timeout --include backpressure --include mailbox --include wasmtime

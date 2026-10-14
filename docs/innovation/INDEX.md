@@ -296,3 +296,19 @@ committed; each needs operator scope decision.
   `cargo test -p temprun` green except pre-existing fr7
   constant-time timing flake (green on rerun). Cross-invocation history
   (SOAK_LOG.md table as series input) remains future SPC-lane work.
+- ingress-drop observability (seam-audit lane) — CANDIDATE, needs operator
+  decision: SLO vs observability. The XDP `pn_filter.c` deliberately carries
+  no BPF maps (an SLO feature: zero per-packet shared-state cost), so
+  filter-dropped frames emit zero signal downstream — a misconfigured or
+  drifting ingress law is invisible until a conformant frame silently never
+  arrives, exactly the a12d7cd defect class (the filter's old second ingress
+  flag XDP_DROP'd valve-ok frames V02/V03 with no counter or log anywhere).
+  Proposed fix shape: per-CPU drop-counter map +
+  `[:stratus, :valve, :pn, :ingress_dropped]` telemetry — this revises the
+  deliberate no-maps SLO decision, hence the operator ask.
+  Evidence caveat: the host harness's `DIFFERENTIAL` line
+  (scripts/xdp_host_vectors.sh) asserts hardcoded expectations, not an
+  executed-valve differential; the executed-valve evidence is the ExUnit
+  court `stratus/test/xdp_pn_filter_differential_test.exs`, which a12d7cd
+  extended to the full 7-vector set — cite the pair, never the script line
+  alone.

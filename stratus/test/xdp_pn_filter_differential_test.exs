@@ -24,6 +24,11 @@ defmodule Stratus.XdpPnFilterDifferentialTest do
     # either malformed or starvation, so both error classes must map to DROP.
     # V02/V03 are the witnesses that the old bit-0 "ingress flag" mask
     # dropped conformant frames (m=0x0002/0x0004, marking bit 0 clear).
+    # Scope law: every row runs mask=0, where the filter and the valve are
+    # law-identical (enablement + conformance only) and always agree. The
+    # valve's :invariant_violation law has NO filter counterpart, so any
+    # mask!=0 frame is a legal valve-only DROP the filter still PASSes —
+    # outside this court's asserted-agreement surface, never a silent row.
     vectors = [
       {:V01, 0x0001_0002_0001_0001, 0x1001_00B2_00A1_0001, 0x0000_0000_0000_0000, 2},
       {:V02, 0x0102_0004_0002_0002, 0x1101_00B2_00A1_0002, 0x0000_0000_0000_0000, 2},

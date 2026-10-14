@@ -311,3 +311,11 @@ Process notes:
 Falsifier for addendum-2: any strata SHA above that fails
 `git log --oneline --no-walk <sha>` at replay time, or a claimed gate
 result with no corresponding file state on disk.
+
+### ADDENDUM-2 correction — disclosed index sweep in landing commit
+
+Landing commit `2d3f959` (addendum-2) swept in another lane's in-flight
+edit: `stratus/lib/stratus/default_arena.ex` (18 lines) was staged by a
+concurrent lane and included in the same commit. Disclosed here per
+same-checkout fan-out law; commit left immutable. The owning lane should
+re-attribute via `git log -1 -- stratus/lib/stratus/default_arena.ex`.

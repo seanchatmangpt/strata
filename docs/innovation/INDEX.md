@@ -86,9 +86,13 @@ Live defects found by the second-order sweep (routed to owning lanes):
   `unpack_quads_varint_delta` + SPV1 packed-blob emit landed in
   strata_protocol/src/cas.rs:338-455 with court
   tests/fielddelta_packing_test.rs; KNOWN_GAPS.md:117-118 records the
-  v26.10.10 interim milestone. Production write-path wiring (cold path
-  actually emitting SPV1 blobs at runtime) still open — full NFR-3 GAP
-  closure additionally needs the varint-delta columnar encoding (v27.04).
+  v26.10.10 interim milestone. Write-path wiring CLOSED 2026-10-13:
+  opt-in `ColdEncoding::{Raw,Packed}` selector + `emit_blob_cold`/
+  `parse_blob_cold` in cas.rs and production `Wormhole::snapshot_packed`
+  emit path, courted in tests/nfr3_storage_density_test.rs
+  (`nfr3_spv1_snapshot_write_path_wired`); DEFAULT raw path unchanged.
+  Full NFR-3 GAP closure additionally needs the varint-delta columnar
+  encoding (v27.04); Elias-Fano re-adjudication still pending operator.
 - gate scripts wired into zero CI heads (E27)
   — PARTIALLY CLOSED 2026-10-13: .github/workflows/ci.yml now wires
   gate-pn-fast (SLO bench + gate0 court) and gate-docs (ontology_check
@@ -172,3 +176,21 @@ report-only PASS rows (L153 refixing), gate debug-profile bench (L165
 refixing), PNML weight-2 arcs, Turtle id-source divergence, NFR-3
 varint unwired. Third-sweep top-10 in per-lane docs; work orders queued
 for Wave 4.
+
+## 2026-10-13 ecosystem-brief intake (Gemini hourly brief)
+
+Innovation candidates from the hourly ecosystem brief — CANDIDATE, not
+committed; each needs operator scope decision.
+
+- graphlaw::shacl polyglot schema compilation — project ontology.ttl's
+  shape surface to typed consumers (Pydantic/TS) with a
+  SchemaCoverageReport. Falsifier: a compiled consumer model diverges
+  from ontology.ttl without the coverage report refusing.
+- graphlaw::policy unsafe-state reachability admission — model strata's
+  PN invariant-mask law (pnabi) as an unsafe_states reachability
+  Problem. Falsifier: a marking sequence reaching an unsafe place
+  passes admission.
+- purrdf demand paging (CountingDemandProvider) — candidate backing for
+  the query verb's graph materialization on large corpora. Falsifier:
+  demand paging changes query results vs eager load on the
+  pn_transitions corpus.

@@ -29,7 +29,7 @@ is deliberately NOT generated. A machine-regenerable per-lane status table
 | M13 | consensus integration — `mutation_consensus_integration_court.rs` | 4 | 4 | 0 | COMPLETE both profiles (debug m4 overflow CLOSED — see Findings) |
 | M14 | cross-tier parity — `mutation_crosslang_court.rs` | 4 | 4 | 0 | COMPLETE |
 | M15 | tick/order — `mutation_tick_order_court.rs` | 5 | 5 | 0 | COMPLETE |
-| M16 | admission/idmap — `mutation_admission_idmap_court.rs` | 6 | 6 | 0 | COMPLETE |
+| M16 | admission/idmap — `mutation_admission_idmap_court.rs` | 5 | 5 | 0 | COMPLETE (count corrected 2026-10-13: court file has 5 mutants — m0 is the real-vs-naive baseline control, not a mutant; header says 5/5; receipt M16.json agrees) |
 | M17 | Elixir valve — `stratus/test/*_valve_test.exs`, arena flow | 6 | 6 | 0 | COMPLETE |
 | M18 | (scope: tollgate/gate scripts) | — | — | — | COMPLETE (survivor closed by W4-P9 refix — WAVES_3_9.md:310; apostrophe-drop class killed 6/6 in refix self-test) |
 | M19 | tollgate meta-mutants — `scripts/gate_consensus.sh`, `master_gate.sh` | 3 | 1 | 2 | 2 HOLES CLOSED (H1 = M19FIX-A EXPECTED_STAGES pin; H2 = M19FIX-B vacuous-stage lint + zero-test guard on disk — master_gate.sh:85-94, master_gate.sh:368-382; WAVES_3_9.md:264) |
@@ -143,15 +143,15 @@ resolved by that lane before final gates.
 
 ## Totals
 
-- Mutants injected: **90**
-- Killed: **86** (incl. M13 4/4 witnessed under `--release`)
+- Mutants injected: **89** (corrected 2026-10-13 from 90: M16 counted 6, but the court file contains 5 mutants — m0 is the baseline control)
+- Killed: **85** (corrected 2026-10-13 from 86 with the M16 count fix; incl. M13 4/4 witnessed under `--release`)
 - Survived: **3** (M03-1 structural w/ named detector; M07-1 equivalent;
   M19-H2 hole pending fix — M19-H1 hole closed by M19FIX-A, counted killed
   via its fix)
   - STALE-NOTE (status-sync 2026-10-13): M19-H2 since CLOSED by M19FIX-B
     (vacuous-stage lint + zero-test guard on disk) — open holes now 0;
     M03-1/M07-1 remain dispositioned non-holes.
-- Hole-rate (survivors / injected): **3.3%** (86+1-fix kills of 90)
+- Hole-rate (survivors / injected): **3.4%** (85+1-fix kills of 89; corrected 2026-10-13 with the M16 count fix)
 - Court files: 16 Rust + 1 Elixir surface + 2 gate scripts
 - PENDING: M18 lane (429 retry). Open work orders: master_gate vacuous-stage
   guard (M19-H2); M13 debug-profile stack overflow.

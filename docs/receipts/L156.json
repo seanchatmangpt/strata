@@ -7,21 +7,68 @@
   ],
   "disclosed_touches": [],
   "verification": {
-    "command": "cargo test -p strata_protocol --lib consensus::slot 6/0",
-    "output_digest": "sha256:408454120d156f18927eb6d280a13841675b11a8c8cedc970e4bd5a096957aed",
-    "tests_passed": 6,
+    "command": "cargo test -p strata-protocol --lib consensus::slot && cargo test -p strata-protocol --lib consensus::slot --release && cargo test -p strata-protocol --test slot_layout_court && cargo test -p strata-protocol --test mutation_slot_wire_court && cargo test -p strata-protocol --test mutation_slot_wire_court --release",
+    "output_digest": "sha256:408454120d156f18927eb6d280a13841675b11a8c8cedc970e4bd5a096957aed (original 6/0 lib run)",
+    "tests_passed": 19,
     "tests_failed": 0
   },
   "deviations": [
     {
       "kind": "SCOPE_NOTE",
-      "note": "64B alignment verified by address; torn-write hammer clean; blake3-u64 checksum honestly non-adversarial"
+      "note": "64B alignment verified by address; torn-write hammer clean; blake3-u64 checksum honestly non-adversarial. Owner-tag fix landed post-mint; re-verified by an independent lane 2026-10-13 at HEAD a2bd0ba (7/0 debug + release lib, slot_layout_court 3/0, mutation_slot_wire_court 6/6 both profiles). The mutation-P1 lane's own receipt was not found in docs/receipts/ \u2014 the 7/0 figure was re-run fresh rather than cited."
+    },
+    {
+      "kind": "DISCLOSED_TOUCH",
+      "note": "2026-10-13 minimal unblock (same-checkout SLA, disclosed by the N05/N20 receipt-refresh lane): the in-flight edit placed `runs` inside `verification`, which the LANE_RECEIPT v2 schema refuses (additionalProperties: false). The runs array was relocated verbatim to legacy.independent_verification_runs_2026_10_13; no content altered."
     }
   ],
   "started_at": "2026-10-11T09:00:00Z",
   "finished_at": "2026-10-11T11:00:00Z",
   "builder_lane": "L156",
   "grader_exemption": {
-    "reason": "No independent grader lane of record at landing: receipt predates the LANE_RECEIPT v2 grading fields (builder_lane/grader_lane). Backfilled 2026-10-13 with this typed exemption rather than a fabricated grader; grading enforcement applies to receipts minted after this changeset."
+    "reason": "No independent grader lane of record at landing: receipt predates the LANE_RECEIPT v2 grading fields (builder_lane/grader_lane). Backfilled 2026-10-13 with this typed exemption rather than a fabricated grader; grading enforcement applies to receipts minted after this changeset. Independent witness: verification lane re-executed every cited court 2026-10-13 (outputs above)."
+  },
+  "legacy": {
+    "independent_verification_runs_2026_10_13": [
+      {
+        "command": "cargo test -p strata-protocol --lib consensus::slot",
+        "witness": "independent verification lane 2026-10-13",
+        "output": "test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 197 filtered out; finished in 1.02s"
+      },
+      {
+        "command": "cargo test -p strata-protocol --lib consensus::slot --release",
+        "witness": "independent verification lane 2026-10-13",
+        "output": "test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 197 filtered out; finished in 0.04s"
+      },
+      {
+        "command": "cargo test -p strata-protocol --test slot_layout_court",
+        "witness": "independent verification lane 2026-10-13",
+        "output": "test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.17s"
+      },
+      {
+        "command": "cargo test -p strata-protocol --test mutation_slot_wire_court",
+        "witness": "independent verification lane 2026-10-13",
+        "output": "test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s"
+      },
+      {
+        "command": "cargo test -p strata-protocol --test mutation_slot_wire_court --release",
+        "witness": "independent verification lane 2026-10-13, HEAD a2bd0ba",
+        "output": "test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s"
+      }
+    ],
+    "owner_tag_fix": {
+      "summary": "Hard owner-tag fix LANDED after this receipt was first minted: write_owned/read_owned bind the blake3 seal to a 64-bit owner tag in the STRATA-SLOT-OWNER-v1 domain (no spare bits in the 64B slot; owner lives in the seal domain). A stale owner's delayed commit refuses typed at the new owner's read (F-A01-1 slot-layer closure).",
+      "courts": [
+        "consensus::slot::tests::stale_owner_substitution_refused",
+        "consensus::slot::tests::ownerless_read_refuses_owned_payload",
+        "consensus::slot::tests::cross_owner_torn_write_hammer"
+      ],
+      "api": [
+        "strata_protocol/src/consensus/slot.rs:26 OWNER_DOMAIN = b\"STRATA-SLOT-OWNER-v1\"",
+        "strata_protocol/src/consensus/slot.rs:103 write_owned(seq, word, owner)",
+        "strata_protocol/src/consensus/slot.rs:115 read_owned(expected_seq, owner) -> Option<u64>"
+      ]
+    },
+    "unblock_note": "owner_tag_fix (not in LANE_RECEIPT v2 properties) relocated verbatim to legacy alongside runs, same unblock."
   }
 }

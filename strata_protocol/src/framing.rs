@@ -79,6 +79,12 @@ pub fn frame_parse(buf: &[u8]) -> Result<(PduHeader, &[u8])> {
         if declared != quad_count {
             return Err(Error::Invalid);
         }
+        // Preamble permutation discriminant must match the inner header's
+        // permutation (doc contract above, offset 8: "must match inner
+        // header"); a disagreeing pair is a corrupted/forged frame.
+        if p[8] != inner.permutation {
+            return Err(Error::Invalid);
+        }
         Ok((inner, &buf[inner_off + PDU_HEADER_LEN..]))
     } else {
         if buf.len() < PDU_HEADER_LEN {
@@ -92,7 +98,14 @@ pub fn frame_parse(buf: &[u8]) -> Result<(PduHeader, &[u8])> {
 /// Strip a valid preamble, returning the raw CLAP frame (header + payload).
 /// Transport-layer convenience for ingress valves that only accept raw CLAP
 /// frames; all preamble validation applies before anything is handed back.
+/// Raw CLAP input (no STRA magic) passes through byte-identical after the
+/// same validation — it is already a raw frame; chopping the first
+/// PREAMBLE_LEN bytes would silently corrupt a valid legacy frame.
 pub fn strip_preamble(buf: &[u8]) -> Result<Vec<u8>> {
     frame_parse(buf)?;
-    Ok(buf[PREAMBLE_LEN..].to_vec())
+    if buf.len() >= 4 && buf[0..4] == FRAME_MAGIC.to_be_bytes() {
+        Ok(buf[PREAMBLE_LEN..].to_vec())
+    } else {
+        Ok(buf.to_vec())
+    }
 }

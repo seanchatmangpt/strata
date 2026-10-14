@@ -15,6 +15,13 @@ defmodule Strata.Merger.LeaseLedger do
       never admitted, or a digest that does not match the admitted one,
       refuses `:lease_invalid`. Admitted lease digests are never
       deleted, so conservation cannot be zeroed by closing.
+
+  DURABILITY BOUNDARY (honest claim): all of this state — consumed
+  slots, admitted digests, the burn odometer — lives in GenServer
+  memory only. The guarantees above hold within ONE ledger process
+  lifetime; a crash or restart re-inits empty, zeroing anti-replay,
+  E-M19 conservation, and the KG-SX1 odometer. Durable design:
+  `docs/innovation/LEDGER_DURABILITY_DESIGN.md`.
     - burn metering (KG-SX1): the ledger meters `fuel` per lease_pk as
       an append-only odometer. Fuel is UNSIGNED on the wire (a mere
       `pos_integer()`), so the ledger — not the wire — is the metering

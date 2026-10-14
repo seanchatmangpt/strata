@@ -543,4 +543,5 @@ addendum-3/4/5/6 (which covered through f553334 / 3979ba0 / 68906b2 / 2d07251).
 
 Falsifier for addendum-7: any SHA above failing
 `git log --oneline --no-walk` at replay time, or the commit count drifting
-from 106 without a superseding addendum.
+from 107 without a superseding addendum (106 at write time; +1 = this
+addendum-7 receipt commit, `f9e6d6f`).

@@ -13,15 +13,15 @@
 //!
 //! Mapping to the graphlaw contract:
 //!   - `states`        = the 16-bit markings reachable by BFS from a seed
-//!                       marking under `pn64::fire` (`m' = (m ^ W-) | W+`
-//!       when `(m & W-) == W-`), over a `DaoTransition` table.
+//!     marking under `pn64::fire` (`m' = (m ^ W-) | W+` when
+//!     `(m & W-) == W-`), over a `DaoTransition` table.
 //!   - `initial`       = the seed marking.
 //!   - `unsafe_states` = the reserved place bits
-//!       (`0x0080 | 0x0200 | 0x8000`) plus `0x0800`-when-unconsumed per G2's
-//!       orphan law (`docs/innovation/ERRC2_governance_futures.md` G2: a
-//!       produced-but-unconsumable place is a state the net must never reach).
+//!     (`0x0080 | 0x0200 | 0x8000`) plus `0x0800`-when-unconsumed per G2's
+//!     orphan law (`docs/innovation/ERRC2_governance_futures.md` G2: a
+//!     produced-but-unconsumable place is a state the net must never reach).
 //!   - `transitions`   = `(verb, pre, post)` rows from
-//!       [`crate::dao_transitions::DAO`] / [`crate::dao_full::DAO_FULL`].
+//!     [`crate::dao_transitions::DAO`] / [`crate::dao_full::DAO_FULL`].
 //!
 //! `PolicyAdmitted` iff zero path from the seed touches an unsafe state;
 //! the refusal carries the exact step witness (the path, edge by edge).

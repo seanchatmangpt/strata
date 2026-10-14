@@ -38,14 +38,14 @@ fn pn64_enabled_fire_exhaustive_4bit_domain() {
 #[test]
 fn pn64_literal_fire_vectors() {
     // Hand-computed word: m=0x00F0, pre=0x0030, post=0x000F, tid=0x7B, flags=0xC3.
-    let w: u64 = 0xC3_7B_000F_0030_00F0;
+    let w: u64 = 0xC37B_000F_0030_00F0;
     assert_eq!(pn64::marking(w), 0x00F0);
     assert_eq!(pn64::pre(w), 0x0030);
     assert_eq!(pn64::post(w), 0x000F);
     assert_eq!(pn64::tid(w), 0x7B);
     assert_eq!(pn64::flags(w), 0xC3);
     // m' = (0x00F0 ^ 0x0030) | 0x000F = 0x00C0 | 0x000F = 0x00CF.
-    assert_eq!(pn64::fire(w).unwrap(), 0xC3_7B_000F_0030_00CF);
+    assert_eq!(pn64::fire(w).unwrap(), 0xC37B_000F_0030_00CF);
     // All-ones word is enabled and fires to itself.
     assert_eq!(pn64::fire(u64::MAX).unwrap(), u64::MAX);
     // Zero word (empty pre) is enabled; firing is identity.

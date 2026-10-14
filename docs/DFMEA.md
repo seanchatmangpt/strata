@@ -144,6 +144,25 @@ Verification commands are given per row; run from repo root `/Users/sac/strata`.
 - **Scores (judgment, 2026-10-13)**: S 8, O 4, D 8 (pre D 8 — no probe covered
   the window since `merge_join` landed). RPN pre 256 → post 64.
 
+## F-9. xdp pn_filter byte-swapped-domain checks (all conformant frames dropped)
+
+- **Failure mode**: every load in `xdp/pn_filter.c` passed through
+  `__builtin_bswap64`, moving all later bit tests into the byte-swapped
+  register domain while the BPF target loads the little-endian wire natively;
+  every golden-conformant frame was dropped at ingress. The bit-62 "version
+  tag" mask clause was a swapped-domain artifact (no corpus pn word has bit
+  62).
+- **Detection**: host harness modeling the real ctx layout — feeding real LE
+  frames from `docs/PN64_VECTORS.md` (no pre-swap) exposed the drop; the
+  earlier "5/5 PASS" vectors were self-consistent only in the swapped domain.
+- **Remediation (landed)**: commit `cc529eb` — LE loads, ingress mask
+  corrected to `0x1`; differential court 3/3 vs Stratus.Valve.Pn64
+  (`scripts/xdp_host_vectors.sh`, V01/V07/V08). Positive control: re-injecting
+  the bswap fails (V01 dropped, exit 1).
+- **Verify**: `bash scripts/xdp_host_vectors.sh`
+- **Scores (judgment, 2026-10-14)**: S 7, O 3, D 8 (pre D 8 — the swapped
+  harness could not detect the swapped filter). RPN pre 168 → post 42.
+
 ---
 
 ## Summary
@@ -158,6 +177,7 @@ Verification commands are given per row; run from repo root `/Users/sac/strata`.
 | F-6 | Teardown remanence | 192 | 96 | Remediated + courts (fr6, p11) |
 | F-7 | CLI silent truncation (p01) | 120 | 45 | **Partially remediated / accepted gap** |
 | F-8 | merge_join below-baseline false-accept | 256 | 64 | Remediated + court (dc8dd7d, found by vibration 2026-10-13) |
+| F-9 | xdp pn_filter byte-swapped-domain checks | 168 | 42 | Remediated + differential court (cc529eb, found by vibration 2026-10-14) |
 
 All RPN values are dated engineering judgments (2026-10-10), not measured
 field data. See Also: `docs/COURT_ADJUDICATIONS.md`.

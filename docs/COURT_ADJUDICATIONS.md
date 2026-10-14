@@ -76,6 +76,20 @@ gate). Honest note: the false-accept window existed since `merge_join` landed
 (no probe covered it); the below-baseline coverage check was only exercised
 after this adjudication.
 
+## XDP Byte-Order Adjudication (2026-10-14)
+
+Host-harness vibration found the `xdp/pn_filter.c` checks running in a
+byte-swapped register domain: each PN64 word was loaded through
+`__builtin_bswap64` before the bit tests, even though the BPF target loads the
+little-endian wire natively. Every golden-conformant frame was dropped at
+ingress. The bit-62 "version tag" mask clause (`0x4000000000000001`) was an
+artifact of the same swapped domain — no pn word in the golden corpus V01-V15
+has bit 62 set. Fixed in commit `cc529eb` (LE loads, ingress mask corrected to
+`0x1`, differential 3/3 vs Stratus.Valve.Pn64 expectations). Honest note: the
+pre-fix "5/5 PASS" host vectors were self-consistent only in the swapped
+domain — the harness pre-swapped its frames to mirror the filter's bug
+(mock-laundered court), so the pass carried zero bits about the real wire.
+
 ## FR/NFR Court Status
 
 | Item | Verdict | Note |

@@ -51,6 +51,10 @@ other tree does not carry to the tag.
   (`temprun/src/bin/soak.rs`, SPC-QA shortlist — the one STRATA-ACTIONABLE
   row of the brief). Ownership map: `docs/innovation/GEMINI_BRIEF_ROADMAP.md`
   (`198e33e`, 2040-horizon, 94 rows).
+- **Post-wave session work (2026-10-14, not previously listed)**: sagas
+  positivity guard (vacuity-sweep positive control per repo clause);
+  telemetry crash-path fix; pn64 mirror court; pn_frame 15-vector; sign/
+  receipt fuzz courts; `shacl_guard` integration.
 - **GEMINI_BRIEF_ROADMAP** itself is release-note capital: the
   SIBLING-OWNED / STRATA-ACTIONABLE / ALREADY-PRESENT ownership map that
   scoped "implement everything in the Gemini ecosystem brief" down to what

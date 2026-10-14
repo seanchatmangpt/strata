@@ -9,7 +9,8 @@
 //!                                 segment permutation (KG-01 refusal surface)
 //!   sign <seed> <msg> -o <sig>    ML-DSA-65 deterministic sign (72B payload)
 //!   verify <pub> <msg> <sig>      ML-DSA-65 verify (exit 0 ok / 1 bad)
-//!   receipt verify <file>         3381B wire-length + digest recomputation
+//!   receipt verify <pub> <file>   3381B wire parse + ML-DSA-65 sig verify
+//!                                 over the receipt's 72B payload, then digest
 //!   cas put <dir> <file>          store file as a Git-CAS blob; prints oid
 //!   cas get <dir> <oid>           inflate + verify oid; payload to stdout
 //!   pn step --pn <hex> --ocel <hex> [--invariant <hex>]
@@ -606,15 +607,27 @@ fn cmd_verify(args: &[String]) -> ExitCode {
 }
 
 fn cmd_receipt(args: &[String]) -> ExitCode {
-    if args.len() != 2 || args[0] != "verify" {
-        return fail(EX_USAGE, "usage: strata receipt verify <file>");
+    if args.len() != 3 || args[0] != "verify" {
+        return fail(EX_USAGE, "usage: strata receipt verify <pub> <file>");
     }
-    let bytes = match read_file(&args[1]) {
+    let pub_key = match exact_file(&args[1], PUBLIC_KEY_LEN, "public key") {
+        Ok(pk) => pk,
+        Err(e) => return fail(EX_USAGE, &e),
+    };
+    let bytes = match read_file(&args[2]) {
         Ok(b) => b,
         Err(e) => return fail(EX_USAGE, &e),
     };
     match AttestationReceipt::from_bytes(&bytes) {
         Ok(r) => {
+            let payload = AttestedPayload {
+                parent_digest: r.parent_digest,
+                universe_digest: r.universe_digest,
+                fuel_consumed: r.fuel_consumed,
+            };
+            if !Signer::verify(&pub_key, &payload, &r.signature) {
+                return fail(EX_VERIFY_FAIL, "receipt signature verification FAILED");
+            }
             let d = r.digest();
             println!("wire_len          {}", AttestationReceipt::WIRE_LEN);
             println!("fuel_consumed     {}", r.fuel_consumed);

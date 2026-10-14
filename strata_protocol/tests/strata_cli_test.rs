@@ -305,13 +305,32 @@ fn sign_with_short_seed_refuses() {
 
 // ---- receipt verify -------------------------------------------------------
 
+/// A real sealed receipt + its encoded public key (deterministic seed path).
+fn sealed_receipt_and_pub() -> (Vec<u8>, Vec<u8>) {
+    let signer = Signer::from_seed([4u8; SEED_LEN]);
+    let mut r = strata_protocol::receipt::AttestationReceipt {
+        parent_digest: [1u8; 32],
+        universe_digest: [2u8; 32],
+        fuel_consumed: 9,
+        signature: [0u8; strata_protocol::ML_DSA_65_SIG_LEN],
+    };
+    use strata_protocol::signer::Seal;
+    r.seal(&signer);
+    (r.to_bytes().to_vec(), signer.public_key())
+}
+
 #[test]
 fn receipt_verify_valid_3381_byte_wire_exit_zero() {
     let t = TempDir::new("rec-ok");
-    let mut r = vec![0xEE; 3381];
-    r[64..72].copy_from_slice(&9u64.to_be_bytes());
-    let f = t.write("rec.bin", &r);
-    let (code, out, err) = run(&["receipt", "verify", f.to_str().unwrap()]);
+    let (receipt, pk) = sealed_receipt_and_pub();
+    let pkf = t.write("pk.bin", &pk);
+    let f = t.write("rec.bin", &receipt);
+    let (code, out, err) = run(&[
+        "receipt",
+        "verify",
+        pkf.to_str().unwrap(),
+        f.to_str().unwrap(),
+    ]);
     assert_eq!(code, 0, "stderr: {err}");
     assert!(out.contains("wire_len          3381"));
     assert!(out.contains("fuel_consumed     9"));
@@ -321,11 +340,70 @@ fn receipt_verify_valid_3381_byte_wire_exit_zero() {
 #[test]
 fn receipt_verify_wrong_length_refuses_nonzero() {
     let t = TempDir::new("rec-bad");
-    let f = t.write("rec.bin", &vec![0u8; 3380]);
-    let (code, out, err) = run(&["receipt", "verify", f.to_str().unwrap()]);
-    assert_ne!(code, 0);
+    let (receipt, pk) = sealed_receipt_and_pub();
+    let pkf = t.write("pk.bin", &pk);
+    let f = t.write("rec.bin", &receipt[..3380]);
+    let (code, out, err) = run(&[
+        "receipt",
+        "verify",
+        pkf.to_str().unwrap(),
+        f.to_str().unwrap(),
+    ]);
+    assert_eq!(code, 1, "EX_VERIFY_FAIL expected, stderr: {err}");
     assert!(out.is_empty());
     assert!(err.contains("3381"), "stderr: {err}");
+}
+
+#[test]
+fn receipt_verify_tampered_signature_refuses_exit_one() {
+    let t = TempDir::new("rec-tamper");
+    let (mut receipt, pk) = sealed_receipt_and_pub();
+    receipt[72] ^= 0x01; // flip one bit in the signature block
+    let pkf = t.write("pk.bin", &pk);
+    let f = t.write("rec.bin", &receipt);
+    let (code, out, err) = run(&[
+        "receipt",
+        "verify",
+        pkf.to_str().unwrap(),
+        f.to_str().unwrap(),
+    ]);
+    assert_eq!(code, 1, "EX_VERIFY_FAIL expected, stderr: {err}");
+    assert!(out.is_empty(), "no stdout on refusal: {out}");
+    assert!(err.contains("FAILED"), "stderr: {err}");
+}
+
+#[test]
+fn receipt_verify_wrong_pubkey_refuses_exit_one() {
+    let t = TempDir::new("rec-wrongpk");
+    let (receipt, _) = sealed_receipt_and_pub();
+    let other = Signer::from_seed([5u8; SEED_LEN]);
+    let pkf = t.write("pk.bin", &other.public_key());
+    let f = t.write("rec.bin", &receipt);
+    let (code, out, err) = run(&[
+        "receipt",
+        "verify",
+        pkf.to_str().unwrap(),
+        f.to_str().unwrap(),
+    ]);
+    assert_eq!(code, 1, "EX_VERIFY_FAIL expected, stderr: {err}");
+    assert!(out.is_empty());
+    assert!(err.contains("FAILED"), "stderr: {err}");
+}
+
+#[test]
+fn receipt_verify_bad_pubkey_length_is_usage_error() {
+    let t = TempDir::new("rec-badpk");
+    let (receipt, _) = sealed_receipt_and_pub();
+    let pkf = t.write("pk.bin", &vec![0u8; 1951]);
+    let f = t.write("rec.bin", &receipt);
+    let (code, out, err) = run(&[
+        "receipt",
+        "verify",
+        pkf.to_str().unwrap(),
+        f.to_str().unwrap(),
+    ]);
+    assert_eq!(code, 2, "EX_USAGE expected, stderr: {err}");
+    assert!(err.contains("1952-byte public key"), "stderr: {err}");
 }
 
 // ---- cas put / get --------------------------------------------------------

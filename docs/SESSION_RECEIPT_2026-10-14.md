@@ -391,3 +391,51 @@ Session total: 193 commits on the branch as of this addendum.
 
 Falsifier for addendum-4: `git log --oneline --no-walk 76bffdc` failing at replay
 time, or rehydrate/idmap claimed landed while `git status` shows it still dirty.
+
+---
+
+## Addendum-5 — wave-5 landings since 76bffdc
+
+Every strata SHA below re-read this session via `git log --oneline --no-walk`
+(verified, exit 0; see per-row subjects). Deduped against addendum-3/4.
+
+| Landing | SHA(s) | Verification |
+|---|---|---|
+| dao widen-ack + ontology cohort: 0x93 ACK_DELEGATION pre widened to 0x0800 (delegation closure total) + G2 delegation-closure law individuals/parity expectations. Dual independent witnesses (3/3 + 7/7 scratch lifecycle incl. negative controls) already recorded under addendum-3 | `33f6705`, `0dba165` | subject re-read both |
+| policy_admission + word_law landing: US-RF unsafe-state reachability admission + word-law boundary court; witness-replay court verifies the refusal trace as a true path (4/4 skeptic witness) | `ef8480f`, `d391a7b` | subject re-read both |
+| framing dual-defect: strip_preamble enforces preamble permutation match (stops corrupting raw CLAP); framing_semantics_court header gains vacuity disposition | `409a24b`, `60696ec` | subject re-read both |
+| xdp byte-order saga: host-side verdict court for pn_filter.c → LE native loads replacing byte-swapped-domain checks → real valve differential court + README desimplified (per COURT_ADJUDICATIONS XDP Byte-Order Adjudication) | `364b4b9` → `cc529eb` → `c2b8b09` | subject re-read all three |
+| ltl/invariants conservation: stale ltl doc fixed + whole-set conservation court | `b02a8e1` | subject re-read |
+| idmap/rehydrate audit landing: typed Overflow refusal in IdMap + JSON-escape of OCEL event ids (was IN-FLIGHT in addendum-4, now landed) | `3979ba0` | subject re-read |
+| n17 domain-separation court + Cargo.toml ml-dsa dev-dep + ERRC2 mask supersession note | `68906b2` | subject re-read |
+| clippy + flake just-ci blockers: needless_range_loop replaced with iterator form in seal court; lease_ledger full-suite flake in 'admitted digests survive unrelated settles' fixed | `fbaf17b`, `a9fe8a6` | subject re-read both |
+| n06/n04 legacy sidecar class closed: lane field stripped from legacy sidecar writes (n06 + n04 writer); N06 receipt gitignored (fresh-run stamp churn) | `f3046a7`, `ded5436`, `3537abb` | subject re-read all three |
+| ontology 4-table self-test: ontology_check.sh --self-test parameterized over all 4 tables | `27fc08e` | subject re-read |
+| temprun golden-fixture format marker + inventory court | `7f6b0ac` | subject re-read |
+| doc_cite_check.sh static doc-citation anti-regression gate | `3763015` | subject re-read |
+| GEMINI_BRIEF_ROADMAP: Gemini brief 2040-horizon ownership map | `198e33e` | subject re-read |
+| court-naming sweep: parity courts loaded via `_test.exs` naming | `60285b2` | subject re-read |
+| DFMEA F-10/F-11 fail-open pair recorded + vibration-wave index row | `f553334` | subject re-read |
+
+Dedup notes (verified present in earlier addenda, NOT re-recorded):
+
+- `6213662` saga netting_ratio positivity guard (also cited for sagas
+  negativity/telemetry crash-path class) — already in addendum-3.
+- `76bffdc` valve exactly-one-emit + fuel-metadata ingest refusals — already
+  in addendum-4.
+- `52e6274` policy_admission mutation-hook isolation — already in addendum-3.
+- `2d07251` pn64 Rust-mirror differential court — already in addendum-3.
+- `bbf1c58` pn_frame 15-vector codec court — already in the main receipt body.
+
+### Vibration-wave series standing
+
+The vibration-wave defect series over the canonical checkout now totals
+11 fixed defects; dated index at
+`docs/COURT_ADJUDICATIONS.md` § "Vibration-Wave Defect Series (2026-10-14,
+index)".
+
+Session total: 100 commits in `548a0bf..HEAD` as of this addendum.
+
+Falsifier for addendum-5: any SHA above failing `git log --oneline --no-walk`
+at replay time, or the commit count drifting from 100 without a superseding
+addendum.

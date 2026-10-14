@@ -31,3 +31,8 @@ __pycache__/
 # oclnr cleanup-workflow residue + scratch courts (A175 triage)
 archive/
 stratus/test/stratus/diag_court.exs
+
+# Lane/probe artifacts (never commit build outputs)
+stratus/priv/temprun_step
+stratus/priv/temprun_rlimit_shim
+stratus/_build_lane7/

@@ -233,4 +233,154 @@ defmodule Strata.Merger.LeaseLedgerTest do
       refute Lease.admit(l, :a07, ledger, verify_sig: fn _d, _l -> false end) == {:ok, :attested}
     end
   end
+
+  # -- (8) KG-SX1 burn/odometer ---------------------------------------------------
+
+  describe "KG-SX1 burn metering" do
+    defp low_fuel_ledger(required_burn) do
+      id = {:kg_sx1_ledger, required_burn, :erlang.unique_integer([:positive])}
+
+      start_supervised!(%{
+        id: id,
+        start: {LeaseLedger, :start_link, [[name: nil, required_burn: required_burn]]}
+      })
+    end
+
+    test "default required_burn is 1 (backward-compatible)", %{ledger: ledger} do
+      assert 1 == LeaseLedger.required_burn(ledger)
+    end
+
+    test "(1) monotonicity: below-threshold refuses, crossing admits, odometer never decreases" do
+      ledger = low_fuel_ledger(250)
+      assert 250 == LeaseLedger.required_burn(ledger)
+
+      # The gate is `burn + fuel >= required_burn`; a refused admission
+      # leaves the odometer untouched, so crossing is driven by record_burn/3.
+      {observations, _} =
+        Enum.reduce(1..3, {[], 0}, fn i, {obs, prev_burn} ->
+          l = lease(run_id: "burn-mono-#{i}")
+
+          result =
+            if i > 1 do
+              assert :ok == LeaseLedger.record_burn(ledger, @pk, 100)
+              Lease.admit(l, :a07, ledger)
+            else
+              Lease.admit(l, :a07, ledger)
+            end
+
+          burn = LeaseLedger.burn_of(ledger, @pk)
+
+          assert burn >= prev_burn, "odometer decreased"
+          outcome = if match?({:ok, _}, result), do: :admitted, else: :refused
+          {obs ++ [{i, outcome, burn}], burn}
+        end)
+
+      # refuses at 0+100 < 250 and 100+100 < 250; admits at 200+100 = 250
+      # and burns to 300
+      assert [{1, :refused, 0}, {2, :refused, 100}, {3, :admitted, 300}] == observations
+    end
+
+    test "(2) anti-vacuity: below-threshold MUST fire with ZERO side effects; exhaustiveness pin" do
+      ledger = low_fuel_ledger(250)
+      l = lease(run_id: "burn-antivac")
+      pk = l.lease_pk
+
+      assert {:error, :lease_insufficient_burn} == Lease.admit(l, :a07, ledger)
+
+      # zero side effects: odometer untouched, slot NOT consumed
+      assert 0 == LeaseLedger.burn_of(ledger, pk)
+      assert {:error, :lease_invalid} == LeaseLedger.settle(ledger, l)
+
+      # same-slot consume still succeeds after the refusal, once the meter
+      # is driven above the threshold
+      assert :ok == LeaseLedger.record_burn(ledger, pk, 250)
+      retry = lease(run_id: "burn-antivac", fuel: 300)
+      assert {:ok, _} = Lease.admit(retry, :a07, ledger)
+
+      # refusal-atom exhaustiveness pin: the full fixed vocabulary
+      assert MapSet.new(Lease.refusals()) ==
+               MapSet.new([
+                 :lease_invalid,
+                 :lease_expired,
+                 :lease_replayed,
+                 :lease_wrong_agent,
+                 :lease_unbound,
+                 :lease_insufficient_burn
+               ])
+    end
+
+    test "(2b) refusal carries the exact fixed atom through the admit path" do
+      ledger = low_fuel_ledger(250)
+      l = lease(run_id: "burn-atom")
+
+      assert {:error, refusal} = Lease.admit(l, :a07, ledger)
+      assert refusal in Lease.refusals()
+      assert refusal == :lease_insufficient_burn
+    end
+
+    test "(3) Sybil-distinctness: independent odometers per lease_pk" do
+      ledger = low_fuel_ledger(250)
+
+      pk_a = :crypto.strong_rand_bytes(Lease.pk_bytes())
+      pk_b = :crypto.strong_rand_bytes(Lease.pk_bytes())
+
+      l_a = lease(run_id: "burn-sybil-a", lease_pk: pk_a, fuel: 100)
+      l_b = lease(run_id: "burn-sybil-b", lease_pk: pk_b, fuel: 100)
+
+      # each pk accumulates independently; neither helps the other cross 250
+      assert {:error, :lease_insufficient_burn} == Lease.admit(l_a, :a07, ledger)
+      assert {:error, :lease_insufficient_burn} == Lease.admit(l_b, :a07, ledger)
+      assert 0 == LeaseLedger.burn_of(ledger, pk_a)
+      assert 0 == LeaseLedger.burn_of(ledger, pk_b)
+
+      # a different agent on pk_a's meter does not see pk_b's (zero) burn
+      l_a2 = lease(run_id: "burn-sybil-a2", agent_id: :a08, lease_pk: pk_a, fuel: 100)
+      assert {:error, :lease_insufficient_burn} == Lease.admit(l_a2, :a08, ledger)
+      assert 0 == LeaseLedger.burn_of(ledger, pk_a)
+
+      # record_burn pushes pk_a over: pk_a admits, pk_b still refused
+      assert :ok == LeaseLedger.record_burn(ledger, pk_a, 150)
+      assert 150 == LeaseLedger.burn_of(ledger, pk_a)
+      assert 0 == LeaseLedger.burn_of(ledger, pk_b)
+
+      l_a3 = lease(run_id: "burn-sybil-a3", lease_pk: pk_a, fuel: 100)
+      assert {:ok, _} = Lease.admit(l_a3, :a07, ledger)
+      assert 250 == LeaseLedger.burn_of(ledger, pk_a)
+      assert 0 == LeaseLedger.burn_of(ledger, pk_b)
+
+      l_b2 = lease(run_id: "burn-sybil-b2", lease_pk: pk_b, fuel: 100)
+      assert {:error, :lease_insufficient_burn} == Lease.admit(l_b2, :a07, ledger)
+    end
+
+    test "burn_of/2 on a malformed pk refuses :lease_invalid (never raises)" do
+      ledger = low_fuel_ledger(1)
+      assert {:error, :lease_invalid} == LeaseLedger.burn_of(ledger, <<1, 2, 3>>)
+      assert {:error, :lease_invalid} == LeaseLedger.burn_of(ledger, "not-a-pk")
+      assert {:error, :lease_invalid} == LeaseLedger.record_burn(ledger, <<1>>, 5)
+    end
+
+    test "(4) conservation tie: admitted lease settles its digest and burn moves by exactly fuel" do
+      ledger = low_fuel_ledger(1)
+      l = lease(run_id: "burn-cons", fuel: 42)
+      pk = l.lease_pk
+      d = Lease.digest(l)
+
+      assert {:ok, :deferred_ctt_boundary} == Lease.admit(l, :a07, ledger)
+      assert :ok == LeaseLedger.verify_conservation(ledger, l, d)
+      assert 42 == LeaseLedger.burn_of(ledger, pk)
+
+      # odometer is append-only across a further admit
+      l2 = lease(run_id: "burn-cons-2", lease_pk: pk, slot: 1, fuel: 8)
+      assert {:ok, _} = Lease.admit(l2, :a07, ledger)
+      assert 50 == LeaseLedger.burn_of(ledger, pk)
+    end
+
+    test "required_burn is init-fixed (fixed issuance register)" do
+      ledger = low_fuel_ledger(250)
+      assert 250 == LeaseLedger.required_burn(ledger)
+      # no raise/set API exists — the API surface is the proof
+      refute function_exported?(LeaseLedger, :set_required_burn, 2)
+      refute function_exported?(LeaseLedger, :raise_required_burn, 2)
+    end
+  end
 end

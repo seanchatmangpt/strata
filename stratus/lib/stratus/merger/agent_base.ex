@@ -19,8 +19,10 @@ defmodule Strata.Merger.AgentBase do
 
   From `Strata.Merger.MergerAgent.refusal/0` semantics: `:lease_invalid`,
   `:lease_expired`, `:lease_replayed`, `:lease_wrong_agent`,
-  `:lease_unbound` (lease law), `:not_admitted`, `:sealed` (trajectory
-  law), plus whatever fixed atom the concrete agent's callbacks return.
+  `:lease_unbound`, `:lease_insufficient_burn` (KG-SX1 burn gate; boot
+  admission propagates it as `{:stop, :lease_insufficient_burn}`),
+  `:not_admitted`, `:sealed` (trajectory law), plus whatever fixed atom
+  the concrete agent's callbacks return.
 
   ## Lease enforcement (S6 forgery fix)
 

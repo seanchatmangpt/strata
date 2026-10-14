@@ -595,6 +595,39 @@ defmodule Strata.MergerAgentsTest do
 
       assert_receive {:mx11_boot, {:error, :lease_invalid}}
     end
+
+    test "KG-SX1: below-threshold ledger boots with {:stop, :lease_insufficient_burn}; above-threshold boots" do
+      below =
+        start_supervised!(%{
+          id: {:kg_sx1_below, :erlang.unique_integer([:positive])},
+          start: {LeaseLedger, :start_link, [[name: nil, required_burn: 250]]}
+        })
+
+      l = lease("traj-burn-under", :a13, fuel: 16)
+
+      # the refused start surfaces as an exit to the linked starter; trap it
+      parent = self()
+
+      {:ok, _task} =
+        Task.start(fn ->
+          Process.flag(:trap_exit, true)
+          result = AgentBase.start_link(Strata.Merger.Agents.Tier3.A13Pn64Replayer, l, lease_ledger: below)
+          send(parent, {:mx11_burn_boot, result})
+        end)
+
+      assert_receive {:mx11_burn_boot, {:error, :lease_insufficient_burn}}
+
+      # zero side effects on the refusal: the odometer is untouched, so the
+      # same lease admits against an above-threshold ledger (fresh pk meter)
+      above =
+        start_supervised!(%{
+          id: {:kg_sx1_above, :erlang.unique_integer([:positive])},
+          start: {LeaseLedger, :start_link, [[name: nil, required_burn: 1]]}
+        })
+      {:ok, agent} = AgentBase.start_link(Strata.Merger.Agents.Tier3.A13Pn64Replayer, l, lease_ledger: above)
+      assert {:error, :malformed_payload} = AgentBase.run(agent)
+      assert %{state: :sealed, refusal: :malformed_payload} = AgentBase.registers(agent)
+    end
   end
 
   # -- Tier-2 verdict laws (pure integer laws, real math) ---------------------------

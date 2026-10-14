@@ -33,6 +33,8 @@ defmodule Strata.Merger.MergerAgent do
           | :lease_expired
           | :lease_replayed
           | :lease_wrong_agent
+          | :lease_unbound
+          | :lease_insufficient_burn
           | :not_admitted
           | :sealed
           | :bridge_down

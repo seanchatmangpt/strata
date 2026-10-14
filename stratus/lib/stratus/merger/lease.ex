@@ -43,13 +43,30 @@ defmodule Strata.Merger.Lease do
     honestly marked `attested: false, verification: :deferred_ctt_boundary`.
     An unverified signature can never yield `attested: true`.
 
-  ## Known limitation: `fuel` is an unsigned constant (SX1)
+  ## `fuel` metering (KG-SX1)
 
   `fuel` is carried in the canonical encoding as an unsigned 64-bit
-  constant and validated only as `pos_integer()`. It is NOT a metered
-  balance: nothing in-BEAM decrements it per unit of work, so a lease's
-  fuel cannot be exhausted by consumption. Budget enforcement is CTT
-  host work, same boundary as signature verification.
+  constant and validated only as `pos_integer()` — it is UNSIGNED on the
+  wire. The single-writer `Strata.Merger.LeaseLedger` is therefore the
+  metering authority: every admission burns the lease's `fuel` into a
+  per-`lease_pk` append-only odometer, and an admission whose pk odometer
+  (plus the lease's own fuel) is below the ledger's init-fixed
+  `required_burn` is refused `:lease_insufficient_burn` with zero side
+  effects. The odometer never decrements and `required_burn` is init-fixed
+  (runtime raise UNSUPPORTED — "fixed issuance register", DFMEA F-2).
+
+  ## Enforcement order (normative)
+
+  The admission checks run in this fixed order, each fail-closed before
+  any side effect:
+
+    1. `check/2` — structural validity, agent identity, expiry;
+    2. `verify_signature/2` — the injected `verify_sig` callback
+       (SX1-F1), refusing `:lease_invalid` before any ledger contact;
+    3. ledger burn gate — `:lease_insufficient_burn` (KG-SX1), zero side
+       effects on refusal;
+    4. slot consumption + digest recording + odometer increment — one
+       atomic ledger transition.
 
   ## Enforcement law (S6 forgery fix)
 
@@ -68,7 +85,9 @@ defmodule Strata.Merger.Lease do
       authority. `Strata.Merger.AgentBase` admits under it only with
       the explicit `:skip_lease_enforcement` opt, and then forces
       `:unattested` into the receipt so downstream consumers know the
-      lease was never crypto-verified nor replay-checked.
+      lease was never crypto-verified nor replay-checked. Burn
+      enforcement (KG-SX1) is the `admit/4` authority path ONLY: the
+      `skip_lease_enforcement` path bypasses the burn gate.
     - `verify/3` with an explicit `nil` ledger (or opts with neither
       `:lease_ledger` nor `:skip_lease_enforcement`) refuses
       `:lease_unbound` — fail-closed, never a silent structural pass.
@@ -113,7 +132,12 @@ defmodule Strata.Merger.Lease do
 
   @typedoc "Fixed zero-entropy lease refusal atoms (E-M12 §4, S6 binding law)."
   @type refusal ::
-          :lease_invalid | :lease_expired | :lease_replayed | :lease_wrong_agent | :lease_unbound
+          :lease_invalid
+          | :lease_expired
+          | :lease_replayed
+          | :lease_wrong_agent
+          | :lease_unbound
+          | :lease_insufficient_burn
 
   @typedoc "ML-DSA-65 encoded verifying key (1952 B)."
   @type lease_pk :: <<_::15616>>
@@ -144,7 +168,14 @@ defmodule Strata.Merger.Lease do
   @pk_bytes 1952
   @sig_bytes 3309
   # Refusal atoms exported for exhaustiveness checks by callers.
-  @refusals [:lease_invalid, :lease_expired, :lease_replayed, :lease_wrong_agent, :lease_unbound]
+  @refusals [
+    :lease_invalid,
+    :lease_expired,
+    :lease_replayed,
+    :lease_wrong_agent,
+    :lease_unbound,
+    :lease_insufficient_burn
+  ]
 
   @doc "Canonical wire field order — BLAKE3 subject coverage order (normative)."
   @spec canonical_fields() :: [atom()]
@@ -253,7 +284,9 @@ defmodule Strata.Merger.Lease do
   def admit(lease, agent_id, ledger, opts) when is_list(opts) do
     with :ok <- check(lease, agent_id),
          :ok <- verify_signature(lease, opts) do
-      case Strata.Merger.LeaseLedger.admit(ledger, lease, digest(lease)) do
+      # KG-SX1: the internal consume message carries the WHOLE lease so the
+    # ledger can meter `fuel` per lease_pk (admit is the authority path).
+    case Strata.Merger.LeaseLedger.admit(ledger, lease, digest(lease)) do
         :ok -> {:ok, verification_state(opts)}
         {:error, _} = refusal -> refusal
       end

@@ -262,7 +262,7 @@ fn parse_artifact(path: &Path) -> Result<Artifact, String> {
     Ok(art)
 }
 
-fn kernel_function<'a>(art: &'a Artifact) -> Option<&'a (u32, usize, usize)> {
+fn kernel_function(art: &Artifact) -> Option<&(u32, usize, usize)> {
     // The kernel is identified by export name. Export func indices map
     // directly onto code-section indices: this artifact is built with zero
     // imports (justfile law), so no imported functions precede defined ones.
@@ -328,9 +328,9 @@ fn main() {
     match locate_artifact().map(|p| parse_artifact(&p)) {
         Some(Ok(art)) => {
             let kernel = kernel_function(&art);
-            let g1 = art.memory.map_or(true, |(min, _)| min == 0);
+            let g1 = art.memory.is_none_or(|(min, _)| min == 0);
             let g2 = kernel.is_some();
-            let g3 = kernel.map_or(false, |(_, _, br)| *br == 0);
+            let g3 = kernel.is_some_and(|(_, _, br)| *br == 0);
             let g4 = art.raw_bytes <= MAX_KERNEL_BYTES;
             println!(
                 "| gate | criterion                          | measured                          | verdict |"
@@ -391,7 +391,7 @@ fn main() {
         }
     };
 
-    let g1p = kart.memory.map_or(true, |(min, _)| min == 0);
+    let g1p = kart.memory.is_none_or(|(min, _)| min == 0);
     let missing: Vec<&str> = ABI_EXPORTS
         .iter()
         .copied()

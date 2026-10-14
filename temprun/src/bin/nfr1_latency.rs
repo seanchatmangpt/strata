@@ -18,6 +18,7 @@ use std::time::Instant;
 
 use temprun::fuel::FuelLease;
 use temprun::{run, ArenaInput, RECEIPT_LEN};
+use temprun::ParentLedger;
 
 const RUNS: u64 = 100_000;
 const WARMUP: u64 = 1_000;
@@ -104,19 +105,19 @@ fn main() {
         let fuel = FuelLease::new(10 + inp.lineage.len() as u64);
         let t0 = Instant::now();
         let admitted = match class {
-            Some(0) => run(&mut inp, FuelLease::new(0)).admitted, // fuel-0
+            Some(0) => run(&mut inp, FuelLease::new(0), &mut ParentLedger::new()).admitted, // fuel-0
             Some(1) => {
                 inp.candidate_mask |= inp.lease_mask; // coord intersection
-                run(&mut inp, fuel).admitted
+                run(&mut inp, fuel, &mut ParentLedger::new()).admitted
             }
             Some(2) => {
                 for c in inp.clock.iter_mut() {
                     *c = 1; // no strict advance over observed
                 }
-                run(&mut inp, fuel).admitted
+                run(&mut inp, fuel, &mut ParentLedger::new()).admitted
             }
             _ => {
-                let out = run(&mut inp, fuel);
+                let out = run(&mut inp, fuel, &mut ParentLedger::new());
                 debug_assert_eq!(out.receipt.len(), RECEIPT_LEN);
                 out.admitted
             }

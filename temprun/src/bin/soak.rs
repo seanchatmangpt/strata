@@ -25,7 +25,7 @@
 use std::time::Instant;
 
 use temprun::fuel::FuelLease;
-use temprun::{run, ArenaInput, RECEIPT_LEN};
+use temprun::{run, ArenaInput, RECEIPT_LEN, ParentLedger};
 
 const LSL_NS: f64 = 0.0;
 const USL_NS: f64 = 50_000.0; // NFR-1: 50 us P99.9 target
@@ -210,7 +210,7 @@ fn main() {
         match class_idx {
             0 => {
                 // fuel-0: lease exhausted before any sieve charges.
-                let out = run(&mut inp, FuelLease::new(0));
+                let out = run(&mut inp, FuelLease::new(0), &mut ParentLedger::new());
                 admitted = out.admitted;
                 debug_assert_eq!(out.receipt.len(), RECEIPT_LEN);
                 dt = t0.elapsed();
@@ -218,7 +218,7 @@ fn main() {
             1 => {
                 // coordinate-intersection: candidate overlaps active lease.
                 inp.candidate_mask |= inp.lease_mask;
-                let out = run(&mut inp, FuelLease::new(10 + u64::from(n) + u64::from(m)));
+                let out = run(&mut inp, FuelLease::new(10 + u64::from(n) + u64::from(m)), &mut ParentLedger::new());
                 admitted = out.admitted;
                 debug_assert!(!out.admitted);
                 dt = t0.elapsed();
@@ -228,7 +228,7 @@ fn main() {
                 for c in inp.clock.iter_mut() {
                     *c = 1; // observed is all 1s -> no strict advance
                 }
-                let out = run(&mut inp, FuelLease::new(10 + u64::from(n) + u64::from(m)));
+                let out = run(&mut inp, FuelLease::new(10 + u64::from(n) + u64::from(m)), &mut ParentLedger::new());
                 admitted = out.admitted;
                 debug_assert!(!out.admitted);
                 dt = t0.elapsed();
@@ -244,7 +244,7 @@ fn main() {
                 dt = t0.elapsed();
             }
             _ => {
-                let out = run(&mut inp, FuelLease::new(10 + u64::from(n) + u64::from(m)));
+                let out = run(&mut inp, FuelLease::new(10 + u64::from(n) + u64::from(m)), &mut ParentLedger::new());
                 admitted = out.admitted;
                 debug_assert_eq!(out.receipt.len(), RECEIPT_LEN);
                 dt = t0.elapsed();

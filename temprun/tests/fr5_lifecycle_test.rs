@@ -49,7 +49,7 @@ use std::process::{Command, Stdio};
 use std::time::Instant;
 
 use temprun::fuel::FuelLease;
-use temprun::{run, ArenaInput, RECEIPT_LEN};
+use temprun::{run, ArenaInput, ParentLedger, RECEIPT_LEN};
 
 const BOUND_MS: u128 = 5;
 /// Standard fuel ceiling: u64::MAX, identical to golden vector 02_max_fuel.
@@ -124,7 +124,7 @@ fn admitted_frame(seed: u64, width: usize, msg_len: usize, tree_n: usize) -> Are
 }
 
 fn run_admitted(inp: &mut ArenaInput) -> temprun::ArenaOutput {
-    let out = run(inp, FuelLease::new(STANDARD_FUEL_CEILING));
+    let out = run(inp, FuelLease::new(STANDARD_FUEL_CEILING), &mut ParentLedger::new());
     assert!(out.admitted, "FR-5 corpus frame must be ADMITTED");
     assert_eq!(out.receipt.len(), RECEIPT_LEN);
     out
@@ -225,7 +225,7 @@ fn fr5_t2_degradation_frames_within_5ms() {
     // 02_max_fuel: standard transition — hard FR-5 bound.
     {
         let t0 = Instant::now();
-        let out = run(&mut max_fuel, FuelLease::new(STANDARD_FUEL_CEILING));
+        let out = run(&mut max_fuel, FuelLease::new(STANDARD_FUEL_CEILING), &mut ParentLedger::new());
         let us = t0.elapsed().as_micros();
         assert!(out.admitted, "02_max_fuel degradation frame must admit");
         assert!(
@@ -241,7 +241,7 @@ fn fr5_t2_degradation_frames_within_5ms() {
         const QUADS: u128 = (4 * 1024 * 1024 / 32) as u128;
         const THROUGHPUT_FLOOR_QPS: u128 = 5_000_000;
         let t0 = Instant::now();
-        let out = run(&mut payload_4mib, FuelLease::new(STANDARD_FUEL_CEILING));
+        let out = run(&mut payload_4mib, FuelLease::new(STANDARD_FUEL_CEILING), &mut ParentLedger::new());
         let us = t0.elapsed().as_micros();
         assert!(out.admitted, "06_payload_4mib degradation frame must admit");
         // Throughput = quads/sec; us -> seconds is us / 1_000_000, so

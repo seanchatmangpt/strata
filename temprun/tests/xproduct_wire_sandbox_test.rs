@@ -32,6 +32,7 @@ use std::path::PathBuf;
 
 use temprun::fuel::FuelLease;
 use temprun::{run, scrub, ArenaInput, RECEIPT_LEN};
+use temprun::ParentLedger;
 
 // --- wire layer (mirrors strata_protocol/src/pdu.rs) ----------------------
 
@@ -110,7 +111,7 @@ fn pipeline(frame: &[u8], input: &mut ArenaInput, dir: &WatchedDir) -> (bool, Op
         }
     };
     let fuel = FuelLease::new(header.fuel_lease);
-    let out = run(input, fuel);
+    let out = run(input, fuel, &mut ParentLedger::new());
     if !out.admitted {
         // Refused: persistence layer must write nothing.
         dir.assert_empty("refused run must write no artifacts");
@@ -297,7 +298,7 @@ fn fuel_exhaustion_sandbox_refusals_are_charged() {
     // proving charges are exactly 1/sieve and exhaustion at 0/1/2 is the
     // charged-sandbox refusal, not a wire artifact.
     let mut input = arena_input();
-    let out = run(&mut input, FuelLease::new(3));
+    let out = run(&mut input, FuelLease::new(3), &mut ParentLedger::new());
     assert!(out.admitted, "lease 3 exactly covers the 3 sieves");
 
     // Coordinate collision: wire-valid, sandbox-refused. The refusing run
@@ -307,7 +308,7 @@ fn fuel_exhaustion_sandbox_refusals_are_charged() {
     // causal + coordinate but not conformance) also refuses charged.
     let mut collide = arena_input();
     collide.candidate_mask = 0b0110; // intersects lease_mask 0b0010
-    let out = run(&mut collide, FuelLease::new(10_000));
+    let out = run(&mut collide, FuelLease::new(10_000), &mut ParentLedger::new());
     assert!(!out.admitted, "coordinate collision must refuse");
     assert_eq!(out.receipt.len(), RECEIPT_LEN);
     assert_eq!(out.receipt[0], temprun::receipt::REFUSED_STATUS);
@@ -315,7 +316,7 @@ fn fuel_exhaustion_sandbox_refusals_are_charged() {
 
     let mut collide2 = arena_input();
     collide2.candidate_mask = 0b0110;
-    let out2 = run(&mut collide2, FuelLease::new(2));
+    let out2 = run(&mut collide2, FuelLease::new(2), &mut ParentLedger::new());
     assert!(!out2.admitted, "coordinate refusal under 2-unit lease");
     assert_eq!(out2.receipt, out.receipt,
         "same coordinate refusal is fuel-count invariant in receipt shape");
@@ -331,7 +332,7 @@ fn wire_refused_and_sandbox_refused_indistinguishable_to_persistence() {
     // Sandbox-refused: real run() output, coordinate collision.
     let mut a = arena_input();
     a.candidate_mask = 0b0110;
-    let sandbox_refused = run(&mut a, FuelLease::new(10_000));
+    let sandbox_refused = run(&mut a, FuelLease::new(10_000), &mut ParentLedger::new());
 
     // Wire-refused: arena never entered; the pipeline's persistence view is
     // "no output object, nothing written".
@@ -364,7 +365,7 @@ fn wire_refused_and_sandbox_refused_indistinguishable_to_persistence() {
         "extractor masks the status byte: refused receipt binds only the digest tail");
     let mut again = arena_input();
     again.candidate_mask = 0b0110;
-    let replay = run(&mut again, FuelLease::new(10_000));
+    let replay = run(&mut again, FuelLease::new(10_000), &mut ParentLedger::new());
     assert_eq!(sandbox_refused.receipt, replay.receipt,
         "sandbox refusal receipt byte-identical on replay (zero entropy)");
 }

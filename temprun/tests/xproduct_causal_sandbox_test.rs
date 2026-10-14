@@ -21,7 +21,7 @@
 
 use temprun::acyclicity::{self, AcyclicRefusal, DEP_P};
 use temprun::fuel::FuelLease;
-use temprun::{run, ArenaInput, RECEIPT_LEN};
+use temprun::{run, ArenaInput, ParentLedger, RECEIPT_LEN};
 
 /// Milestone vocabulary (matches fr3_causal courts): distinct (s, p, o, t).
 const M1: [u64; 4] = [10, 1, 100, 10];
@@ -141,7 +141,7 @@ fn causal_refusal_refuses_at_every_fuel_level_with_identical_receipt() {
         for fuel in 0u64..=3 {
             let mut inp = conforming_input();
             apply(cls, &mut inp);
-            let out = run(&mut inp, FuelLease::new(fuel));
+            let out = run(&mut inp, FuelLease::new(fuel), &mut ParentLedger::new());
             assert!(!out.admitted, "class {:?} must refuse at fuel {}", cls, fuel);
             assert_eq!(out.receipt.len(), RECEIPT_LEN);
             receipts.push(out.receipt);
@@ -152,7 +152,7 @@ fn causal_refusal_refuses_at_every_fuel_level_with_identical_receipt() {
         // The refusal receipt differs from the conforming admit receipt
         // (status code in byte 0 only — digest tail is shared).
         let mut admit_inp = conforming_input();
-        let admit = run(&mut admit_inp, FuelLease::new(3));
+        let admit = run(&mut admit_inp, FuelLease::new(3), &mut ParentLedger::new());
         assert!(admit.admitted);
         assert_ne!(receipts[0], admit.receipt);
     }
@@ -170,19 +170,19 @@ fn causal_tier_runs_before_later_sieves_per_pinned_order() {
     // fuel 1 and the full conforming frame admitting at fuel 3.
     let mut coords_bad = conforming_input();
     coords_bad.candidate_mask = 0b0110; // intersects lease 0b0010
-    let out = run(&mut coords_bad, FuelLease::new(1));
+    let out = run(&mut coords_bad, FuelLease::new(1), &mut ParentLedger::new());
     assert!(!out.admitted);
 
     let mut causal_bad = conforming_input();
     apply(CausalClass::Cycle, &mut causal_bad);
-    let out2 = run(&mut causal_bad, FuelLease::new(1));
+    let out2 = run(&mut causal_bad, FuelLease::new(1), &mut ParentLedger::new());
     assert!(!out2.admitted);
 
     // Same digest inputs -> identical receipts despite different tiers.
     assert_eq!(out.receipt, out2.receipt);
 
     let mut ok = conforming_input();
-    assert!(run(&mut ok, FuelLease::new(3)).admitted);
+    assert!(run(&mut ok, FuelLease::new(3), &mut ParentLedger::new()).admitted);
 }
 
 #[test]
@@ -211,7 +211,7 @@ fn every_causal_refusal_path_zeroizes_all_allocated_memory() {
     for cls in ALL_CLASSES {
         let mut inp = conforming_input();
         apply(cls, &mut inp);
-        let out = run(&mut inp, FuelLease::new(3));
+        let out = run(&mut inp, FuelLease::new(3), &mut ParentLedger::new());
         assert!(!out.admitted);
         assert_all_zero(&inp);
     }
@@ -224,7 +224,7 @@ fn causal_refusal_scrub_holds_at_minimum_fuel_too() {
     for cls in ALL_CLASSES {
         let mut inp = conforming_input();
         apply(cls, &mut inp);
-        let out = run(&mut inp, FuelLease::new(0));
+        let out = run(&mut inp, FuelLease::new(0), &mut ParentLedger::new());
         assert!(!out.admitted);
         assert_all_zero(&inp);
     }
@@ -236,7 +236,7 @@ fn causal_refusal_scrub_holds_at_minimum_fuel_too() {
 fn causal_refused_run_leaves_no_residual_state_for_subsequent_conforming_run() {
     // Reference: conforming run on a pristine frame.
     let mut pristine = conforming_input();
-    let reference = run(&mut pristine, FuelLease::new(3));
+    let reference = run(&mut pristine, FuelLease::new(3), &mut ParentLedger::new());
     assert!(reference.admitted);
 
     // 20 reps: poison the "sandbox" with a causal-refused run, then run a
@@ -249,18 +249,18 @@ fn causal_refused_run_leaves_no_residual_state_for_subsequent_conforming_run() {
             if rep % 2 == 0 { CausalClass::Cycle } else { CausalClass::TraceInversion },
             &mut bad,
         );
-        let refused = run(&mut bad, FuelLease::new(3));
+        let refused = run(&mut bad, FuelLease::new(3), &mut ParentLedger::new());
         assert!(!refused.admitted, "rep {}", rep);
         assert_eq!(refused.receipt, {
             // Refusal receipt is stable across reps (same digest + refuse bit).
             let mut r0 = conforming_input();
             apply(CausalClass::Cycle, &mut r0);
-            run(&mut r0, FuelLease::new(3)).receipt
+            run(&mut r0, FuelLease::new(3), &mut ParentLedger::new()).receipt
         });
         assert_all_zero(&bad);
 
         let mut fresh = conforming_input();
-        let admitted = run(&mut fresh, FuelLease::new(3));
+        let admitted = run(&mut fresh, FuelLease::new(3), &mut ParentLedger::new());
         assert!(admitted.admitted, "rep {}: refused run contaminated the sandbox", rep);
         assert_eq!(admitted.receipt, reference.receipt, "rep {}", rep);
         assert_eq!(admitted.universe_digest, reference.universe_digest, "rep {}", rep);
@@ -321,7 +321,7 @@ fn property_100_randomized_causal_violations_refuse_identical_receipt_shape() {
             inp.observed = vec![2, 1];
         }
 
-        let out = run(&mut inp, FuelLease::new(3));
+        let out = run(&mut inp, FuelLease::new(3), &mut ParentLedger::new());
         assert!(!out.admitted, "rep {} class {:?} pos {} must refuse", rep, class, pos);
         assert_eq!(out.receipt.len(), RECEIPT_LEN, "rep {}", rep);
         // Refusal receipt is byte 0 bit 0 set over the (input-invariant)

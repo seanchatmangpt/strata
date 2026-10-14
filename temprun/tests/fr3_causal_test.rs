@@ -22,6 +22,7 @@ use temprun::clock::monotonic;
 use temprun::conformance::{merge_join, merge_join_total};
 use temprun::fuel::FuelLease;
 use temprun::{ArenaInput, RECEIPT_LEN};
+use temprun::ParentLedger;
 
 /// Milestone vocabulary: each milestone is a distinct (s, p, o) triple.
 /// t (column 3) is the unrolled temporal order.
@@ -56,7 +57,7 @@ fn fully_conforming_unrolled_trace_admits() {
     let policy = policy_of(&lineage);
     assert!(merge_join(&lineage, &policy));
     assert!(merge_join_total(&lineage, &policy));
-    let out = temprun::run(&mut frame(lineage, policy), FuelLease::new(3));
+    let out = temprun::run(&mut frame(lineage, policy), FuelLease::new(3), &mut ParentLedger::new());
     assert!(out.admitted);
     assert_eq!(out.receipt.len(), RECEIPT_LEN);
 }
@@ -85,7 +86,7 @@ fn causal_cycle_is_order_covered_but_refused_by_the_acyclicity_sieve() {
     // Even the stricter total join passes — neither direction is missing.
     assert!(merge_join_total(&lineage, &policy));
     // End-to-end: the acyclicity sieve (FR-3 adjudication) refuses the frame.
-    let out = temprun::run(&mut frame(lineage, policy), FuelLease::new(3));
+    let out = temprun::run(&mut frame(lineage, policy), FuelLease::new(3), &mut ParentLedger::new());
     assert!(!out.admitted, "FLIPPED: causal cycles must refuse end-to-end");
 }
 
@@ -100,7 +101,7 @@ fn vector_clock_inversion_refused_end_to_end() {
     inp.clock = vec![1, 1];
     inp.observed = vec![2, 1];
     assert!(!monotonic(&inp.clock, &inp.observed));
-    let out = temprun::run(&mut inp, FuelLease::new(3));
+    let out = temprun::run(&mut inp, FuelLease::new(3), &mut ParentLedger::new());
     assert!(!out.admitted);
 }
 
@@ -124,7 +125,7 @@ fn unrolled_frame_sequence_inversion_refused_per_event() {
     let mut inp = frame(lineage, policy);
     inp.clock = ev3;
     inp.observed = hi;
-    assert!(!temprun::run(&mut inp, FuelLease::new(3)).admitted);
+    assert!(!temprun::run(&mut inp, FuelLease::new(3), &mut ParentLedger::new()).admitted);
 }
 
 // ---- (c) missing prerequisite: lineage row with no policy milestone ----
@@ -136,7 +137,7 @@ fn lineage_event_without_policy_milestone_refused_end_to_end() {
     let lineage = vec![M1, M2, stranger];
     let policy = policy_of(&[M1, M2]);
     assert!(!merge_join(&lineage, &policy));
-    let out = temprun::run(&mut frame(lineage, policy), FuelLease::new(3));
+    let out = temprun::run(&mut frame(lineage, policy), FuelLease::new(3), &mut ParentLedger::new());
     assert!(!out.admitted);
 }
 
@@ -151,7 +152,7 @@ fn skipped_middle_milestone_refused_by_merge_join() {
     let lineage = vec![M1, M3];
     let policy = policy_of(&[M1, M2, M3]);
     assert!(!merge_join(&lineage, &policy));
-    let out = temprun::run(&mut frame(lineage, policy), FuelLease::new(3));
+    let out = temprun::run(&mut frame(lineage, policy), FuelLease::new(3), &mut ParentLedger::new());
     assert!(!out.admitted);
 }
 

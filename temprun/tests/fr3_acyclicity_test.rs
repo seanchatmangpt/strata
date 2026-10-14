@@ -10,6 +10,7 @@
 use temprun::acyclicity::{check, AcyclicRefusal, DEP_P};
 use temprun::fuel::FuelLease;
 use temprun::{ArenaInput, RECEIPT_LEN};
+use temprun::ParentLedger;
 
 const M1: [u64; 4] = [10, 1, 100, 10];
 const M2: [u64; 4] = [20, 2, 200, 20];
@@ -42,7 +43,7 @@ fn t1_dependency_stamped_not_after_cause_refused_end_to_end() {
     // — a's cause b is stamped after a (within-trace inversion).
     let lineage = vec![[21, 7, 11, 10], [11, 7, 1, 50]];
     assert_eq!(check(&lineage), Err(AcyclicRefusal::ClockInversion));
-    let out = temprun::run(&mut frame(lineage), FuelLease::new(3));
+    let out = temprun::run(&mut frame(lineage), FuelLease::new(3), &mut ParentLedger::new());
     assert!(!out.admitted);
     assert_eq!(out.receipt.len(), RECEIPT_LEN);
 }
@@ -54,7 +55,7 @@ fn t2_direct_two_cycle_refused_end_to_end() {
     // The EXACT frame fr3_causal pinned as ADMITTING; now must refuse.
     let lineage = vec![[10, 7, 20, 10], [20, 7, 10, 20]];
     assert_eq!(check(&lineage), Err(AcyclicRefusal::Cycle));
-    let out = temprun::run(&mut frame(lineage), FuelLease::new(3));
+    let out = temprun::run(&mut frame(lineage), FuelLease::new(3), &mut ParentLedger::new());
     assert!(!out.admitted, "FR-3 adjudication: causal cycle must refuse");
 }
 
@@ -64,7 +65,7 @@ fn t2_direct_two_cycle_refused_end_to_end() {
 fn t3_indirect_three_cycle_refused_end_to_end() {
     let lineage = vec![[1, 7, 2, 10], [2, 7, 3, 20], [3, 7, 1, 30]];
     assert_eq!(check(&lineage), Err(AcyclicRefusal::Cycle));
-    let out = temprun::run(&mut frame(lineage), FuelLease::new(3));
+    let out = temprun::run(&mut frame(lineage), FuelLease::new(3), &mut ParentLedger::new());
     assert!(!out.admitted);
 }
 
@@ -74,7 +75,7 @@ fn t3_indirect_three_cycle_refused_end_to_end() {
 fn t4_self_loop_stagnation_refused_end_to_end() {
     let lineage = vec![[5, 7, 5, 1]];
     assert_eq!(check(&lineage), Err(AcyclicRefusal::Cycle));
-    let out = temprun::run(&mut frame(lineage), FuelLease::new(3));
+    let out = temprun::run(&mut frame(lineage), FuelLease::new(3), &mut ParentLedger::new());
     assert!(!out.admitted);
 }
 
@@ -85,7 +86,7 @@ fn conforming_acyclic_trace_still_admits_same_fuel() {
     // M1..M4 carry non-causal predicates: no edges, still admits at fuel 3 —
     // the wiring moved NO fuel-charge boundary.
     let lineage = vec![M1, M2, M3, M4];
-    let out = temprun::run(&mut frame(lineage), FuelLease::new(3));
+    let out = temprun::run(&mut frame(lineage), FuelLease::new(3), &mut ParentLedger::new());
     assert!(out.admitted);
     assert_eq!(out.receipt.len(), RECEIPT_LEN);
 }
@@ -96,7 +97,7 @@ fn acyclic_dependency_chain_admits_end_to_end() {
     // node ids across subject/object positions: id(n) = n*2+1).
     let lineage = vec![[61, 7, 41, 30], [41, 7, 21, 20], [21, 7, 11, 10]];
     assert_eq!(check(&lineage), Ok(()));
-    let out = temprun::run(&mut frame(lineage), FuelLease::new(3));
+    let out = temprun::run(&mut frame(lineage), FuelLease::new(3), &mut ParentLedger::new());
     assert!(out.admitted);
 }
 
@@ -220,7 +221,7 @@ fn property_100_randomized_dag_vs_cyclic_vs_oracle() {
             );
         }
         // End-to-end agreement through the real arena gate.
-        let out = temprun::run(&mut frame(lineage), FuelLease::new(3));
+        let out = temprun::run(&mut frame(lineage), FuelLease::new(3), &mut ParentLedger::new());
         assert_eq!(
             out.admitted, !cyclic,
             "case {case}: run() disagreement with oracle"

@@ -56,15 +56,57 @@ pub struct ArenaOutput {
     pub admitted: bool,
 }
 
+/// Replay ledger over parent commit digests (KG-42 wire law): a parent
+/// already recorded is a replayed actuation and must refuse. The ledger is
+/// sorted-dedup so replay detection is a binary search — no data-dependent
+/// branch on content, only on digest membership.
+pub struct ParentLedger {
+    seen: Vec<[u8; 32]>,
+}
+
+impl Default for ParentLedger {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl ParentLedger {
+    pub fn new() -> Self {
+        ParentLedger { seen: Vec::new() }
+    }
+
+    /// true iff the parent digest was already recorded (replay).
+    fn is_replay(&self, parent: &[u8; 32]) -> bool {
+        self.seen.binary_search(parent).is_ok()
+    }
+
+    /// Record an admitted parent digest (sorted-dedup insert).
+    fn record(&mut self, parent: [u8; 32]) {
+        if let Err(pos) = self.seen.binary_search(&parent) {
+            self.seen.insert(pos, parent);
+        }
+    }
+}
+
 /// Run the arena. All refusals collapse to the same constant-time path.
-pub fn run(input: &mut ArenaInput, mut fuel: fuel::FuelLease) -> ArenaOutput {
+///
+/// `ledger` is the parent-digest replay sieve: a run whose parent commit
+/// digest is already in the ledger refuses (0x02 receipt, KG-42); an
+/// admitted run records its parent before teardown.
+pub fn run(input: &mut ArenaInput, mut fuel: fuel::FuelLease, ledger: &mut ParentLedger) -> ArenaOutput {
+    // Parent read before scrub zeroes it.
+    let parent = input.parent;
     // 1. Fuel: each sieve step costs; exhaustion -> constant-time refusal.
     let mut refuse = false;
 
-    // Sieve order: clock + causal acyclicity (same causal tier, ONE fuel
-    // unit — fuel-charge ordering unchanged, FR-3 adjudication), then
+    // Replay sieve: the ledger fires on digest membership, not content.
+    let replay = ledger.is_replay(&parent);
+
+    // Sieve order: clock + causal acyclicity + replay (same causal tier, ONE
+    // fuel unit — fuel-charge ordering unchanged, FR-3 adjudication), then
     // coordinates, then conformance.
     if !fuel.charge(1)
+        || replay
         || !clock::monotonic(&input.clock, &input.observed)
         || acyclicity::check(&input.lineage).is_err()
     {
@@ -76,13 +118,19 @@ pub fn run(input: &mut ArenaInput, mut fuel: fuel::FuelLease) -> ArenaOutput {
         refuse = true;
     }
 
-    if !refuse && (!fuel.charge(1) || !conformance::merge_join(&input.lineage, &input.policy)) {
+    if !refuse && (!fuel.charge(1) || !conformance::merge_join_total(&input.lineage, &input.policy)) {
         refuse = true;
     }
 
     // Always assemble (digest of empty stream is still deterministic) so the
     // refusal and admission paths do identical work — constant-time by shape.
     let universe_digest = git::assemble(&input.tree_entries, &input.parent, &input.message);
+
+    // Admitted parents are recorded AFTER the decision, before teardown, so
+    // a refused run never poisons the ledger.
+    if !refuse {
+        ledger.record(parent);
+    }
 
     let receipt = receipt::seal(refuse, &universe_digest);
     // 5. Zeroization of ALL allocated input memory before exit (FR-6).
@@ -139,7 +187,7 @@ mod tests {
     #[test]
     fn conformance_pass_admits() {
         let mut inp = base_input();
-        let out = run(&mut inp, FuelLease::new(10));
+        let out = run(&mut inp, FuelLease::new(10), &mut ParentLedger::new());
         assert!(out.admitted);
     }
 
@@ -147,7 +195,7 @@ mod tests {
     fn conformance_fail_refuses_constant_shape() {
         let mut inp = base_input();
         inp.policy[1] = [4, 5, 99, 0]; // o mismatch
-        let out = run(&mut inp, FuelLease::new(10));
+        let out = run(&mut inp, FuelLease::new(10), &mut ParentLedger::new());
         assert!(!out.admitted);
         assert_eq!(out.receipt.len(), 32);
     }
@@ -155,16 +203,16 @@ mod tests {
     #[test]
     fn fuel_exhaustion_constant_time_refusal() {
         let mut inp = base_input();
-        let a = run(&mut inp, FuelLease::new(1)); // exhausts before sieves
+        let a = run(&mut inp, FuelLease::new(1), &mut ParentLedger::new()); // exhausts before sieves
         let mut inp2 = base_input();
         inp2.clock = vec![0, 9]; // would also refuse, different cause
-        let b = run(&mut inp2, FuelLease::new(1));
+        let b = run(&mut inp2, FuelLease::new(1), &mut ParentLedger::new());
         // Same fuel exhaustion -> identical receipts (no error entropy).
         assert_eq!(a.receipt, b.receipt);
         assert!(!a.admitted && !b.admitted);
         // A refusal vs an admit on the same digest differ in byte 0 only
         // (0x02 status code vs the digest's own byte).
-        let c = run(&mut base_input(), FuelLease::new(10));
+        let c = run(&mut base_input(), FuelLease::new(10), &mut ParentLedger::new());
         assert_ne!(a.receipt, c.receipt);
         assert_eq!(c.receipt, c.universe_digest, "admit register is the digest");
     }
@@ -173,7 +221,7 @@ mod tests {
     fn coordinate_intersection_fails_closed() {
         let mut inp = base_input();
         inp.candidate_mask = 0b0110; // intersects lease 0b0010
-        let out = run(&mut inp, FuelLease::new(10));
+        let out = run(&mut inp, FuelLease::new(10), &mut ParentLedger::new());
         assert!(!out.admitted);
     }
 
@@ -181,18 +229,18 @@ mod tests {
     fn clock_inversion_refused() {
         let mut inp = base_input();
         inp.clock = vec![0, 0]; // observed says node1 saw 1
-        let out = run(&mut inp, FuelLease::new(10));
+        let out = run(&mut inp, FuelLease::new(10), &mut ParentLedger::new());
         assert!(!out.admitted);
     }
 
     #[test]
     fn zeroization_digest_determinism() {
-        let d1 = run(&mut base_input(), FuelLease::new(10)).universe_digest;
-        let d2 = run(&mut base_input(), FuelLease::new(10)).universe_digest;
+        let d1 = run(&mut base_input(), FuelLease::new(10), &mut ParentLedger::new()).universe_digest;
+        let d2 = run(&mut base_input(), FuelLease::new(10), &mut ParentLedger::new()).universe_digest;
         assert_eq!(d1, d2, "digest must be deterministic after zeroize");
         let mut inp = base_input();
         inp.tree_entries.push(([9u8; 32], [9u8; 32]));
-        let d3 = run(&mut inp, FuelLease::new(10)).universe_digest;
+        let d3 = run(&mut inp, FuelLease::new(10), &mut ParentLedger::new()).universe_digest;
         assert_ne!(d1, d3);
     }
 }

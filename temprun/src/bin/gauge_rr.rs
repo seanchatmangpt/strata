@@ -33,7 +33,7 @@
 use std::time::Instant;
 
 use temprun::fuel::FuelLease;
-use temprun::{run, ArenaInput};
+use temprun::{run, ArenaInput, ParentLedger};
 
 const PARTS: usize = 10;
 const OPERATORS: usize = 3;
@@ -126,7 +126,7 @@ fn replicate_ns(part: usize, operator: usize) -> (f64, bool) {
     for s in samples.iter_mut() {
         let mut inp = build_part(part, operator);
         let t0 = Instant::now();
-        let out = run(&mut inp, FuelLease::new((size_class(part) as u64) + 10));
+        let out = run(&mut inp, FuelLease::new((size_class(part) as u64) + 10), &mut ParentLedger::new());
         let dt = t0.elapsed();
         last_admitted = out.admitted;
         *s = dt.as_nanos() as f64;
@@ -148,7 +148,7 @@ fn main() {
         // Warmup this operator's context.
         for w in 0..WARMUP {
             let mut inp = build_part(w as usize % PARTS, op);
-            let _ = run(&mut inp, FuelLease::new(10));
+            let _ = run(&mut inp, FuelLease::new(10), &mut ParentLedger::new());
         }
         for (part, part_cell) in op_cells.iter_mut().enumerate() {
             for slot in part_cell.iter_mut() {

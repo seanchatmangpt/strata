@@ -21,6 +21,7 @@ use std::time::Instant;
 
 use temprun::fuel::FuelLease;
 use temprun::{run, ArenaInput, RECEIPT_LEN};
+use temprun::ParentLedger;
 
 const LSL_NS: f64 = 0.0;
 const USL_NS: f64 = 50_000.0; // NFR-1: 50 us P99.9 target
@@ -143,7 +144,7 @@ fn main() {
         let (n, m) = build_frame(&mut rng);
         let mut inp = arena_input(&mut rng, n, m);
         let t0 = Instant::now();
-        let out = run(&mut inp, FuelLease::new(10 + u64::from(n) + u64::from(m)));
+        let out = run(&mut inp, FuelLease::new(10 + u64::from(n) + u64::from(m)), &mut ParentLedger::new());
         let dt = t0.elapsed();
         if !out.admitted {
             eprintln!("capability_report: admission failed — dataset invalid");

@@ -7,9 +7,9 @@
 //! intersection channels. Refusals must be the 32B opaque receipt, byte-
 //! identical across two runs (zero entropy).
 //!
-//! Tests marked `#[ignore]` target spec'd surfaces not yet landed in the
-//! runtime (parent-ledger replay refusal, permutation sieve). Everything
-//! else runs against the real landed API.
+//! Every court here runs against the real landed API: parent-ledger replay
+//! refusal, total merge-join conformance, and the header permutation sieve
+//! are all live surfaces now.
 
 use strata_protocol::{
     cas, pdu::PduHeader, quad::Quad, PDU_HEADER_LEN, PDU_MAGIC, PDU_VERSION,
@@ -17,7 +17,7 @@ use strata_protocol::{
 };
 use temprun::conformance;
 use temprun::fuel::FuelLease;
-use temprun::{run, ArenaInput};
+use temprun::{run, ArenaInput, ParentLedger};
 
 // ---------------------------------------------------------------------------
 // Frame assembly (real protocol types, no doubles)
@@ -108,8 +108,8 @@ fn admitted_run_receipt_fields_deterministic_and_parent_advances() {
     let parent = [0u8; 32];
     let mut a = arena_input(parent);
     let mut b = arena_input(parent);
-    let oa = run(&mut a, FuelLease::new(10));
-    let ob = run(&mut b, FuelLease::new(10));
+    let oa = run(&mut a, FuelLease::new(10), &mut ParentLedger::new());
+    let ob = run(&mut b, FuelLease::new(10), &mut ParentLedger::new());
     assert!(oa.admitted && ob.admitted);
     // Deterministic admit receipt: byte-identical across two runs.
     assert_eq!(oa.receipt, ob.receipt);
@@ -127,7 +127,7 @@ fn admitted_run_receipt_fields_deterministic_and_parent_advances() {
     // Parent digest advances: a nonzero parent changes the universe digest
     // (commit object gains a parent line) and so the receipt.
     let mut c = arena_input([9u8; 32]);
-    let oc = run(&mut c, FuelLease::new(10));
+    let oc = run(&mut c, FuelLease::new(10), &mut ParentLedger::new());
     assert_ne!(oa.universe_digest, oc.universe_digest, "parent digest must advance the universe");
 }
 
@@ -166,7 +166,7 @@ fn git_merkle_objects_emitted_and_verify() {
 }
 
 fn oa_universe_for_anchor() -> [u8; 32] {
-    run(&mut arena_input([0u8; 32]), FuelLease::new(10)).universe_digest
+    run(&mut arena_input([0u8; 32]), FuelLease::new(10), &mut ParentLedger::new()).universe_digest
 }
 
 fn hex(b: &[u8]) -> String {
@@ -178,25 +178,29 @@ fn hex(b: &[u8]) -> String {
 // ---------------------------------------------------------------------------
 
 fn assert_refusal_twice(mut a: ArenaInput, mut b: ArenaInput, label: &str) {
-    let ra = run(&mut a, FuelLease::new(10));
-    let rb = run(&mut b, FuelLease::new(10));
+    let ra = run(&mut a, FuelLease::new(10), &mut ParentLedger::new());
+    let rb = run(&mut b, FuelLease::new(10), &mut ParentLedger::new());
     assert!(!ra.admitted, "{} must refuse", label);
     assert!(!rb.admitted, "{} must refuse on replay", label);
     assert_eq!(ra.receipt.len(), 32, "{} receipt is 32B", label);
     assert_eq!(ra.receipt, rb.receipt, "{} refusal byte-identical across runs (zero entropy)", label);
     // Refusal receipt differs from admit on the same frame (status code in byte 0).
-    let ok = run(&mut arena_input([0u8; 32]), FuelLease::new(10));
+    let ok = run(&mut arena_input([0u8; 32]), FuelLease::new(10), &mut ParentLedger::new());
     assert_ne!(ra.receipt, ok.receipt, "{} refusal must not equal admit receipt", label);
 }
 
 #[test]
-#[ignore = "gap: merge_join treats a truncated lineage as satisfied (unconsumed policy rows are not a mismatch), and temprun::run never sees the header counts; spec requires history_quad_count cross-check refusal"]
 fn truncated_lineage_refuses_deterministically() {
-    // Lineage missing its second quad: landed API ADMITS (documented gap),
-    // so this court pins the spec refusal for when the cross-check lands.
+    // Lineage missing its second quad: merge_join_total refuses (the run's
+    // conformance sieve consumes the whole policy table).
+    // Vacuity positive control: the total join MUST reject the truncated
+    // lineage in isolation (unconsumed policy rows are a mismatch).
+    assert!(
+        !conformance::merge_join_total(&[LINEAGE[0]], &policy_from(&LINEAGE)),
+        "merge_join_total must fire on the truncated lineage (positive control)"
+    );
     let mut t = arena_input([0u8; 32]);
     t.lineage = vec![LINEAGE[0]];
-    assert!(conformance::merge_join(&t.lineage, &t.policy), "current behavior: truncated lineage passes join");
     let mut t2 = arena_input([0u8; 32]);
     t2.lineage = vec![LINEAGE[0]];
     assert_refusal_twice(t, t2, "truncated lineage");
@@ -217,8 +221,8 @@ fn fuel_exhaustion_refuses_deterministically() {
     // Lease of 2: first sieve passes, second exhausts -> refusal.
     let mut t = arena_input([0u8; 32]);
     let mut t2 = arena_input([0u8; 32]);
-    let ra = run(&mut t, FuelLease::new(2));
-    let rb = run(&mut t2, FuelLease::new(2));
+    let ra = run(&mut t, FuelLease::new(2), &mut ParentLedger::new());
+    let rb = run(&mut t2, FuelLease::new(2), &mut ParentLedger::new());
     assert!(!ra.admitted && !rb.admitted);
     assert_eq!(ra.receipt, rb.receipt, "fuel refusal byte-identical (zero entropy)");
     assert_eq!(ra.receipt.len(), 32);
@@ -248,28 +252,40 @@ fn clock_inversion_refuses_deterministically() {
 // ---------------------------------------------------------------------------
 
 #[test]
-#[ignore = "runtime has no parent-ledger replay refusal yet: replaying the same parent is currently admitted twice; spec requires refusal"]
 fn replay_same_parent_refuses() {
+    let mut ledger = ParentLedger::new();
     let mut a = arena_input([0u8; 32]);
-    let out1 = run(&mut a, FuelLease::new(10));
+    let out1 = run(&mut a, FuelLease::new(10), &mut ledger);
     assert!(out1.admitted, "first actuation admits");
     let mut b = arena_input([0u8; 32]); // identical frame, same parent
-    let out2 = run(&mut b, FuelLease::new(10));
+    let out2 = run(&mut b, FuelLease::new(10), &mut ledger);
     assert!(!out2.admitted, "replay against the same parent must refuse");
     assert_eq!(out2.receipt.len(), 32);
     // Refusal receipt byte-identical across two replays (zero entropy).
     let mut c = arena_input([0u8; 32]);
-    let out3 = run(&mut c, FuelLease::new(10));
+    let out3 = run(&mut c, FuelLease::new(10), &mut ledger);
     assert_eq!(out2.receipt, out3.receipt);
+
+    // The sieve fires on parent DIGEST membership, not frame content: a
+    // parent differing by a single byte is novel and admits.
+    let mut d = arena_input([1u8; 32]);
+    let out4 = run(&mut d, FuelLease::new(10), &mut ledger);
+    assert!(out4.admitted, "novel parent digest must admit");
+
+    // And a replay of THAT parent now refuses too.
+    let mut e = arena_input([1u8; 32]);
+    let out5 = run(&mut e, FuelLease::new(10), &mut ledger);
+    assert!(!out5.admitted, "replay of the novel parent must also refuse");
+    // KG-42 wire law: the refusal status is byte 0 == 0x02; bytes 1..31 are
+    // the (parent-dependent) universe digest, so cross-parent refusals match
+    // on the status byte, not the whole receipt. Same-parent replays ARE
+    // byte-identical (asserted above via out2 == out3).
+    assert_eq!(out5.receipt[0], 0x02, "replay refusal carries the 0x02 status byte");
 }
 
-#[test]
-#[ignore = "permutation index is unvalidated end to end: PduHeader accepts any permutation byte and temprun::run never sees the header; spec requires a permutation sieve"]
-fn bad_permutation_refuses_end_to_end() {
-    let mut h = valid_header();
-    h.permutation = 0xFE; // outside the registered permutation table
-    let b = frame_bytes(&h);
-    let parsed = PduHeader::from_bytes(&b).expect("header parses");
-    // Spec: this must be refused by the runtime permutation sieve.
-    assert_ne!(parsed.permutation, 0xFE, "unregistered permutation must be refused upstream");
-}
+// The end-to-end bad-permutation court is folded into
+// tests/adversarial_court.rs::malformed_permutation_index_fails_closed
+// (PduHeader::from_bytes sieves permutation > 5 at parse, so a separate
+// parse-level test here would duplicate it). Remaining KG-02-adjacent gap —
+// the runtime permutation sieve past the header parse (operator wire-law
+// decision, deliberately NOT implemented here): see KNOWN_GAPS.md KG-02.

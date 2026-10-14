@@ -10,6 +10,7 @@
 
 use temprun::fuel::FuelLease;
 use temprun::{run, ArenaInput};
+use temprun::ParentLedger;
 
 // --- independent oracle: per-bit scan, no shared logic with lock_ok ---
 
@@ -72,7 +73,7 @@ fn full_overlap_refuses_end_to_end() {
     let mut inp = base_input();
     inp.candidate_mask = 0b0010;
     inp.lease_mask = 0b0010;
-    let out = run(&mut inp, FuelLease::new(10));
+    let out = run(&mut inp, FuelLease::new(10), &mut ParentLedger::new());
     assert!(!out.admitted);
     assert_eq!(out.receipt.len(), 32); // constant-time refusal shape
 }
@@ -82,7 +83,7 @@ fn disjoint_admits_end_to_end() {
     let mut inp = base_input();
     inp.candidate_mask = 0b1000;
     inp.lease_mask = 0b0111;
-    let out = run(&mut inp, FuelLease::new(10));
+    let out = run(&mut inp, FuelLease::new(10), &mut ParentLedger::new());
     assert!(out.admitted);
 }
 
@@ -93,7 +94,7 @@ fn coords_refusal_precedes_conformance_fuel_charge() {
     // pinning coords at step 2 (after clock, before conformance).
     let mut disjoint = base_input();
     disjoint.candidate_mask = 0b1000;
-    let out2 = run(&mut disjoint, FuelLease::new(3));
+    let out2 = run(&mut disjoint, FuelLease::new(3), &mut ParentLedger::new());
     assert!(out2.admitted, "disjoint candidate admits at exactly 3 fuel");
 
     // With fuel = 2 and an intersecting candidate, the coords sieve consumes
@@ -102,19 +103,19 @@ fn coords_refusal_precedes_conformance_fuel_charge() {
     // (constant-time by design), so we pin shape equality only.
     let mut intersect = base_input();
     intersect.candidate_mask = 0b0010;
-    let out = run(&mut intersect, FuelLease::new(2));
+    let out = run(&mut intersect, FuelLease::new(2), &mut ParentLedger::new());
     assert!(!out.admitted, "intersection must refuse even at minimum fuel");
     assert_eq!(out.receipt.len(), out2.receipt.len());
 
     // Same intersecting candidate at fuel = 10: still refuses (sieve, not fuel).
     let mut intersect_full = base_input();
     intersect_full.candidate_mask = 0b0010;
-    assert!(!run(&mut intersect_full, FuelLease::new(10)).admitted);
+    assert!(!run(&mut intersect_full, FuelLease::new(10), &mut ParentLedger::new()).admitted);
 
     // Fuel = 1 exhausts at/before coords: refusal either way, constant shape.
     let mut fuel1 = base_input();
     fuel1.candidate_mask = 0b0010;
-    let out3 = run(&mut fuel1, FuelLease::new(1));
+    let out3 = run(&mut fuel1, FuelLease::new(1), &mut ParentLedger::new());
     assert!(!out3.admitted);
     assert_eq!(out.receipt.len(), out3.receipt.len());
 }
@@ -144,7 +145,7 @@ fn property_100_random_vs_oracle() {
         let mut inp = base_input();
         inp.candidate_mask = cand;
         inp.lease_mask = lease;
-        let out = run(&mut inp, FuelLease::new(10));
+        let out = run(&mut inp, FuelLease::new(10), &mut ParentLedger::new());
         assert_eq!(
             out.admitted,
             !expected_refuse,

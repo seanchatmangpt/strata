@@ -27,6 +27,7 @@ use std::process::exit;
 
 use temprun::fuel::FuelLease;
 use temprun::{run, ArenaInput, RECEIPT_LEN};
+use temprun::ParentLedger;
 
 fn be_u64(b: &[u8]) -> u64 {
     let mut a = [0u8; 8];
@@ -84,7 +85,7 @@ fn main() {
         parent,
         message: b"clap".to_vec(),
     };
-    let out = run(&mut input, FuelLease::new(fuel));
+    let out = run(&mut input, FuelLease::new(fuel), &mut ParentLedger::new());
     debug_assert_eq!(out.receipt.len(), RECEIPT_LEN);
     if std::fs::write(&args[2], out.receipt).is_err() {
         exit(2);

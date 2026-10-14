@@ -28,7 +28,7 @@ use std::sync::mpsc;
 use std::time::{Duration, Instant};
 
 use temprun::fuel::FuelLease;
-use temprun::{run, ArenaInput, RECEIPT_LEN};
+use temprun::{run, ArenaInput, ParentLedger, RECEIPT_LEN};
 
 /// MMIX LCG (Knuth): deterministic, full-period on u64.
 struct Lcg(u64);
@@ -55,7 +55,7 @@ impl Lcg {
 fn run_with_timeout(mut input: ArenaInput, fuel: u64, timeout: Duration) -> temprun::ArenaOutput {
     let (tx, rx) = mpsc::channel();
     let handle = std::thread::spawn(move || {
-        let out = run(&mut input, FuelLease::new(fuel));
+        let out = run(&mut input, FuelLease::new(fuel), &mut ParentLedger::new());
         tx.send(()).expect("timeout watchdog already dropped");
         out
     });
@@ -169,7 +169,7 @@ fn g2_fuel_boundary_exact_exhaustion() {
             rng.next_u64()
         };
         let mut inp = clone_input(&golden);
-        let out = run(&mut inp, FuelLease::new(fuel));
+        let out = run(&mut inp, FuelLease::new(fuel), &mut ParentLedger::new());
         assert_eq!(out.admitted, fuel >= 3, "fuel {fuel}: admit iff >= 3 charges");
         assert_eq!(out.receipt.len(), RECEIPT_LEN);
         if fuel < 3 {
@@ -184,8 +184,8 @@ fn g2_fuel_boundary_exact_exhaustion() {
     // sieve the fuel ran out in.
     let mut a = clone_input(&golden);
     a.clock = vec![0, 9]; // would refuse anyway; fuel 1 trips first
-    let ra = run(&mut a, FuelLease::new(1));
-    let rb = run(&mut clone_input(&golden), FuelLease::new(1));
+    let ra = run(&mut a, FuelLease::new(1), &mut ParentLedger::new());
+    let rb = run(&mut clone_input(&golden), FuelLease::new(1), &mut ParentLedger::new());
     assert_eq!(ra.receipt, rb.receipt);
 }
 
@@ -231,7 +231,7 @@ fn g3_clock_coord_edge_values() {
         // u64::MAX candidate must fail closed against any nonzero lease.
         let mut m = clone_input(&golden);
         m.candidate_mask = u64::MAX;
-        assert!(!run(&mut m, FuelLease::new(100)).admitted);
+        assert!(!run(&mut m, FuelLease::new(100), &mut ParentLedger::new()).admitted);
     }
 }
 

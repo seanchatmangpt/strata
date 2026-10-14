@@ -1,15 +1,17 @@
+// VACUITY: EXEMPT — direct law-assertion court over a fixed corpus; no mutation-kill claim
 //! Adversarial red-team court for Strata (lane S8).
 //!
 //! Falsification doctrine: replayed tokens, malformed permutations,
 //! truncated causal histories, and out-of-order clocks FAIL CLOSED.
 //!
-//! Tests marked `#[ignore]` target spec'd surfaces the strata-protocol
-//! crate has not landed yet (register model, lease masks, fuel-metered
-//! trace execution). The protocol lane un-ignores them when those
-//! surfaces land.
+//! The two remaining `#[ignore]`d tests target spec'd surfaces still unlanded
+//! (lease masks, fuel-metered trace execution); each ignore reason cites its
+//! KNOWN_GAPS reference. The register-model surfaces have landed
+//! (`strata_protocol::Register`) and their courts run for real.
 
 use strata_protocol::{
     AttestationReceipt, PduHeader, PDU_HEADER_LEN, PDU_MAGIC, PDU_VERSION, Quad, RefusalReceipt,
+    Register,
 };
 use strata_protocol::receipt::ML_DSA_65_SIG_LEN;
 
@@ -137,31 +139,18 @@ fn malformed_permutation_index_fails_closed() {
 // 1. Replay: identical frame ingested twice -> second refuses
 // ---------------------------------------------------------------------------
 
-// AWAITS PROTOCOL: replay detection requires the register model (parent
-// digest must mismatch after register advance). The protocol crate ships
-// no register/chain-state surface. Un-ignore when it lands.
+// Register surface LANDED: strata_protocol::Register::ingest (parent-digest
+// chain state + epoch-nonce high-water mark).
 #[test]
-#[ignore = "awaits strata-protocol register model (parent-digest chain state)"]
 fn replayed_frame_refused_on_second_ingest() {
     let h = valid_header();
     let frame = frame_bytes(&h, &quads(2, 0), &quads(1, 100));
     // First ingest advances the register; the replayed frame carries the
     // same parent digest, which no longer matches the advanced register.
-    let first = ingest_against_register(&frame, None);
+    let first = Register::ingest(&frame, None);
     assert!(first.is_ok(), "first ingest of a valid frame must accept");
-    let second = ingest_against_register(&frame, Some(first.unwrap()));
+    let second = Register::ingest(&frame, Some(first.unwrap()));
     assert_eq!(second, Err(strata_protocol::Error::Invalid));
-}
-
-// Spec-shaped API the register lane must provide:
-//   ingest_against_register(frame, current_register: Option<[u8;32]>)
-//     -> Result<[u8; 32]>  (new register digest, or Invalid)
-#[allow(unused)]
-fn ingest_against_register(
-    _frame: &[u8],
-    _register: Option<[u8; 32]>,
-) -> Result<[u8; 32], strata_protocol::Error> {
-    Err(strata_protocol::Error::Invalid) // placeholder until surface lands
 }
 
 // ---------------------------------------------------------------------------
@@ -190,24 +179,25 @@ fn truncated_causal_history_fails_closed() {
 // 4. Out-of-order vector clocks (nonce inversion) -> refuse
 // ---------------------------------------------------------------------------
 
-// AWAITS PROTOCOL: nonce ordering requires the register model (the epoch
-// nonce must be monotone against register state). Un-ignore when it lands.
+// Register surface LANDED: strata_protocol::Register::ingest enforces
+// epoch-nonce monotonicity against the register high-water mark.
 #[test]
-#[ignore = "awaits strata-protocol register model (epoch-nonce monotonicity)"]
 fn inverted_epoch_nonce_fails_closed() {
     let h1 = valid_header(); // nonce 0x0102_0304_0506_0708
     let frame1 = frame_bytes(&h1, &quads(2, 0), &quads(1, 100));
-    let reg = ingest_against_register(&frame1, None).unwrap();
+    let reg = Register::ingest(&frame1, None).unwrap();
 
     let mut h2 = valid_header();
+    h2.parent_receipt_digest = reg.parent; // stands on the advanced tip
     h2.epoch_nonce = h1.epoch_nonce - 1; // inversion
     let frame2 = frame_bytes(&h2, &quads(2, 0), &quads(1, 100));
-    assert_eq!(ingest_against_register(&frame2, Some(reg)), Err(strata_protocol::Error::Invalid));
+    assert_eq!(Register::ingest(&frame2, Some(reg)), Err(strata_protocol::Error::Invalid));
 
     let mut h3 = valid_header();
+    h3.parent_receipt_digest = reg.parent; // stands on the advanced tip
     h3.epoch_nonce = h1.epoch_nonce + 1; // lawful advance
     let frame3 = frame_bytes(&h3, &quads(2, 0), &quads(1, 100));
-    assert!(ingest_against_register(&frame3, Some(reg)).is_ok());
+    assert!(Register::ingest(&frame3, Some(reg)).is_ok());
 }
 
 // ---------------------------------------------------------------------------
@@ -217,7 +207,7 @@ fn inverted_epoch_nonce_fails_closed() {
 // AWAITS PROTOCOL: no lease-mask surface exists in strata-protocol.
 // Un-ignore when the lease lane lands.
 #[test]
-#[ignore = "awaits strata-protocol lease-mask surface"]
+#[ignore = "lease-mask surface unlanded — KG-ADX-LEASE (see KNOWN_GAPS.md: nearest entries KG-ARD21 / KG-SX1)"]
 fn candidate_quad_intersecting_active_lease_refused() {
     let active_mask = [quads(1, 42)[0]]; // lease held on quad (42,43,44,45)
     let h = valid_header();
@@ -264,7 +254,7 @@ fn refusal_output_is_exactly_32_opaque_bytes() {
 // AWAITS PROTOCOL: the trace executor that exhausts fuel is the stratus
 // runtime's surface. Un-ignore when the fuel-metered executor lands.
 #[test]
-#[ignore = "awaits stratus fuel-metered trace executor"]
+#[ignore = "fuel-metered trace executor unlanded and this body is a vacuous stub — KG-ADX-FUEL (see KNOWN_GAPS.md: nearest entries KG-FR5 / KG-SX1)"]
 fn fuel_exhaustion_mid_trace_refuses_with_opaque_receipt() {
     let _ = (valid_header().fuel_lease, 0u64); // lease=0 exhausts immediately
     // Spec: executor returns RefusalReceipt, never a typed cause.
@@ -330,6 +320,8 @@ fn golden_header_constants_are_clap_v1() {
 // debug build the optimizer-less `try_into().unwrap()` slicing dominates
 // late-exit parses (~140ns vs ~25ns), an artifact of the build profile,
 // not a protocol timing channel. Run with `cargo test --release`.
+// This probe runs ONLY under `--release`: in debug builds cfg_attr ignores
+// it (debug instrumentation dominates late-exit parse timing).
 #[test]
 #[cfg_attr(debug_assertions, ignore = "timing probe requires --release")]
 fn refusal_latency_has_no_input_offset_correlation() {

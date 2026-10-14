@@ -3,9 +3,9 @@
 //!
 //! Packing — canonical PN64/OCEL64 ABI (`docs/PN64_ABI.md`, bit 0 = LSB):
 //! - `pn`:   marking `[15:0]`, pre `W−` `[31:16]`, post `W+` `[47:32]`,
-//!           tid `[55:48]`, flags `[63:56]`.
+//!   tid `[55:48]`, flags `[63:56]`.
 //! - `ocel`: activity `[15:0]` (its low byte names the transition id);
-//!           higher fields are opaque to the kernel.
+//!   higher fields are opaque to the kernel.
 //! - `invariant_mask`: safety invariant — places that MUST be empty for the
 //!   transition to fire.
 //!
@@ -13,6 +13,7 @@
 //! - valid  -> commit `m' = (m ^ pre) | post` (consume pre, produce post);
 //!   all non-marking fields preserved bit-exact.
 //! - invalid -> return `pn` unchanged.
+//!
 //! Branchless throughout: validity is folded to a 0/-1 mask via
 //! `ct_eq(x) = (x | x.wrapping_neg()) >> 63` and applied with bitwise ops.
 //! No data-dependent branches.
@@ -62,7 +63,7 @@ pub fn step(pn: u64, ocel: u64, invariant_mask: u64) -> u64 {
     let tid = (pn >> 48) & 0xFF;
     let activity = ocel & 0xFF; // activity low byte names the transition
 
-    let malformed = (activity as u64).wrapping_sub(tid); // 0 iff conforms
+    let malformed = activity.wrapping_sub(tid); // 0 iff conforms
     let not_enabled = (m & pre) ^ pre;
     // Invariant law (PRD FR-03.3): the forbidden-bit check binds m' (the NEXT
     // marking), not m — places that must be empty after the transition.
@@ -189,7 +190,7 @@ mod tests {
             let m = next() & 0xFFFF;
             let pre = next() & 0xFFFF;
             let post = next() & 0xFFFF;
-            let tid = (next() & 0xFF) as u64;
+            let tid = next() & 0xFF;
             let flags = (next() & 0xFF) << 56;
             let inv = next() & 0xFFFF;
             let pn = flags | (tid << 48) | (post << 32) | (pre << 16) | m;

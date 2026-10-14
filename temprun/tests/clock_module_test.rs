@@ -8,7 +8,7 @@
 
 use temprun::clock::monotonic;
 use temprun::fuel::FuelLease;
-use temprun::{run, ArenaInput, RECEIPT_LEN};
+use temprun::{run, ArenaInput, ParentLedger, RECEIPT_LEN};
 
 // --- 1. Accept path ---
 
@@ -119,10 +119,10 @@ fn clock_refused_and_fuel_starved_receipts_identical_shape() {
     // entropy — identical 32B receipts, both unadmitted.
     let mut inverted = base_input();
     inverted.clock = vec![0, 0];
-    let a = run(&mut inverted, FuelLease::new(10));
+    let a = run(&mut inverted, FuelLease::new(10), &mut ParentLedger::new());
 
     let mut starved = base_input(); // clock would pass
-    let b = run(&mut starved, FuelLease::new(0)); // exhausts before sieves
+    let b = run(&mut starved, FuelLease::new(0), &mut ParentLedger::new()); // exhausts before sieves
 
     assert_eq!(a.receipt, b.receipt);
     assert_eq!(a.receipt.len(), RECEIPT_LEN);
@@ -136,8 +136,8 @@ fn clock_admit_vs_refuse_differ_only_in_status_byte() {
     // the conformance court's no-entropy finding).
     let mut bad = base_input();
     bad.clock = vec![0, 9]; // inversion on node 0
-    let refused = run(&mut bad, FuelLease::new(10));
-    let admitted = run(&mut base_input(), FuelLease::new(10));
+    let refused = run(&mut bad, FuelLease::new(10), &mut ParentLedger::new());
+    let admitted = run(&mut base_input(), FuelLease::new(10), &mut ParentLedger::new());
 
     assert!(!refused.admitted);
     assert!(admitted.admitted);
@@ -160,18 +160,18 @@ fn clock_admit_vs_refuse_differ_only_in_status_byte() {
 fn deterministic_over_ten_runs() {
     let first = {
         let mut inp = base_input();
-        run(&mut inp, FuelLease::new(10))
+        run(&mut inp, FuelLease::new(10), &mut ParentLedger::new())
     };
     for _ in 0..10 {
         let mut inp = base_input();
-        let out = run(&mut inp, FuelLease::new(10));
+        let out = run(&mut inp, FuelLease::new(10), &mut ParentLedger::new());
         assert_eq!(out.receipt, first.receipt);
         assert_eq!(out.universe_digest, first.universe_digest);
         assert_eq!(out.admitted, first.admitted);
 
         let mut bad = base_input();
         bad.clock = vec![0, 0];
-        let r = run(&mut bad, FuelLease::new(10));
+        let r = run(&mut bad, FuelLease::new(10), &mut ParentLedger::new());
         assert!(!r.admitted);
         assert_eq!(r.receipt[0], temprun::receipt::REFUSED_STATUS, "refusal status code");
     }

@@ -5,6 +5,7 @@
 use temprun::conformance::merge_join;
 use temprun::fuel::FuelLease;
 use temprun::{ArenaInput, RECEIPT_LEN};
+use temprun::ParentLedger;
 
 fn base_input() -> ArenaInput {
     ArenaInput {
@@ -25,7 +26,7 @@ fn base_input() -> ArenaInput {
 #[test]
 fn conforming_lineage_admits() {
     let mut inp = base_input();
-    let out = temprun::run(&mut inp, FuelLease::new(3));
+    let out = temprun::run(&mut inp, FuelLease::new(3), &mut ParentLedger::new());
     assert!(out.admitted, "conforming input with fuel for all 3 sieves admits");
 }
 
@@ -36,7 +37,7 @@ fn empty_vs_empty_is_vacuous_admit() {
     let mut inp = base_input();
     inp.lineage.clear();
     inp.policy.clear();
-    assert!(temprun::run(&mut inp, FuelLease::new(3)).admitted);
+    assert!(temprun::run(&mut inp, FuelLease::new(3), &mut ParentLedger::new()).admitted);
 }
 
 #[test]
@@ -64,7 +65,7 @@ fn missing_policy_row_refuses() {
     assert!(!merge_join(&[[9, 9, 9, 1]], &[[1, 2, 3, 0]]));
     let mut inp = base_input();
     inp.lineage.push([7, 8, 9, 30]); // sorted append, unmatched
-    assert!(!temprun::run(&mut inp, FuelLease::new(3)).admitted);
+    assert!(!temprun::run(&mut inp, FuelLease::new(3), &mut ParentLedger::new()).admitted);
 }
 
 #[test]
@@ -102,15 +103,15 @@ fn refusal_receipt_carries_no_cause_entropy() {
     // assembly => identical 32B receipt, distinguishable only via `admitted`.
     let mut conf = base_input();
     conf.policy[1] = [4, 5, 99, 0];
-    let a = temprun::run(&mut conf, FuelLease::new(3));
+    let a = temprun::run(&mut conf, FuelLease::new(3), &mut ParentLedger::new());
 
     let mut coord = base_input();
     coord.candidate_mask = 0b0110;
-    let b = temprun::run(&mut coord, FuelLease::new(3));
+    let b = temprun::run(&mut coord, FuelLease::new(3), &mut ParentLedger::new());
 
     let mut clk = base_input();
     clk.clock = vec![0, 0];
-    let c = temprun::run(&mut clk, FuelLease::new(3));
+    let c = temprun::run(&mut clk, FuelLease::new(3), &mut ParentLedger::new());
 
     assert_eq!(a.receipt, b.receipt);
     assert_eq!(b.receipt, c.receipt);
@@ -125,15 +126,15 @@ fn fuel_precedence_pinned() {
     // 3 sieve charges total (clock, coords, conformance). Exact thresholds:
     // fuel 3 => admit; fuel 2 => conformance sieve starves and refuses even
     // though the lineage fully conforms; fuel 1 and 0 refuse earlier.
-    let fuel3 = temprun::run(&mut base_input(), FuelLease::new(3));
+    let fuel3 = temprun::run(&mut base_input(), FuelLease::new(3), &mut ParentLedger::new());
     assert!(fuel3.admitted);
 
     let mut inp2 = base_input();
-    let fuel2 = temprun::run(&mut inp2, FuelLease::new(2));
+    let fuel2 = temprun::run(&mut inp2, FuelLease::new(2), &mut ParentLedger::new());
     assert!(!fuel2.admitted, "conforming lineage still refuses at fuel 2");
 
     let mut inp1 = base_input();
-    let fuel1 = temprun::run(&mut inp1, FuelLease::new(1));
+    let fuel1 = temprun::run(&mut inp1, FuelLease::new(1), &mut ParentLedger::new());
     assert!(!fuel1.admitted);
     assert_eq!(fuel1.receipt, fuel2.receipt, "all refusals share one shape");
 
@@ -148,10 +149,10 @@ fn conformance_mismatch_does_not_charge_extra_fuel() {
     // preceding sieve: exhaust exactly at the conformance sieve (fuel 2)
     // and compare with a mismatch at ample fuel — same receipt either way.
     let mut starving = base_input();
-    let a = temprun::run(&mut starving, FuelLease::new(2));
+    let a = temprun::run(&mut starving, FuelLease::new(2), &mut ParentLedger::new());
     let mut mismatch = base_input();
     mismatch.lineage.push([7, 8, 9, 30]);
-    let b = temprun::run(&mut mismatch, FuelLease::new(3));
+    let b = temprun::run(&mut mismatch, FuelLease::new(3), &mut ParentLedger::new());
     assert_eq!(a.receipt, b.receipt);
 }
 
@@ -159,9 +160,9 @@ fn conformance_mismatch_does_not_charge_extra_fuel() {
 
 #[test]
 fn same_input_same_verdict_ten_times() {
-    let first = temprun::run(&mut base_input(), FuelLease::new(3));
+    let first = temprun::run(&mut base_input(), FuelLease::new(3), &mut ParentLedger::new());
     for _ in 0..9 {
-        let out = temprun::run(&mut base_input(), FuelLease::new(3));
+        let out = temprun::run(&mut base_input(), FuelLease::new(3), &mut ParentLedger::new());
         assert_eq!(out.receipt, first.receipt);
         assert_eq!(out.universe_digest, first.universe_digest);
         assert_eq!(out.admitted, first.admitted);
@@ -172,12 +173,12 @@ fn same_input_same_verdict_ten_times() {
 fn mismatch_verdict_deterministic_ten_times() {
     let mut first_inp = base_input();
     first_inp.policy[0] = [1, 2, 4, 0];
-    let first = temprun::run(&mut first_inp, FuelLease::new(3));
+    let first = temprun::run(&mut first_inp, FuelLease::new(3), &mut ParentLedger::new());
     assert!(!first.admitted);
     for _ in 0..9 {
         let mut inp = base_input();
         inp.policy[0] = [1, 2, 4, 0];
-        let out = temprun::run(&mut inp, FuelLease::new(3));
+        let out = temprun::run(&mut inp, FuelLease::new(3), &mut ParentLedger::new());
         assert_eq!(out.receipt, first.receipt);
         assert!(!out.admitted);
     }

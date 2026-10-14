@@ -22,6 +22,7 @@ use std::time::Instant;
 
 use temprun::fuel::FuelLease;
 use temprun::{run, ArenaInput, RECEIPT_LEN};
+use temprun::ParentLedger;
 
 /// Total frames: 5 classes x 400 frames, deterministic rotation.
 const FRAMES: usize = 2000;
@@ -162,7 +163,7 @@ fn fr7_frame_granularity_constant_time_refusals() {
             continue;
         } else {
             let t = t0;
-            let o = run(&mut inp, fuel_for(cls, n, m));
+            let o = run(&mut inp, fuel_for(cls, n, m), &mut ParentLedger::new());
             lat[cls].push(t.elapsed().as_nanos() as u32);
             o
         };
@@ -206,7 +207,7 @@ fn fr7_frame_granularity_constant_time_refusals() {
             message: master.message.clone(),
         };
         apply_class(cls, &mut inp);
-        let out = run(&mut inp, fuel_for(cls, n, m));
+        let out = run(&mut inp, fuel_for(cls, n, m), &mut ParentLedger::new());
         assert!(!out.admitted);
         assert_eq!(out.receipt.len(), RECEIPT_LEN);
         receipts.push(out.receipt);
@@ -253,10 +254,10 @@ fn fr7_corrupted_parent_ingress_constant_time() {
         assert_ne!(a.parent, b.parent);
 
         let t0 = Instant::now();
-        let out_a = run(&mut a, FuelLease::new(10 + u64::from(n) + u64::from(m)));
+        let out_a = run(&mut a, FuelLease::new(10 + u64::from(n) + u64::from(m)), &mut ParentLedger::new());
         valid_lat.push(t0.elapsed().as_nanos() as u32);
         let t1 = Instant::now();
-        let out_b = run(&mut b, FuelLease::new(10 + u64::from(n) + u64::from(m)));
+        let out_b = run(&mut b, FuelLease::new(10 + u64::from(n) + u64::from(m)), &mut ParentLedger::new());
         corrupt_lat.push(t1.elapsed().as_nanos() as u32);
 
         // Corruption is NOT a refusal class (FR-7 corrupted = refuse): the

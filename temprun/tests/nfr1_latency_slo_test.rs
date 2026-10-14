@@ -7,6 +7,7 @@ use std::time::Instant;
 
 use temprun::fuel::FuelLease;
 use temprun::{run, ArenaInput};
+use temprun::ParentLedger;
 
 const RUNS: u64 = 100_000;
 const WARMUP: u64 = 1_000;
@@ -83,25 +84,25 @@ fn nfr1_latency_smoke_bounds() {
         if i >= WARMUP && (i - WARMUP) % 4 == 3 {
             match ((i / 4) % 3) as usize {
                 0 => {
-                    let out = run(&mut inp, FuelLease::new(0));
+                    let out = run(&mut inp, FuelLease::new(0), &mut ParentLedger::new());
                     assert!(!out.admitted);
                 }
                 1 => {
                     inp.candidate_mask |= inp.lease_mask;
-                    let out = run(&mut inp, fuel);
+                    let out = run(&mut inp, fuel, &mut ParentLedger::new());
                     assert!(!out.admitted);
                 }
                 _ => {
                     for c in inp.clock.iter_mut() {
                         *c = 1; // no strict advance over observed
                     }
-                    let out = run(&mut inp, fuel);
+                    let out = run(&mut inp, fuel, &mut ParentLedger::new());
                     assert!(!out.admitted);
                 }
             }
         } else {
             let t0 = Instant::now();
-            let out = run(&mut inp, fuel);
+            let out = run(&mut inp, fuel, &mut ParentLedger::new());
             let dt = t0.elapsed();
             assert!(out.admitted);
             if i >= WARMUP {

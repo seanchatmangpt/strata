@@ -27,7 +27,7 @@
 use std::fs;
 
 use temprun::fuel::FuelLease;
-use temprun::{run, ArenaInput, RECEIPT_LEN};
+use temprun::{run, ArenaInput, ParentLedger, RECEIPT_LEN};
 
 const FIXTURE_DIR: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures");
 
@@ -233,7 +233,7 @@ fn emit_golden() {
     fs::create_dir_all(FIXTURE_DIR).unwrap();
     for id in PROFILES {
         let (mut inp, fuel) = profile(id);
-        let out = run(&mut inp, FuelLease::new(fuel));
+        let out = run(&mut inp, FuelLease::new(fuel), &mut ParentLedger::new());
         let text = format!(
             "// frozen golden vector: profile {id}, fuel {fuel}\n// regenerate = deliberate diff (see test header)\nadmitted: {}\nreceipt: {}\nuniverse_digest: {}\n",
             out.admitted,
@@ -280,7 +280,7 @@ fn golden_vectors_reproduce_byte_exact() {
     for id in PROFILES {
         let (want_admitted, want_receipt, want_digest) = load_golden(id);
         let (mut inp, fuel) = profile(id);
-        let out = run(&mut inp, FuelLease::new(fuel));
+        let out = run(&mut inp, FuelLease::new(fuel), &mut ParentLedger::new());
         assert_eq!(out.admitted, want_admitted, "{id}: admitted flag drifted");
         assert_eq!(
             out.receipt, want_receipt,
@@ -302,7 +302,7 @@ fn negative_golden_refusal_is_constant_shape() {
     let (want_admitted, want_receipt, want_digest) = load_golden("10_malformed_refusal");
     assert!(!want_admitted, "negative golden must be a refusal");
     let (mut inp, fuel) = profile("10_malformed_refusal");
-    let out = run(&mut inp, FuelLease::new(fuel));
+    let out = run(&mut inp, FuelLease::new(fuel), &mut ParentLedger::new());
     assert!(!out.admitted);
     assert_eq!(out.receipt, want_receipt);
     assert_eq!(out.universe_digest, want_digest);
@@ -311,7 +311,7 @@ fn negative_golden_refusal_is_constant_shape() {
     let (mut clean, fuel) = profile("10_malformed_refusal");
     clean.clock = vec![1, 2];
     clean.observed = vec![1, 1];
-    let twin = run(&mut clean, FuelLease::new(fuel));
+    let twin = run(&mut clean, FuelLease::new(fuel), &mut ParentLedger::new());
     assert!(twin.admitted);
     assert_eq!(out.receipt[1..], twin.receipt[1..]);
     assert_eq!(out.receipt[0], temprun::receipt::REFUSED_STATUS);

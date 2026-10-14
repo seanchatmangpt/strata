@@ -5,6 +5,7 @@
 
 use temprun::fuel::FuelLease;
 use temprun::{run, ArenaInput};
+use temprun::ParentLedger;
 
 fn sample_input() -> ArenaInput {
     ArenaInput {
@@ -42,7 +43,7 @@ fn assert_all_zero(inp: &ArenaInput) {
 #[test]
 fn fr6_admit_path_zeroizes_all_allocated_memory() {
     let mut inp = sample_input();
-    let out = run(&mut inp, FuelLease::new(10));
+    let out = run(&mut inp, FuelLease::new(10), &mut ParentLedger::new());
     assert!(out.admitted);
     assert_all_zero(&inp);
 }
@@ -52,7 +53,7 @@ fn fr6_refusal_path_zeroizes_all_allocated_memory() {
     // Constant-time refusal must scrub identically (same work, same teardown).
     let mut inp = sample_input();
     inp.policy[1] = [4, 5, 99, 0]; // conformance mismatch -> refuse
-    let out = run(&mut inp, FuelLease::new(10));
+    let out = run(&mut inp, FuelLease::new(10), &mut ParentLedger::new());
     assert!(!out.admitted);
     assert_all_zero(&inp);
 }
@@ -60,7 +61,7 @@ fn fr6_refusal_path_zeroizes_all_allocated_memory() {
 #[test]
 fn fr6_fuel_exhaustion_path_zeroizes_all_allocated_memory() {
     let mut inp = sample_input();
-    let out = run(&mut inp, FuelLease::new(0)); // refuse before any sieve
+    let out = run(&mut inp, FuelLease::new(0), &mut ParentLedger::new()); // refuse before any sieve
     assert!(!out.admitted);
     assert_all_zero(&inp);
 }
@@ -79,8 +80,8 @@ fn fr6_output_is_independent_of_scrubbed_input() {
     // the arena result: same input twice -> same outputs.
     let mut a = sample_input();
     let mut b = sample_input();
-    let oa = run(&mut a, FuelLease::new(10));
-    let ob = run(&mut b, FuelLease::new(10));
+    let oa = run(&mut a, FuelLease::new(10), &mut ParentLedger::new());
+    let ob = run(&mut b, FuelLease::new(10), &mut ParentLedger::new());
     assert_eq!(oa.receipt, ob.receipt);
     assert_eq!(oa.universe_digest, ob.universe_digest);
     assert_all_zero(&a);

@@ -15,6 +15,7 @@
 
 use temprun::fuel::FuelLease;
 use temprun::ArenaInput;
+use temprun::ParentLedger;
 
 /// Fresh input each call (`ArenaInput` is consumed/zeroized by `run`).
 fn input_with_quads(lineage: Vec<[u64; 4]>) -> ArenaInput {
@@ -40,11 +41,11 @@ fn input_with_quads(lineage: Vec<[u64; 4]>) -> ArenaInput {
 fn u64_extremes_admitted_without_coercion() {
     for term in [0u64, u64::MAX] {
         let mut inp = input_with_quads(vec![[term, term, term, 1]]);
-        let out = temprun::run(&mut inp, FuelLease::new(10));
+        let out = temprun::run(&mut inp, FuelLease::new(10), &mut ParentLedger::new());
         assert!(out.admitted, "extreme term {term} must admit");
         // Round-trip: the digest is reproducible from the same raw u64s.
         let mut replay = input_with_quads(vec![[term, term, term, 1]]);
-        let again = temprun::run(&mut replay, FuelLease::new(10));
+        let again = temprun::run(&mut replay, FuelLease::new(10), &mut ParentLedger::new());
         assert_eq!(out.universe_digest, again.universe_digest);
     }
 }
@@ -54,18 +55,18 @@ fn u64_extremes_admitted_without_coercion() {
 fn all_quad_slots_carry_full_u64_range() {
     let q: [u64; 4] = [0, 1, u64::MAX - 1, u64::MAX];
     let mut inp = input_with_quads(vec![q]);
-    let out = temprun::run(&mut inp, FuelLease::new(10));
+    let out = temprun::run(&mut inp, FuelLease::new(10), &mut ParentLedger::new());
     assert!(out.admitted);
     let mut inp2 = input_with_quads(vec![q]);
-    assert_eq!(out.universe_digest, temprun::run(&mut inp2, FuelLease::new(10)).universe_digest);
+    assert_eq!(out.universe_digest, temprun::run(&mut inp2, FuelLease::new(10), &mut ParentLedger::new()).universe_digest);
 }
 
 /// Same input -> same IDs -> same receipt/digest, 10x. Identity is stable.
 #[test]
 fn same_term_yields_same_id_ten_times() {
-    let baseline = temprun::run(&mut input_with_quads(vec![[42, 7, 99, 5]]), FuelLease::new(10));
+    let baseline = temprun::run(&mut input_with_quads(vec![[42, 7, 99, 5]]), FuelLease::new(10), &mut ParentLedger::new());
     for _ in 0..10 {
-        let out = temprun::run(&mut input_with_quads(vec![[42, 7, 99, 5]]), FuelLease::new(10));
+        let out = temprun::run(&mut input_with_quads(vec![[42, 7, 99, 5]]), FuelLease::new(10), &mut ParentLedger::new());
         assert_eq!(out.universe_digest, baseline.universe_digest);
         assert_eq!(out.receipt, baseline.receipt);
     }
@@ -93,6 +94,7 @@ fn different_terms_are_distinct() {
             i
         },
         FuelLease::new(10),
+        &mut temprun::ParentLedger::new(),
     );
     assert!(!refused.admitted, "unmatched u64 term must refuse");
 }
@@ -128,16 +130,16 @@ fn collision_sweep_ten_k_terms_all_distinct() {
 /// commit-message portion of the digest, carrying zero ID semantics.
 #[test]
 fn string_bytes_in_message_never_enter_the_id_space() {
-    let clean = temprun::run(&mut input_with_quads(vec![[9, 8, 7, 1]]), FuelLease::new(10));
+    let clean = temprun::run(&mut input_with_quads(vec![[9, 8, 7, 1]]), FuelLease::new(10), &mut ParentLedger::new());
     let mut dirty = input_with_quads(vec![[9, 8, 7, 1]]);
     dirty.message = b"<uri:http://example.org/s#term> {\"json\": true}".to_vec();
-    let d = temprun::run(&mut dirty, FuelLease::new(10));
+    let d = temprun::run(&mut dirty, FuelLease::new(10), &mut ParentLedger::new());
     assert!(clean.admitted && d.admitted, "string bytes must not gate admission");
     // String payload perturbs only the commit-message hash (digest), never
     // the conformance verdict or the quad ID space.
     assert_ne!(clean.universe_digest, d.universe_digest);
     // Identical quads AND identical bytes-typed fields => identical receipt:
     // the pipeline is a pure function of the u64/[u8;32] inputs.
-    let replay = temprun::run(&mut input_with_quads(vec![[9, 8, 7, 1]]), FuelLease::new(10));
+    let replay = temprun::run(&mut input_with_quads(vec![[9, 8, 7, 1]]), FuelLease::new(10), &mut ParentLedger::new());
     assert_eq!(clean.receipt, replay.receipt);
 }

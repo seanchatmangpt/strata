@@ -14,9 +14,11 @@ panic = "abort"
 codegen-units = 1
 strip = true
 
-# Workspace member: root Cargo.toml members includes "temprun/pn_kernel"
-# (coordinator/L65). No nested [workspace] table — multi-root breaks cargo -p.
-#
+# Standalone workspace: pn_kernel is a no_std cdylib built for wasm32 only;
+# the host cargo (root workspace) must never touch it. It is built exclusively
+# via `just pn-kernel-wasm` from temprun/pn_kernel.
+[workspace]
+
 # Gate 0 artifact build:
 #   cargo build --target wasm32-unknown-unknown --release
 #   python3 strip_memory.py \

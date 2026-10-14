@@ -164,18 +164,24 @@ defmodule Stratus.Valve.DefaultArena do
 
     case File.mkdir_p(tmpdir) do
       :ok ->
-        File.write!(Path.join(tmpdir, "frame.bin"), frame)
-        args = ["run", "--dir", "#{tmpdir}::/", wasm_path(), "frame.bin", "out.bin"]
+        # Crash-path cleanup + typed degradation: a missing wasmtime binary
+        # raises ErlangError(:enoent) out of System.cmd — without the rescue
+        # it would cross the actuation boundary untyped and leak the tmpdir.
+        try do
+          File.write!(Path.join(tmpdir, "frame.bin"), frame)
+          args = ["run", "--dir", "#{tmpdir}::/", wasm_path(), "frame.bin", "out.bin"]
 
-        outcome =
           case System.cmd("wasmtime", args, stderr_to_stdout: true) do
             {_, 0} -> normalize_register(File.read(Path.join(tmpdir, "out.bin")))
             {output, 3} -> malformed(tmpdir, output)
             {output, _code} -> arena_failure(tmpdir, output)
           end
-
-        _ = File.rm_rf(tmpdir)
-        outcome
+        rescue
+          ErlangError -> {:error, :arena_failure}
+          File.Error -> {:error, :arena_failure}
+        after
+          _ = File.rm_rf(tmpdir)
+        end
 
       _error ->
         {:error, :arena_failure}

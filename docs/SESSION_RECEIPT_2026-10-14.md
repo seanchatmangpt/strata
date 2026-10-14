@@ -260,3 +260,54 @@ Honest record of friction; each class recurred enough to name.
 Falsifier for the addendum: any SHA above that fails
 `git log --oneline --no-walk <sha>` on this checkout at replay time, or a
 claimed landing with no corresponding file state on disk.
+
+## ADDENDUM-2 (2026-10-14, wave-2 landings since d59ba32)
+
+Append-only continuation. Every strata SHA verified via
+`git log --oneline --no-walk <sha>` on this checkout (22/22 resolved).
+Cross-repo SHAs verified in their own checkouts (insa, ggen-marketplace).
+Already-recorded items (`cc529eb` xdp byte-order, `60696ec` vacuity
+marker — see ADDENDUM above) are not repeated as rows.
+
+| Landing | SHA(s) | Evidence |
+|---|---|---|
+| Framing dual-defect fix (preamble permutation match; stop strip_preamble corrupting raw CLAP) | `409a24b` | subject + diff; vacuity marker `60696ec` already recorded |
+| XDP honest differential completion: `c2b8b09` replaces the host harness's hardcoded-expectation "DIFFERENTIAL" with a real valve differential — `test/xdp_pn_filter_differential_test.exs` drives real `Stratus.Valve.Pn64.validate_and_advance/3` on golden pairs V01/V07/V08 and asserts valve verdicts match executed XDP verdicts {2,1,1}; provenance cited (executed `scripts/xdp_host_vectors.sh`: 5/5 PASS, DIFFERENTIAL 3/3 OK, exit 0); README desimplified (drops stale "bswap x2" residue) | `c2b8b09` | commit body + test file + README; gates: 12 tests 0 failures |
+| XDP adjudication ledger / DFMEA F-9 | `9384a7c` | subject |
+| n06 sidecar guard (strip lane field from legacy sidecar writes) | `f3046a7` | subject |
+| n04 sidecar writer strips lane field — gate_receipts stays green | `ded5436` | subject |
+| Ontology 4-table `--self-test` parameterization (n07/M-small) | `27fc08e` | subject |
+| Golden-fixture format marker + inventory court (temprun) | `7f6b0ac` | subject |
+| DAO widen-ack: 0x93 ACK_DELEGATION pre 0x0808→0x0800 — delegation closure total; positive control (every m & 0x0800 != 0 enables 0x93); dao_full_valve 16/0, dao_parity 0-fail, policy_admission 4/0 | `33f6705` | commit body |
+| Widen-ack landing tail: G2 delegation-closure law individuals re-masked, parity expectations + pn_transitions snapshot + SHACL regenerated (40 rows, coverage 100%); ontology_check --rust 65/65 zero-drift, query_golden 4/0; 3/3 lifecycle witness (delegate→undelegate→ack drains PENDING on all three paths) | `0dba165` | commit body |
+| policy_admission + word_law landing: US-RF unsafe-state reachability admission + word-law boundary court (`ef8480f`); witness-replay court, refusal trace verified as true path (`d391a7b`); skeptic witness 4/4 independent | `ef8480f`, `d391a7b` | commit subjects + ADDENDUM witness line |
+| pn64 Rust-mirror differential court (BEAM mirror bit-identity vs Rust golden table) | `2d07251` | subject |
+| pn_frame codec court on all 15 golden-vector doc rows | `bbf1c58` | subject |
+| LTL/invariants whole-set conservation court + stale ltl doc fix | `b02a8e1` | subject |
+| pnwire_slo absolute ns gates → report-only (structural census sole gate) | `27b6e75` | subject |
+| nfr4 load-invariant doubling-scaling gate; 5ms absolute → 50ms smoke bound | `8adb9b6` | subject |
+| ct_jitter_court timing leg → report-only; structural census sole gate | `c73d573` | subject |
+| GEMINI_BRIEF_ROADMAP (2040-horizon ownership map, 94 rows) | `198e33e` | subject |
+| Sagas positivity guard: netting_ratio invariant admits [0, 0.18] only, negatives refuse | `6213662` | subject |
+| Cross-repo seam: insa strata-mirror court documented in sync.rs header + CHANGELOG | `1c47ea3` | verified in ~/insa, not strata |
+| Cross-repo seam: pn64 pack README companion-template requirement + VERB_COUNT defect note | `f38396b78` | verified in ~/ggen-marketplace, not strata |
+| `just ci` blocker fixes (found-and-fixed this session): needless_range_loop in temprun seal court; lease_ledger full-suite flake ("admitted digests survive unrelated settles") | `fbaf17b`, `a9fe8a6` | subjects |
+| doc_cite gate landing: static doc-citation anti-regression script | `3763015` | subject |
+
+Process notes:
+
+1. **Honest-differential completion pattern.** `c2b8b09` is the template
+   case: a "DIFFERENTIAL" that compared against documented constants is
+   not a differential. Replaced with a real executed collaborator
+   (Chicago); filter-only vectors make no valve claim — claim scoped to
+   the vectors actually witnessed.
+2. **Widen-ack ruled-out alternatives are recorded in the commit body**
+   (undelegate-clears refuted by 13 identical rows; admission-refusal
+   rejected to keep totality), so replay does not re-derive them.
+3. **Verification method**: every strata SHA above re-read from
+   `git log --no-walk` output this session (23/23); cross-repo SHAs
+   re-read from their own checkouts. Count is from this read, not memory.
+
+Falsifier for addendum-2: any strata SHA above that fails
+`git log --oneline --no-walk <sha>` at replay time, or a claimed gate
+result with no corresponding file state on disk.

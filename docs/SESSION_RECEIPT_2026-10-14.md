@@ -319,3 +319,45 @@ edit: `stratus/lib/stratus/default_arena.ex` (18 lines) was staged by a
 concurrent lane and included in the same commit. Disclosed here per
 same-checkout fan-out law; commit left immutable. The owning lane should
 re-attribute via `git log -1 -- stratus/lib/stratus/default_arena.ex`.
+
+### ADDENDUM-3 — wave-3 landings since addendum-2 (2d3f959)
+
+Every strata SHA below re-read this session via `git log --oneline --no-walk` (14/14 verified).
+
+| Landing | SHA(s) | Verification |
+|---|---|---|
+| policy_admission mutation-hook isolation (S-lane, test-only mirror behind the court) | `52e6274` | subject |
+| n06 sidecar receipt gitignored (fresh-run stamp churn) | `3537abb` | subject |
+| dao widen-ack: 0x93 ACK_DELEGATION pre widened to 0x0800 — delegation closure total | `33f6705` | subject |
+| dao widen-ack landing tail: G2 law individuals + parity expectations, ontology_check --rust 65/65 zero-drift | `0dba165` | subject + body |
+| Court-naming sweep: parity courts loaded via `_test.exs` naming; suite +18 → 384/0 | `60285b2` | subject |
+| FR-4 independent no-DO-authority attack court | `c121618` | subject |
+| Sagas positivity guard: netting_ratio admits [0, 0.18] only, negatives refuse | `6213662` | subject |
+| `just ci` blocker fixes: needless_range_loop in temprun seal court; lease_ledger clock-read full-suite flake pin | `fbaf17b`, `a9fe8a6` | subjects |
+| pn64 Rust-mirror differential court (BEAM mirror bit-identity vs Rust golden table) | `2d07251` | subject |
+| xdp differential completion: real valve differential court for pn_filter; README desimplified | `c2b8b09` | subject |
+| rustc-ice dumps gitignored (concurrent-cargo LTO race class) | `8a78fc2` | subject |
+| default_arena crash-path fix (swept into addendum-2 landing commit `2d3f959`; witnessed 3/3) | `2d3f959` | subject + addendum-2 correction note |
+| doc_cite gate triaged: static doc-citation anti-regression script | `3763015` | subject |
+
+Witnesses (independent, this wave):
+
+- Scratch lifecycle witness 7/7 including negative controls.
+- policy_admission court 4/0 — two independent witnesses of the dao widen-ack cohort
+  (`33f6705`, `0dba165`).
+- Framing witness 6/6; dao witness 3/3.
+
+Falsifier for addendum-3: any strata SHA above that fails
+`git log --oneline --no-walk <sha>` at replay time, or a claimed witness
+result with no corresponding court file on disk.
+
+### Carried forward — OPEN adjudication asks
+
+- E03, E09, E13+E20, E14, E07+E30 — open adjudication asks, unresolved.
+- KG-02, KG-P14 preimage — open.
+- NFR-3 EF — open.
+
+### Carried forward — user-pending actions
+
+All user-pending actions from the main receipt body and addendum-2 remain
+pending; none closed this wave.

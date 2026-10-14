@@ -6,7 +6,7 @@ content_hash = "blake3:1eb98be1e0ea80a57f5a61bef2f608c2dea34885e7b51dc2d1078acdc
 
 [packs.strata-pn64-pack]
 source = "path:/Users/sac/ggen-marketplace/packs/strata-pn64-pack"
-content_hash = "blake3:7a273ada958dfd9f2ee833b7fc66165109e45fd48683217d9e2ceae5d3498d2d"
+content_hash = "blake3:f668aa59261c605548a76ecea00f0273aa9491ddb2ed96f89be50e4698380f6f"
 
 [packs.strata-protocol-pack]
 source = "path:/Users/sac/ggen-marketplace/packs/strata-protocol-pack"

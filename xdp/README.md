@@ -48,8 +48,8 @@ to `XDP_PASS - sign`: a single basic block, zero data-dependent branches
 
 148 Mpps minimum sustainable throughput (NFR-06). At 148 Mpps on a 10 GHz-class
 core the budget is ~67 instructions/packet; the compiled program is expected to
-be ~20 instructions (2 loads, bswap x2, 2 masks/xors, or, arithmetic
-sign-fold, return), leaving >3x headroom.
+be ~20 instructions (2 plain LE loads, 2 masks/xors, arithmetic sign-fold,
+return), leaving >3x headroom.
 
 ## Verification story
 
@@ -70,10 +70,18 @@ sign-fold, return), leaving >3x headroom.
    5 verdict vectors through it — the V01/V07/V08 golden pairs reused
    literally from `docs/PN64_VECTORS.md` (staged as real LE frames, no
    pre-swap), plus all-zero and minimal-pass. For V01/V07/V08 the harness
-   additionally asserts agreement with the documented Elixir valve
-   expectations (`Stratus.Valve.Pn64.validate_and_advance/3`: V01 `submit`,
-   V07 `err:01` malformed, V08 `err:02` token starvation — all three map to
-   the same pass/drop verdict). Green = `5/5 PASS` + `DIFFERENTIAL 3/3 OK`.
+   additionally asserts agreement with the Elixir valve's pass/drop verdict
+   (`Stratus.Valve.Pn64.validate_and_advance/3`: V01 `submit` -> PASS, V07
+   `err:01` malformed -> DROP, V08 `err:02` token starvation -> DROP).
+   Green = `5/5 PASS` + `DIFFERENTIAL 3/3 OK`.
+4. **Valve differential court** (`stratus/test/xdp_pn_filter_differential_test.exs`):
+   drives the real `Stratus.Valve.Pn64.validate_and_advance/3` on the same
+   V01/V07/V08 golden pairs and asserts the valve's verdict (`{:ok, _}` vs
+   `{:error, :malformed | :token_starvation}`) matches the filter's executed
+   XDP_PASS/XDP_DROP verdicts (provenance cited in the test moduledoc).
+   Green = `mix test test/xdp_pn_filter_differential_test.exs` passing.
+   The two ingress-policy vectors (all-zero, minimal-pass) are filter-only:
+   the valve has no ingress-flag notion, so no valve claim is made for them.
 
 ## Loading
 

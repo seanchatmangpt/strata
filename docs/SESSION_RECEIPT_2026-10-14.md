@@ -183,3 +183,20 @@ Receipt self: `docs/SESSION_RECEIPT_2026-10-14.md`, committed on
 
 - Merge of `fix/kg-42-status-code` and any tag: pending explicit request
   (repo law: merge only on explicit request; never rebase, never force push).
+
+## CORRECTION (2026-10-14, post-receipt audit)
+
+The four fix-list items recorded above as NOT LOCATED did land, inside
+other lanes' commits. Each mapping re-verified via
+`git log --oneline -1 -- <file>` (and `-S` content search):
+
+| item | real commit | evidence |
+|------|-------------|----------|
+| tier3_leaf `:saga_abort` | `1a82eda` | `git log -1 -- stratus/lib/stratus/merger/agents/tier3_leaf.ex` — "fix(merger): A11 classifies failed leaf results as :saga_abort (fail-closed)" |
+| tick Display zero-entropy | `1a82eda` | `git log -S 'Display' -- strata_protocol/src/consensus/tick.rs` — Display for TickError in same fail-closed commit |
+| conformance POWL Xor(vec![]) panic + abi.rs row-length overflow | `b15b76b` | `git log -1 -- temprun/src/abi.rs` and `-- temprun/src/conformance.rs` — "fix(temprun): fail closed on adversarial ABI lengths; no panic on empty Xor" |
+| n18 query-path leak (zero-entropy const refusals) | `0eaae70` | `git log -S 'entropy' -- strata_protocol/src/bin/strata.rs` — diff adds "Zero-entropy diagnostics (N18)" constant refusal classes |
+
+The original misses came from path-name mismatches (tier3_leaf lives under
+`stratus/lib/...`, temprun paths were probed under `strata_engine/src/...`)
+plus commit-subject-only search. All four items are grounded ALIVE.

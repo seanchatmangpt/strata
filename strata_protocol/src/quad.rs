@@ -10,6 +10,11 @@ pub struct Quad {
     pub g: u64,
 }
 
+const _: () = assert!(
+    core::mem::size_of::<Quad>() == 32 && core::mem::align_of::<Quad>() == 8,
+    "Quad wire layout law: 32 bytes, 8-byte aligned (repr(C, align(8))); a field or repr change silently corrupts the Z2^64 wire format",
+);
+
 pub const QUAD_LEN: usize = 32;
 
 impl Quad {

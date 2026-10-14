@@ -121,6 +121,12 @@ defmodule Strata.Merger.Card do
   # implements the served callback (`function_exported?/3` over the compiled
   # module). A module missing `receipt/1` must NOT advertise receipt.
   defp skills(module, tier) when tier in [1, 2, 3, 4] do
+    # function_exported?/3 is false for any module not yet loaded into the
+    # VM — without ensure_loaded the projection races on load order (a seed
+    # shuffle decides whether another test already invoked the module).
+    # Unloadable modules (e.g. NotARealAgent) stay unprojected, fail-closed.
+    Code.ensure_loaded(module)
+
     base =
       [
         {:admit, :admit, 1, "Admit", "Verify Φ_lease and admit the cell payload (Strata.Merger.MergerAgent.admit/1).", ["merger", "admission"]},

@@ -1,6 +1,6 @@
 # Court Inventory
 
-Generated `python3 scripts/gen_court_inventory.py` on 2026-10-13. Regenerate on court additions.
+Generated `python3 scripts/gen_court_inventory.py` on 2026-10-14. Regenerate on court additions.
 
 Row per court/test file. `vacuity-signal` is indicative only (grep for VACUITY marker / should_panic / assert_raise / refusal assertions), NOT proof a court is non-vacuous.
 
@@ -27,6 +27,7 @@ Row per court/test file. `vacuity-signal` is indicative only (grep for VACUITY m
 | [fr2_permutation_test.rs](strata_protocol/tests/fr2_permutation_test.rs) | `pdu::PduHeader` | FR-2 permutation conformance court: a frame declaring permutation k must carry segments sorted in layout k; sort-merge consumability for SPO-POS. | refusal assertions |
 | [fr8_merkle_commit_test.rs](strata_protocol/tests/fr8_merkle_commit_test.rs) | `cas::` | FR-8 court: admitted transitions produce Git Merkle objects (blob/tree/ commit) and Knowledge Wormhole snapshots at scheduled intervals Δt*. | refusal assertions |
 | [fr9_conservation_test.rs](strata_protocol/tests/fr9_conservation_test.rs) | `signer::` | FR-9 Chatman Conservation Invariant + ML-DSA-65 sealing (Chicago). PRD wording: every transition satisfies ΔS + Φ_lease ≡ R_receipt and is | none |
+| [framing_semantics_court.rs](strata_protocol/tests/framing_semantics_court.rs) | `framing::` | Framing semantics court (audit lane): closes two real gaps found in `src/framing.rs` — (1) preamble permutation discriminant not required to | VACUITY marker+refusal assertions |
 | [gasless_quota_court.rs](strata_protocol/tests/gasless_quota_court.rs) | `consensus::gasless_admission::` | Gasless quota admission courts (L152, rev 2 per-place law) — zero-mock, exhaustive classification. | VACUITY marker+refusal assertions |
 | [idmap_trace_court.rs](strata_protocol/tests/idmap_trace_court.rs) | `idmap::` | Cross-module integration court (lane L120, wave 2). Zero mocks. Wires four real modules together end to end: | VACUITY marker+refusal assertions |
 | [insa_sync_shape_court.rs](strata_protocol/tests/insa_sync_shape_court.rs) | `—` | Drift meta-court: strata's logchain law vs insa-proof's mirrored sync law, adjudicated against LIVE SOURCE on both sides (lane mirror of | VACUITY marker |
@@ -71,11 +72,13 @@ Row per court/test file. `vacuity-signal` is indicative only (grep for VACUITY m
 | [pnml_fuzz_court.rs](strata_protocol/tests/pnml_fuzz_court.rs) | `pnml::` | Deep mutation fuzz court for the PNML module — Lane L136 (wave 2). `src/pnml.rs` is registered in lib.rs (`pub mod pnml;`), so this court | VACUITY marker+refusal assertions |
 | [pnml_langsec_court.rs](strata_protocol/tests/pnml_langsec_court.rs) | `invariants::reachable_bitset` | LangSec Type-3 parser court for the PNML module. Wave 2 (L137). `src/pnml.rs` is now registered in lib.rs (`pub mod pnml`), | VACUITY marker+refusal assertions |
 | [pnwire_golden_court.rs](strata_protocol/tests/pnwire_golden_court.rs) | `pnwire` | PN64 wire-contract court (zero mocks). Pins the 16-byte frame produced by [`pnwire::write`] against | VACUITY marker+refusal assertions |
+| [policy_admission_court.rs](strata_protocol/tests/policy_admission_court.rs) | `dao_full::DAO_FULL` | Policy-admission court (graphlaw::policy pattern, Gemini-brief lane #1). (a) safe seed admits with an empty witness; | VACUITY marker+refusal assertions |
 | [precedence_court.rs](strata_protocol/tests/precedence_court.rs) | `—` | Integration court for the RONR precedence law (Lane L72, wave 2). Exercises L70's `precedence.rs` over real RONR flows through the real | VACUITY marker+refusal assertions |
 | [precedence_property_court.rs](strata_protocol/tests/precedence_property_court.rs) | `pn64` | Property court for the RONR precedence law (Lane L101, wave 2). Exercises `strata_protocol::precedence` over its FULL input space. | VACUITY marker+refusal assertions |
 | [qualifier_law_court.rs](strata_protocol/tests/qualifier_law_court.rs) | `ocel64::pack` | Algebraic proof court for the rehydrate relationship-qualifier convention. Convention (strata_protocol/src/rehydrate.rs, "Relationship qualifier | VACUITY marker |
 | [query_golden_court.rs](strata_protocol/tests/query_golden_court.rs) | `—` | Golden court for the `strata query` verb (wave lane: ontology query surface). Chicago discipline: every case spawns the real `strata` binary | VACUITY marker+refusal assertions |
 | [receipt_chain_link_test.rs](strata_protocol/tests/receipt_chain_link_test.rs) | `—` | Receipt chain linkage tests (Chicago, deterministic). Semantics pinned here: an `AttestationReceipt` chains via its | none |
+| [receipt_verify_fuzz_court.rs](strata_protocol/tests/receipt_verify_fuzz_court.rs) | `receipt::AttestationReceipt` | Randomized adversarial corpus for the `strata receipt verify` refusal surface, same law as sign_refusal_fuzz_court: every case is a real | VACUITY marker+refusal assertions |
 | [redteam_suite_test.rs](strata_protocol/tests/redteam_suite_test.rs) | `signer::` | PRD §6.4 unified red-team suite: every adversarial attack class in one file, driven against the real end-to-end pipeline (header parse -> | refusal assertions |
 | [refusal_wire_test.rs](strata_protocol/tests/refusal_wire_test.rs) | `—` | Refusal wire properties: fixed 32B, opaque, round-trip identity, refusal/receipt type separation, determinism, class collision check. | refusal assertions |
 | [rehydrate_court.rs](strata_protocol/tests/rehydrate_court.rs) | `—` | FR-05 / NFR-05 court: million-frame logsink round-trip + rehydration. Real collaborators, zero mocks: a deterministic LCG drives the six | VACUITY marker+refusal assertions |
@@ -84,6 +87,7 @@ Row per court/test file. `vacuity-signal` is indicative only (grep for VACUITY m
 | [ronr_full_court.rs](strata_protocol/tests/ronr_full_court.rs) | `invariants::` | Integration court for the extended RONR verb space (lane L119, wave 2). Zero mocks: every check goes through the real crate API — | VACUITY marker+refusal assertions |
 | [ronr_mutation_court.rs](strata_protocol/tests/ronr_mutation_court.rs) | `—` | Proves the RONR acceptance court (`ronr_court.rs`) is non-vacuous: for each of the 12 RONR transitions, apply the "revert the diff" mutation — swap the | VACUITY marker+refusal assertions |
 | [rule_lowering_court.rs](strata_protocol/tests/rule_lowering_court.rs) | `dispatch` | Rule-lowering court (Lane L67). The ggen pipeline's compile-time contract, tested in Rust: a Horn-clause | VACUITY marker+refusal assertions |
+| [sign_refusal_fuzz_court.rs](strata_protocol/tests/sign_refusal_fuzz_court.rs) | `—` | Randomized adversarial corpus for the `strata sign` refusal surface (the crypto boundary), same law as cli_refusal_fuzz_court: every case is a real | VACUITY marker+refusal assertions |
 | [signed_commit_flow_test.rs](strata_protocol/tests/signed_commit_flow_test.rs) | `signer::` | Chicago integration flow: Signer (ML-DSA-65) -> cas::emit_commit with the hex-encoded signature in the `ml-dsa-65-sig` header -> re-parse -> verify. | none |
 | [signer_test.rs](strata_protocol/tests/signer_test.rs) | `signer::` | Chicago tests for the ML-DSA-65 attestation signer: real sign/verify round-trips over real keys, no doubles. The module is included by path so | refusal assertions |
 | [slot_layout_court.rs](strata_protocol/tests/slot_layout_court.rs) | `consensus::slot::Slot` | Integration courts for `consensus::slot::Slot` (lane L157-re). Chicago discipline: real threads, real heap addresses, assertions on | VACUITY marker+refusal assertions |
@@ -92,6 +96,7 @@ Row per court/test file. `vacuity-signal` is indicative only (grep for VACUITY m
 | [tick_wrap_court.rs](strata_protocol/tests/tick_wrap_court.rs) | `—` | Monotonic-tick courts (Lane L30). Chicago-style: real `pnabi`/`ocel64`/`ronr`/`pn64` collaborators, no mocks. | VACUITY marker+refusal assertions |
 | [transport_preamble_test.rs](strata_protocol/tests/transport_preamble_test.rs) | `framing::` | Transport framing preamble court (Poka-Yoke, additive dual-read). Chicago: real byte buffers, real parse functions, assertions on returned | refusal assertions |
 | [tripartite_separation_test.rs](strata_protocol/tests/tripartite_separation_test.rs) | `cas::` | Tripartite plane separation court (PRD: SELECT ≠ CONSTRUCT ≠ DO). The strata stack has no literal SELECT/CONSTRUCT verbs; the planes map | refusal assertions |
+| [word_law_boundary_court.rs](strata_protocol/tests/word_law_boundary_court.rs) | `—` | Word-law boundary court: pn64/ocel64 bit laws pinned by literal vectors. Complements the sampled/random courts (`pn64_court.rs`, `pn_fuzz_court.rs`) | VACUITY marker |
 | [wormhole_cas_integration_test.rs](strata_protocol/tests/wormhole_cas_integration_test.rs) | `cas` | Integration tests binding the two Knowledge-Wormhole surfaces: `cas::KnowledgeWormhole` (commit-addressed snapshots over Git objects) | none |
 | [wormhole_reconstruct_test.rs](strata_protocol/tests/wormhole_reconstruct_test.rs) | `cas::` | Time-travel reconstruction courts for `Wormhole::reconstruct_at` (NFR-4). Real collaborators only: the actual `Wormhole`, `CasSnapshotLedger`, and | refusal assertions |
 | [wormhole_test.rs](strata_protocol/tests/wormhole_test.rs) | `wormhole::` | Knowledge Wormhole Chicago tests (NFR-4 / NFR-3). Real collaborators: the actual `Wormhole` over real `Quad` deltas with a | none |
@@ -110,7 +115,7 @@ Row per court/test file. `vacuity-signal` is indicative only (grep for VACUITY m
 | [abi_version_court.rs](temprun/tests/abi_version_court.rs) | `—` | abi_version_court — W-ABI2 item 6 cross-check court. Loads a REAL built `ctt_wasm_guest.wasm` artifact (never the bridge's | none |
 | [arena_fuzz_test.rs](temprun/tests/arena_fuzz_test.rs) | `fuel::FuelLease` | Deterministic LCG fuzz/property tests for the temprun admission arena. Same discipline as `strata_protocol/tests/pdu_fuzz_test.rs`: no proptest | refusal assertions |
 | [clock_module_test.rs](temprun/tests/clock_module_test.rs) | `clock::monotonic` | Direct contract tests for the vector-clock monotonicity sieve (`temprun::clock::monotonic`) and its interplay with the fuel sieve. | refusal assertions |
-| [conformance_module_test.rs](temprun/tests/conformance_module_test.rs) | `conformance::merge_join` | Conformance-module court: merge_join accept/refusal classes, fuel precedence, and verdict determinism. Chicago-style — real `run()` calls, | refusal assertions |
+| [conformance_module_test.rs](temprun/tests/conformance_module_test.rs) | `conformance::` | Conformance-module court: merge_join accept/refusal classes, fuel precedence, and verdict determinism. Chicago-style — real `run()` calls, | refusal assertions |
 | [fr1_projection_test.rs](temprun/tests/fr1_projection_test.rs) | `fuel::FuelLease` | FR-1 projection court: every identifier maps to u64 in Z_2^64; strings, JSON, and URIs are PROHIBITED at the admission boundary. | refusal assertions |
 | [fr3_acyclicity_test.rs](temprun/tests/fr3_acyclicity_test.rs) | `acyclicity::` | FR-3 acyclicity court (operator adjudication 2026-10-10: cycle rejection is MANDATORY). The causal sieve wired into `run()`'s first fuel unit must | refusal assertions |
 | [fr3_causal_test.rs](temprun/tests/fr3_causal_test.rs) | `clock::monotonic` | FR-3 causal-trace court: unrolled OCEL 2.0 trace properties vs the three refusal classes (cyclical causal loops, vector-clock inversions, missing | refusal assertions |
@@ -124,7 +129,9 @@ Row per court/test file. `vacuity-signal` is indicative only (grep for VACUITY m
 | [nfr1_latency_slo_test.rs](temprun/tests/nfr1_latency_slo_test.rs) | `fuel::FuelLease` | NFR-1 smoke-bound SLO test (test profile, x50 headroom so debug builds don't false-fail): median < 2.5ms and P99.9 < 5ms over a 100k mixed | refusal assertions |
 | [nfr2_memory_cap_test.rs](temprun/tests/nfr2_memory_cap_test.rs) | `—` | NFR-2 court: the WASM arena's linear memory is hard-capped at 256 pages (16 MiB), declared in the module itself, and growth beyond the cap fails | none |
 | [pn_fuel_test.rs](temprun/tests/pn_fuel_test.rs) | `fuel::FuelLease` | PN64 fuel-metering court: constant-fuel per step, deterministic exhaustion, no hidden allocation. Chicago-style — real `pn::step` calls | none |
+| [pn_pnabi_differential_court.rs](temprun/tests/pn_pnabi_differential_court.rs) | `pnabi::validate_and_advance` | Differential court: `temprun::pn` ≡ `strata_protocol::pnabi`. Pins the temprun port of the PN64 transition law to the canonical | refusal assertions |
 | [powl_policy_model_test.rs](temprun/tests/powl_policy_model_test.rs) | `conformance::` | Compiled-POWL policy model court. PRD contract: policies are COMPILED POWL workflows into sorted coordinate structures, evaluated by the | refusal assertions |
+| [receipt_seal_branchless_court.rs](temprun/tests/receipt_seal_branchless_court.rs) | `receipt::` | KG-42 seal branchlessness court (algebra witness). The `receipt::seal` doc comment claims the 0x02 substitution is | refusal assertions |
 | [receipt_stream_ambiguity_test.rs](temprun/tests/receipt_stream_ambiguity_test.rs) | `receipt::` | Receipt stream ambiguity court (KG-42 wire law, `temprun::receipt`). Pins the documented 1/256 fail-closed ambiguity end to end on real | refusal assertions |
 | [xproduct_causal_sandbox_test.rs](temprun/tests/xproduct_causal_sandbox_test.rs) | `acyclicity::` | CROSS-PRODUCT CELL: CAUSAL × SANDBOX. Four courts over the causal refusal classes (frame clock inversion, | refusal assertions |
 | [xproduct_wire_sandbox_test.rs](temprun/tests/xproduct_wire_sandbox_test.rs) | `fuel::FuelLease` | CROSS-PRODUCT CELL: WIRE × SANDBOX (lane xc-wire-sandbox). Pins the precedence wire-refusal > fuel-consumption and the shared | refusal assertions |
@@ -141,7 +148,7 @@ Row per court/test file. `vacuity-signal` is indicative only (grep for VACUITY m
 |---|---|---|---|
 | [cas_ring_valve_test.exs](stratus/test/cas_ring_valve_test.exs) | `Stratus.Valve.CasRing` | (no header doc) | assert_raise+refusal assertions |
 | [dao_full_valve_test.exs](stratus/test/dao_full_valve_test.exs) | `Stratus.Valve.DaoFull` | (no header doc) | none |
-| [dao_parity_court.exs](stratus/test/dao_parity_court.exs) | `Stratus.Valve.Dao` | (no header doc) | VACUITY marker |
+| [dao_parity_court_test.exs](stratus/test/dao_parity_court_test.exs) | `Stratus.Valve.Dao` | (no header doc) | VACUITY marker |
 | [dao_telemetry_test.exs](stratus/test/dao_telemetry_test.exs) | `Stratus.Valve.Dao` | (no header doc) | assert_raise+refusal assertions |
 | [dao_valve_fuzz_test.exs](stratus/test/dao_valve_fuzz_test.exs) | `—` | (no header doc) | refusal assertions |
 | [dao_valve_test.exs](stratus/test/dao_valve_test.exs) | `Stratus.Valve.Dao` | (no header doc) | none |
@@ -155,10 +162,13 @@ Row per court/test file. `vacuity-signal` is indicative only (grep for VACUITY m
 | [pn64_vector_doc_test.exs](stratus/test/pn64_vector_doc_test.exs) | `Stratus.Valve.Pn64` | (no header doc) | refusal assertions |
 | [pn64_zero_heap_test.exs](stratus/test/pn64_zero_heap_test.exs) | `Stratus.Valve.Pn64` | (no header doc) | none |
 | [pn_frame_test.exs](stratus/test/pn_frame_test.exs) | `Stratus.PnFrame` | (no header doc) | none |
+| [pn_frame_vector_doc_test.exs](stratus/test/pn_frame_vector_doc_test.exs) | `Stratus.PnFrame` | (no header doc) | none |
 | [pn_frame_wire_golden_test.exs](stratus/test/pn_frame_wire_golden_test.exs) | `Stratus.PnFrame` | (no header doc) | none |
 | [pn_telemetry_test.exs](stratus/test/pn_telemetry_test.exs) | `Stratus.Valve.Pn64` | (no header doc) | assert_raise+refusal assertions |
+| [provenance_turtle_escaping_court_test.exs](stratus/test/provenance_turtle_escaping_court_test.exs) | `Stratus.Valve.Provenance` | (no header doc) | none |
+| [provenance_turtle_roundtrip_court_test.exs](stratus/test/provenance_turtle_roundtrip_court_test.exs) | `Stratus.Valve.Provenance` | (no header doc) | none |
 | [provenance_valve_test.exs](stratus/test/provenance_valve_test.exs) | `Stratus.Valve.Provenance` | (no header doc) | none |
-| [ronr_parity_court.exs](stratus/test/ronr_parity_court.exs) | `Stratus.Valve.Pn64` | (no header doc) | VACUITY marker |
+| [ronr_parity_court_test.exs](stratus/test/ronr_parity_court_test.exs) | `Stratus.Valve.Pn64` | (no header doc) | VACUITY marker |
 | [strata_beam_mutant_court.exs](stratus/test/strata_beam_mutant_court.exs) | `Stratus.Valve.Pn64` | (no header doc) | VACUITY marker+refusal assertions |
 | [strata_concuerror_court.exs](stratus/test/strata_concuerror_court.exs) | `Stratus.Valve.Pn64` | (no header doc) | VACUITY marker+refusal assertions |
 | [strata_merger_agents_test.exs](stratus/test/strata_merger_agents_test.exs) | `Strata.Merger.` | (no header doc) | refusal assertions |
@@ -170,12 +180,16 @@ Row per court/test file. `vacuity-signal` is indicative only (grep for VACUITY m
 | [default_arena_race_test.exs](stratus/test/stratus/default_arena_race_test.exs) | `Stratus.Valve.DefaultArena` | (no header doc) | refusal assertions |
 | [default_arena_test.exs](stratus/test/stratus/default_arena_test.exs) | `Stratus.Valve.DefaultArena` | (no header doc) | refusal assertions |
 | [diag_court.exs](stratus/test/stratus/diag_court.exs) | `—` | (no header doc) | none |
+| [merger_card_a02_receipt_court_test.exs](stratus/test/stratus/merger_card_a02_receipt_court_test.exs) | `Strata.Merger.Card` | (no header doc) | refusal assertions |
 | [nfr2_beam_heap_test.exs](stratus/test/stratus/nfr2_beam_heap_test.exs) | `Stratus.Valve` | (no header doc) | refusal assertions |
 | [pdu_layout_test.exs](stratus/test/stratus/pdu_layout_test.exs) | `Stratus.Valve` | (no header doc) | refusal assertions |
+| [pn64_rust_mirror_court_test.exs](stratus/test/stratus/pn64_rust_mirror_court_test.exs) | `Stratus.Valve.Pn64` | (no header doc) | refusal assertions |
 | [procbin_hardening_test.exs](stratus/test/stratus/procbin_hardening_test.exs) | `Stratus.Valve` | (no header doc) | refusal assertions |
 | [receipt_store_test.exs](stratus/test/stratus/receipt_store_test.exs) | `Stratus.Valve.ReceiptStore` | (no header doc) | none |
+| [no_authority_attack_test.exs](stratus/test/stratus/resources/no_authority_attack_test.exs) | `Stratus.Resources.` | (no header doc) | none |
 | [no_authority_test.exs](stratus/test/stratus/resources/no_authority_test.exs) | `Stratus.Resources.` | (no header doc) | refusal assertions |
 | [refusal_binding_test.exs](stratus/test/stratus/resources/refusal_binding_test.exs) | `Stratus.Resources.` | (no header doc) | refusal assertions |
+| [refusal_freeze_test.exs](stratus/test/stratus/resources/refusal_freeze_test.exs) | `Stratus.Resources.ValveState` | (no header doc) | refusal assertions |
 | [valve_state_test.exs](stratus/test/stratus/resources/valve_state_test.exs) | `Stratus.Resources.ValveState` | (no header doc) | none |
 | [telemetry_test.exs](stratus/test/stratus/telemetry_test.exs) | `Stratus.Telemetry` | (no header doc) | refusal assertions |
 | [temprun_port_backpressure_test.exs](stratus/test/stratus/temprun_port_backpressure_test.exs) | `—` | (no header doc) | refusal assertions |
@@ -189,6 +203,8 @@ Row per court/test file. `vacuity-signal` is indicative only (grep for VACUITY m
 | [xproduct_attest_witness_test.exs](stratus/test/stratus/xproduct_attest_witness_test.exs) | `Stratus.Valve` | (no header doc) | refusal assertions |
 | [xproduct_sandbox_witness_test.exs](stratus/test/stratus/xproduct_sandbox_witness_test.exs) | `Stratus.Valve` | (no header doc) | refusal assertions |
 | [xproduct_wire_witness_test.exs](stratus/test/stratus/xproduct_wire_witness_test.exs) | `Stratus.Valve` | (no header doc) | refusal assertions |
+| [stratus_saga_telemetry_test.exs](stratus/test/stratus_saga_telemetry_test.exs) | `Strata.Merger.Reactor.NovationSaga` | (no header doc) | refusal assertions |
 | [valve_refusal_timing_test.exs](stratus/test/valve_refusal_timing_test.exs) | `Stratus.Valve` | (no header doc) | refusal assertions |
+| [xdp_pn_filter_differential_test.exs](stratus/test/xdp_pn_filter_differential_test.exs) | `Stratus.Valve.Pn64` | (no header doc) | none |
 
-**Totals**: 167 court/test files; 140 with a vacuity signal, 27 without.
+**Totals**: 183 court/test files; 151 with a vacuity signal, 32 without.

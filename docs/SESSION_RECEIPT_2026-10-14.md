@@ -439,3 +439,47 @@ Session total: 100 commits in `548a0bf..HEAD` as of this addendum.
 Falsifier for addendum-5: any SHA above failing `git log --oneline --no-walk`
 at replay time, or the commit count drifting from 100 without a superseding
 addendum.
+
+---
+
+## Addendum-6 — wave-6 landings since addendum-5 (11211be)
+
+Append-only. `git log --oneline 11211be..HEAD | wc -l` = **0**: no code
+commits landed after addendum-5; this addendum is a dedupe/totals pass.
+Every SHA below re-read this session via `git log --oneline --no-walk`
+(6/6 resolved, exit 0).
+
+| Landing | SHA(s) | Verification | Already recorded |
+|---|---|---|---|
+| policy_admission mutation-hook isolation (test-only mirror behind the court) | `52e6274` | subject re-read | addendum-3 row + addendum-5 dedup note |
+| xdp finding ledgers: xdp byte-order adjudication + DFMEA F-9 | `9384a7c` | subject re-read | ADDENDUM row + addendum-2 row |
+| DFMEA F-10/F-11 fail-open pair + vibration-wave index row | `f553334` | subject re-read | addendum-5 row |
+| idmap overflow refusal + rehydrate OCEL id JSON-escape | `3979ba0` | subject re-read | addendum-5 row (was IN-FLIGHT in addendum-4) |
+| n17 domain-separation court + ml-dsa dev-dep + ERRC2 mask supersession note | `68906b2` | subject re-read | addendum-5 row |
+| pn64 Rust-mirror differential court (BEAM mirror vs Rust golden table) | `2d07251` | subject re-read | addendum-3 row + addendum-5 dedup note |
+
+Witnesses carried forward (unchanged this wave; no new runs executed):
+framing 6/6, dao widen-ack 3/3 + 7/7 scratch lifecycle incl. negative
+controls, positivity 3/3 x2, policy_admission 4/4, pn64 mirror.
+
+### Totals at addendum-6 time
+
+- Session range: `git log --oneline 548a0bf..HEAD | wc -l` = **101**
+  commits (was 100 at addendum-5; +1 = the addendum-5 receipt commit).
+- Working tree: `git status --porcelain` excluding `_build_lane7`,
+  `temprun_step`, `rlimit_shim` = **14** entries (other lanes' in-flight
+  edits + receipt sidecars); none staged by this lane.
+
+### Carried forward — OPEN falsifier / adjudication list (unchanged)
+
+- E03, E09, E13+E20, E14, E07+E30 — open adjudication asks, unresolved.
+- KG-02, KG-P14 preimage — open.
+- NFR-3 EF — open.
+- N05 residual ~1-cycle early-exit channel (KG-N05) — open.
+- KG-SX1 hostile-CTT-host wire-level boundary — open.
+- User-pending actions (lane build roots, `/tmp/strata_lanes` 5.2G,
+  l77 scratch snapshot deletion) — all still pending; none closed.
+
+Falsifier for addendum-6: any SHA above failing
+`git log --oneline --no-walk` at replay time, or the commit count drifting
+from 101 without a superseding addendum.

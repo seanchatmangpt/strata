@@ -322,6 +322,21 @@ fn merge_receipt(section_json: &str) {
     *slot = Some(combined);
 }
 
+/// Fail-safe receipt guard: never downgrade an existing LANE_RECEIPT v2 with
+/// status LANDED. When one is present on disk, the v1 court payload is
+/// redirected to a `legacy.original_payload`-compatible sidecar
+/// (`N04.legacy_payload.json`) instead of clobbering the v2 receipt.
+fn receipt_target(out: &Path) -> PathBuf {
+    if let Ok(txt) = std::fs::read_to_string(out) {
+        let v2_landed =
+            txt.contains("\"LANDED\"") && txt.contains("\"verification\"") && txt.contains("\"wave\"");
+        if v2_landed {
+            return out.with_extension("legacy_payload.json");
+        }
+    }
+    out.to_path_buf()
+}
+
 fn flush_receipt(extra_status: Option<&str>) {
     let slot = RECEIPT.lock().unwrap().clone();
     if let Some(json) = slot {
@@ -329,7 +344,7 @@ fn flush_receipt(extra_status: Option<&str>) {
             Some(s) => json.replace("\"status\":\"PASS\"", &format!("\"status\":\"{s}\"")),
             None => json,
         };
-        let out = repo_root().join("docs/receipts/N04.json");
+        let out = receipt_target(&repo_root().join("docs/receipts/N04.json"));
         if let Some(parent) = out.parent() {
             std::fs::create_dir_all(parent).unwrap();
         }

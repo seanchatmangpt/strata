@@ -55,8 +55,12 @@ fn run_audit() -> (bool, String) {
         )
         .status()
         .unwrap_or_else(|e| panic!("failed to spawn audit script: {e}"));
+    // The audit script's fail-safe guard may redirect the v1 payload to a
+    // sidecar when the on-disk receipt is LANE_RECEIPT v2 / LANDED; prefer it.
+    let sidecar = out.with_extension("legacy_payload.json");
+    let receipt_path = if sidecar.exists() { &sidecar } else { &out };
     let receipt =
-        std::fs::read_to_string(&out).unwrap_or_else(|e| panic!("receipt unreadable: {e}"));
+        std::fs::read_to_string(receipt_path).unwrap_or_else(|e| panic!("receipt unreadable: {e}"));
     (status.success(), receipt)
 }
 

@@ -32,6 +32,27 @@ audit_mode="asm-text"
 
 json_quote() { python3 -c 'import json,sys; print(json.dumps(sys.argv[1]))' "$1"; }
 
+# Fail-safe receipt guard: never downgrade an existing LANE_RECEIPT v2 with
+# status LANDED. When one is present, the v1 audit payload is redirected to a
+# `legacy.original_payload`-compatible sidecar (`N06.legacy_payload.json`).
+receipt_target() { # $1 = candidate path; prints the path to write
+  python3 - "$1" <<'PYEOF'
+import json, sys
+p = sys.argv[1]
+try:
+    with open(p) as f:
+        d = json.load(f)
+except Exception:
+    print(p)
+    raise SystemExit
+if isinstance(d, dict) and d.get("status") == "LANDED" and "verification" in d and "wave" in d:
+    print(p[: -len(".json")] + ".legacy_payload.json" if p.endswith(".json") else p + ".legacy_payload.json")
+else:
+    print(p)
+PYEOF
+}
+out="$(receipt_target "$out")"
+
 exit_fail() { # $1 = reason
   python3 - "$1" <<EOF
 import json, sys, datetime

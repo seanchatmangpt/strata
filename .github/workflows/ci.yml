@@ -53,3 +53,31 @@ jobs:
 
       - name: Full ladder (just ci)
         run: just ci
+
+  consensus:
+    name: Consensus gate (master_gate consensus tier)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain (pinned by rust-toolchain.toml) + wasm targets
+        run: |
+          rustup toolchain install
+          rustup target add wasm32-unknown-unknown wasm32-wasip1
+
+      - name: Cache cargo registry + target
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: cargo-${{ runner.os }}-${{ hashFiles('Cargo.lock', 'rust-toolchain.toml') }}
+          restore-keys: cargo-${{ runner.os }}-
+
+      # E27 residual closed: consensus tier was unwired (api_shape_ratchet
+      # standalone, courts CI-less). Not in `just ci` — the consensus_slo
+      # bench alone measures ~234s release (well over the 60s ladder
+      # budget) — so it runs as its own cached job.
+      - name: Consensus tier (scripts/master_gate.sh --tier consensus)
+        run: scripts/master_gate.sh --tier consensus

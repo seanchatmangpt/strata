@@ -120,6 +120,14 @@ gate-docs:
     scripts/ontology_check.sh --rust
     scripts/module_ratchet.sh
 
+# Consensus gate (E27 wiring): master_gate consensus tier — module ratchet,
+# api-shape ratchet, Wave-3 consensus courts, consensus_slo bench.
+# NOT in the `ci` ladder: measured 250-360s (release cargo builds + the
+# ~234s consensus_slo bench) — far over the 60s ladder budget. Run it via
+# `just gate-consensus` or the dedicated ci.yml consensus job.
+gate-consensus:
+    scripts/master_gate.sh --tier consensus
+
 # Print the PN64 documentation index: file listing + first header per file.
 docs-pn:
     #!/bin/sh
@@ -139,3 +147,11 @@ release-tag:
 test-stratus-full:
     @test -d stratus || { echo "SKIP: stratus/ absent"; exit 0; }
     cd stratus && mix test --include fuzz --include t26_concurrent --include temprun_timeout --include backpressure --include mailbox --include wasmtime
+
+# Ontology projection gate (PS-CGF/CL-SDG slice): project ontology.ttl into
+# generated JSON + TS consumers, refuse on any unmapped pn: class/predicate,
+# and run the golden courts (transition count 40 + TSV byte-match + must-fire
+# mutation self-test).
+gate-ontology-project:
+    python3 scripts/shacl_project.py --court
+    python3 scripts/shacl_project.py --self-test

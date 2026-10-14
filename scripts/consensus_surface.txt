@@ -2,7 +2,7 @@
 # ERRC tollgate meta C2 (docs/innovation/ERRC_tollgate_meta.md).
 # Regenerate: bash scripts/api_shape_ratchet.sh (after reviewing the typed diff).
 # Refuses: added pub fn/const/struct, removed entries, changed signature class.
-hash: fe386eb08db911b8afd8f010cdef5b43874b0fa3a70caef6b7fcf6989780251e
+hash: 2898c8cb301d90b6ab0bbb0663996b1ebf6e8175434af13f0c8d2c24efba2e75
 cas_ring.rs::abandon fn pub fn abandon(&self, slot: SlotId) -> Result<(), ConsensusError> {
 cas_ring.rs::abandoned_count fn pub fn abandoned_count(&self) -> usize {
 cas_ring.rs::capacity fn pub fn capacity(&self) -> usize {
@@ -14,7 +14,7 @@ cas_ring.rs::drain_into fn pub fn drain_into(&self, f: &mut impl FnMut(u64)) {
 cas_ring.rs::new fn pub fn new() -> Self {
 cas_ring.rs::SlotId struct pub struct SlotId(pub usize);
 fifo_sequencer.rs::new const_fn pub const fn new() -> Self {
-fifo_sequencer.rs::next fn pub fn next(&mut self) -> u64 {
+fifo_sequencer.rs::next_tick fn pub fn next_tick(&mut self) -> u64 {
 fifo_sequencer.rs::order fn pub fn order(events: &[(u64, u64)]) -> Vec<u64> {
 fifo_sequencer.rs::peek const_fn pub const fn peek(&self) -> u64 {
 fifo_sequencer.rs::Sequence struct pub struct Sequence {
@@ -34,8 +34,10 @@ ordering.rs::total_order_key fn pub fn total_order_key(tick: u64, slot: u64, tie
 slot.rs::is_aligned const_fn pub const fn is_aligned() -> bool {
 slot.rs::new const_fn pub const fn new() -> Self {
 slot.rs::read fn pub fn read(&self, expected_seq: u64) -> Option<u64> {
+slot.rs::read_owned fn pub fn read_owned(&self, expected_seq: u64, owner: u64) -> Option<u64> {
 slot.rs::Slot struct pub struct Slot {
 slot.rs::write fn pub fn write(&self, seq: u64, word: u64) {
+slot.rs::write_owned fn pub fn write_owned(&self, seq: u64, word: u64, owner: u64) {
 tick.rs::as_nanos fn pub fn as_nanos(&self) -> u64 {
 tick.rs::HwTick struct pub struct HwTick(u64);
 tick.rs::mono_checked fn pub fn mono_checked(prev: HwTick, next: HwTick) -> Result<HwTick, TickError> {

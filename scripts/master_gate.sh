@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# master_gate.sh — unified 15-stage gate registry (lane W4-P8, per
+# master_gate.sh — unified 20-stage gate registry (lane W4-P8, per
 # docs/innovation/ERRC2_master_gate_spec.md, ratified E54 design).
 #
 # Composes gate_pn.sh + gate_consensus.sh + module_ratchet.sh +
@@ -13,6 +13,7 @@
 #                          [--wave <manifest>]          # tollgate manifest (targets + poll_secs)
 #                          [--poll-secs <n>]            # poll window override; default 0
 #                          [--out <file>]               # NDJSON sink; default stdout
+#                          [--self-test]                # parser round-trip mutation test, exit 0/1
 #
 # Exit codes: 0 = PASS; 1 = any FAIL / untolerated SKIP; 2 = usage or
 # registry error (unknown tier, bad id charset, dependency cycle, vacuous
@@ -49,6 +50,7 @@ WITH=""
 WAVE_MANIFEST=""
 POLL_SECS=0
 OUT=""
+SELF_TEST=0
 POLL_INTERVAL_SECS=15
 
 usage() { echo "usage: $0 [--tier pn|consensus|all] [--only id[,id...]] [--tolerate id] [--allow-skip] [--with id[,id...]] [--wave manifest] [--poll-secs n] [--out file]" >&2; exit 2; }
@@ -63,6 +65,7 @@ while [ $# -gt 0 ]; do
     --wave) [ $# -ge 2 ] || usage; WAVE_MANIFEST="$2"; shift 2 ;;
     --poll-secs) [ $# -ge 2 ] || usage; POLL_SECS="$2"; shift 2 ;;
     --out) [ $# -ge 2 ] || usage; OUT="$2"; shift 2 ;;
+    --self-test) SELF_TEST=1; shift ;;
     *) usage ;;
   esac
 done
@@ -94,7 +97,16 @@ add_stage() { # add_stage <tier> <id> <kind> <depends> <skip_policy> <target> <c
       exit 2
       ;;
   esac
-  CMDS="$CMDS|$_cmd"
+  # Record separator: NEWLINE, not `|` (M19FIX-B follow-up WO). The old
+  # `CMDS="$CMDS|$_cmd"` + `cut -d'|'` split piped cmds at the first `|`,
+  # truncating any cmd containing a pipe. Newline join + `sed -n <n>p`
+  # round-trips arbitrary cmds (mutation-tested via --self-test below).
+  if [ -n "$CMDS" ]; then
+    CMDS="$CMDS
+$_cmd"
+  else
+    CMDS="$_cmd"
+  fi
 }
 
 # --- canonical stage table (D2) ---
@@ -113,8 +125,17 @@ add_stage consensus    concurrent_race_court test    module-ratchet     fail    
 add_stage consensus    mev_falsify_court   tollgate  module-ratchet     fail        strata_protocol/tests/mev_falsify_court.rs cargo test -p strata-protocol --test mev_falsify_court --release
 add_stage consensus    cas_ring_fuzz_court test      mev_falsify_court  fail        strata_protocol/tests/cas_ring_fuzz_court.rs cargo test -p strata-protocol --test cas_ring_fuzz_court --release
 add_stage consensus    consensus_slo       bench     cas_ring_court     fail        strata_protocol/benches/consensus_slo.rs cargo test -p strata-protocol --bench consensus_slo --release -- --test --nocapture
+# E27 residual (2026-10-13): api_shape_ratchet was standalone (WAVES_3_9.md:176)
+# — wired into the consensus tier as its own ratchet stage.
+add_stage consensus    api-shape-ratchet   ratchet   -                  fail        - scripts/api_shape_ratchet.sh
+# Laws-lane gates (W4-P9 refix + lane 3): tier "all" so both pn and
+# consensus runs pick them up. Targets "-" = always run (never SKIP).
+add_stage all          doc-drift           ratchet   -                  fail        - scripts/gate_doc_drift.sh
+add_stage all          vacuity-check       test      -                  fail        - scripts/gate_vacuity.sh
+add_stage all          receipts            test      -                  fail        - scripts/gate_receipts.sh
+add_stage all          status-sync         test      -                  fail        - scripts/gate_status_sync.sh
 
-N_STAGES=15
+N_STAGES=20
 
 # Accessors (parallel arrays as whitespace strings; 1-based).
 reg_field() { # reg_field <array-string> <index-1based>
@@ -126,10 +147,31 @@ stage_kind()     { reg_field "$KINDS" "$1"; }
 stage_deps()     { reg_field "$DEPS" "$1"; }
 stage_policy()   { reg_field "$POLICIES" "$1"; }
 stage_target()   { reg_field "$TARGETS" "$1"; }
-stage_cmd()      { echo "$CMDS" | cut -d'|' -f$(( $1 + 1 )) -; }
+stage_cmd()      { printf '%s\n' "$CMDS" | sed -n "$1p"; }
 stage_optin()    { # opt-in stages run only under --with (D2: kernel-rebuild)
   case "$1" in kernel-rebuild) return 0 ;; *) return 1 ;; esac
 }
+
+# --self-test: parser mutation test. A cmd containing `|` must survive a
+# full add_stage -> stage_cmd round-trip (the old `|` record separator
+# truncated at the first pipe — M19FIX-B disclosed follow-up WO).
+if [ "$SELF_TEST" -eq 1 ]; then
+  (
+    CMDS=""
+    add_stage all zz_pipe_probe test - fail - echo "a|b" "c|d"
+    got="$(stage_cmd 1)"
+    if [ "$got" != 'echo a|b c|d' ]; then
+      echo "master_gate: SELF-TEST FAIL: round-trip lost pipe cmd:" >&2
+      echo "  want: echo a|b c|d" >&2
+      echo "  got:  $got" >&2
+      exit 1
+    fi
+    # also confirm stage count is unaffected by the probe (subshell)
+    [ "$(printf '%s\n' "$CMDS" | wc -l | tr -d ' ')" -eq 1 ] || exit 1
+  ) || { echo "master_gate: SELF-TEST FAILED" >&2; exit 1; }
+  echo "SELF-TEST OK: pipe-containing cmd survives register+list round-trip"
+  exit 0
+fi
 
 # ---------------------------------------------------------------------------
 # Tier selection ("all" = pn U consensus, deduped by id).
@@ -180,6 +222,32 @@ if [ -n "$ONLY" ]; then
   done
   SELECTED="$ONLY_SET"
 fi
+
+# Cross-tier dependency closure (E27 wiring fix): tier selection is by
+# tier tag only, but module-ratchet is tier "all" while every consensus
+# court depends on it — without closure, --tier consensus selected courts
+# whose dependency was never selected and the topo sort misreported a
+# dependency cycle. Idempotent on the already-closed --only result.
+expand_sel_deps() { # expand_sel_deps <ids...> -> transitive dep closure on stdout
+  _out=""
+  for sid in $1; do
+    case " $_out " in *" $sid "*) continue ;; esac
+    _out="$_out $sid"
+    queue="$(stage_deps "$(id_to_idx "$sid")")"
+    while [ -n "$queue" ]; do
+      did=$(echo "$queue" | awk '{print $1}')
+      queue=$(echo "$queue" | awk '{$1=""; sub(/^ /,""); print}')
+      [ "$did" = "-" ] && [ -z "$queue" ] && break
+      [ "$did" = "-" ] && continue
+      didx=$(id_to_idx "$did") || { echo "master_gate: registry error: unknown dep '$did'" >&2; exit 2; }
+      case " $_out " in *" $did "*) continue ;; esac
+      _out="$_out $did"
+      queue="$queue $(stage_deps "$didx")"
+    done
+  done
+  echo "$_out"
+}
+SELECTED=$(expand_sel_deps "$SELECTED")
 
 # --with: opt-in stages are included ONLY if named (and removed otherwise).
 WITH_SET=" $WITH "

@@ -141,6 +141,7 @@ Row per court/test file. `vacuity-signal` is indicative only (grep for VACUITY m
 |---|---|---|---|
 | [cas_ring_valve_test.exs](stratus/test/cas_ring_valve_test.exs) | `Stratus.Valve.CasRing` | (no header doc) | assert_raise+refusal assertions |
 | [dao_full_valve_test.exs](stratus/test/dao_full_valve_test.exs) | `Stratus.Valve.DaoFull` | (no header doc) | none |
+| [dao_parity_court.exs](stratus/test/dao_parity_court.exs) | `Stratus.Valve.Dao` | (no header doc) | VACUITY marker |
 | [dao_telemetry_test.exs](stratus/test/dao_telemetry_test.exs) | `Stratus.Valve.Dao` | (no header doc) | assert_raise+refusal assertions |
 | [dao_valve_fuzz_test.exs](stratus/test/dao_valve_fuzz_test.exs) | `—` | (no header doc) | refusal assertions |
 | [dao_valve_test.exs](stratus/test/dao_valve_test.exs) | `Stratus.Valve.Dao` | (no header doc) | none |
@@ -190,4 +191,4 @@ Row per court/test file. `vacuity-signal` is indicative only (grep for VACUITY m
 | [xproduct_wire_witness_test.exs](stratus/test/stratus/xproduct_wire_witness_test.exs) | `Stratus.Valve` | (no header doc) | refusal assertions |
 | [valve_refusal_timing_test.exs](stratus/test/valve_refusal_timing_test.exs) | `Stratus.Valve` | (no header doc) | refusal assertions |
 
-**Totals**: 166 court/test files; 139 with a vacuity signal, 27 without.
+**Totals**: 167 court/test files; 140 with a vacuity signal, 27 without.

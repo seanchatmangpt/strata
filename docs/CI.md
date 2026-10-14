@@ -11,16 +11,16 @@ The single entry point is `just ci`, which runs the full verification ladder:
 
 The toolchain is pinned by `rust-toolchain.toml` (nightly + `wasm32-unknown-unknown` target).
 
-**GitHub Actions does not run `just ci`.** As of 2026-10-13 (`.github/workflows/ci.yml` read at edit time), the `rust` job runs the gates step-by-step:
+**GitHub Actions runs exactly `just ci`.** As of 2026-10-13 (collapse landed in
+`e89e48b`), `ci.yml` has a single `rust` job — Rust toolchain + wasm targets,
+Elixir 1.19/OTP 28, `just`, cargo + stratus caches, rdflib — whose run step is
+`just ci`. The recipe (justfile) is the ladder of record:
 
-1. `just test`
-2. `just lint`
-3. `just test-wasm` + `just check-wasm-imports`
-4. `just gate-pn-fast` (PN64 fast gate; the full 10x10^6 soak variant is local-only via `just gate-pn`)
-5. `just gate-docs` (ontology + module ratchet gates; installs `rdflib`)
-6. `cargo build -p temprun --target wasm32-wasip1 --release`
+`ci: test test-wasm check-wasm-imports lint gate-pn-fast wasip1 gate-docs test-stratus`
 
-A second `stratus` job (Elixir 1.19 / OTP 28) runs `just test-stratus`. The local `just ci` recipe (test, test-wasm, check-wasm-imports, lint, test-stratus) is a subset of CI — it omits `gate-pn-fast` and `gate-docs`.
+The full 10×10⁶ soak remains local-only by design (`just gate-pn` /
+`just soak`); `just test-stratus-full` runs the heavy-tag courts CI excludes
+by default.
 
 ## Imports = ∅ verification
 

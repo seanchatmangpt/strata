@@ -14,11 +14,14 @@ pub extern "C" fn conformance_join(
     p_ptr: *const u64,
     p_len: usize,
 ) -> i32 {
-    // Rows are [u64;4]; lengths are in rows.
-    let lineage =
-        unsafe { core::slice::from_raw_parts(l_ptr, l_len.saturating_mul(4)) };
-    let policy =
-        unsafe { core::slice::from_raw_parts(p_ptr, p_len.saturating_mul(4)) };
+    // Rows are [u64;4]; lengths are in rows. An adversarial row count whose
+    // byte length overflows usize must refuse (0), never saturate into a
+    // from_raw_parts slice of fabricated length (UB).
+    if l_len > usize::MAX / 4 || p_len > usize::MAX / 4 {
+        return 0;
+    }
+    let lineage = unsafe { core::slice::from_raw_parts(l_ptr, l_len * 4) };
+    let policy = unsafe { core::slice::from_raw_parts(p_ptr, p_len * 4) };
     let lr: Vec<[u64; 4]> = lineage.chunks_exact(4).map(|c| [c[0], c[1], c[2], c[3]]).collect();
     let pr: Vec<[u64; 4]> = policy.chunks_exact(4).map(|c| [c[0], c[1], c[2], c[3]]).collect();
     conformance::merge_join(&lr, &pr) as i32

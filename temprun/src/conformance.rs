@@ -149,7 +149,12 @@ pub fn compile_workflow(root: &Powl, choices: &[usize]) -> Vec<[u64; 4]> {
             Powl::Sequence(v) => R::Seq(v.iter().map(|c| resolve(c, choices, coords)).collect()),
             Powl::Parallel(v) => R::Par(v.iter().map(|c| resolve(c, choices, coords)).collect()),
             Powl::Xor(v) => {
-                assert!(!v.is_empty(), "Xor node with no branches");
+                // Empty Xor is a malformed spec: refuse by emitting nothing
+                // (the compiled policy then fails the total join) — never a
+                // panic on adversarial input.
+                if v.is_empty() {
+                    return R::Seq(Vec::new());
+                }
                 let idx = choices.first().copied().unwrap_or(0).min(v.len() - 1);
                 if !choices.is_empty() {
                     *choices = &choices[1..];
@@ -214,6 +219,11 @@ fn walk(node: &Powl, ordinal: &mut u64, choices: &mut &[usize], out: &mut Vec<[u
             }
         }
         Powl::Xor(branches) => {
+            // Malformed spec (no branches): emit nothing rather than panic on
+            // the `len() - 1` underflow; the total join then refuses.
+            if branches.is_empty() {
+                return;
+            }
             let idx = choices.first().copied().unwrap_or(0).min(branches.len() - 1);
             if !choices.is_empty() {
                 *choices = &choices[1..];

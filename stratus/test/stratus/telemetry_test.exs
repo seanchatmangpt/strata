@@ -137,6 +137,33 @@ defmodule Stratus.TelemetryTest do
              events(table, :refuse)
   end
 
+  test "arena non-atom error return normalizes to :arena_failure, exactly one refuse emitted",
+       %{events: table} do
+    # Exactly-one-emit-per-outcome law: an arena returning {:error, term}
+    # with a non-atom (contract violation) must NOT crash the valve (which
+    # would zero-emit AND reset witness registers via supervisor restart) —
+    # it must produce exactly one :arena_failure refuse with the readable
+    # header fuel, registers intact.
+    {:ok, pid} = GenServer.start(Valve, arena: fn _f -> {:error, "arena exploded"} end)
+
+    assert {:error, :arena_failure} = ingest(pid, frame())
+
+    assert [{:refuse, _, _, %{class: :arena_failure, fuel: 1}}] = events(table, :refuse)
+    assert events(table, :admit) == []
+
+    # Registers survived — no restart reset to genesis.
+    assert %{parent_digest: <<0::256>>, commit_hash: <<0::256>>} = GenServer.call(pid, :registers)
+  end
+
+  test "fuel_exhausted refusal carries the readable header fuel (0), not nil", %{
+    valve: pid,
+    events: table
+  } do
+    assert {:error, :fuel_exhausted} = ingest(pid, frame(fuel: 0))
+
+    assert [{:refuse, _, _, %{class: :fuel_exhausted, fuel: 0}}] = events(table, :refuse)
+  end
+
   test "crash path: no telemetry event beyond the typed exit", %{events: table} do
     # An arena that raises crashes the valve process (real GenServer semantics).
     # :telemetry executes only on typed outcomes — a crashing handle_call must

@@ -131,7 +131,7 @@ defmodule Stratus.Valve do
 
     case validate(frame, state) do
       {:error, reason} ->
-        Stratus.Telemetry.refuse(start, reason, nil, parent_present?)
+        Stratus.Telemetry.refuse(start, reason, fuel_from_validate(reason, frame), parent_present?)
         {:reply, {:error, reason}, state}
 
       {:ok, header} ->
@@ -146,9 +146,21 @@ defmodule Stratus.Valve do
             Stratus.Telemetry.refuse(start, :arena_failure, header.fuel, parent_present?)
             {:reply, {:error, :arena_failure}, state}
 
+          # Typed arena refusal: the valve's constant-time refusal contract
+          # requires an atom; propagate it as the event class.
           {:error, reason} when is_atom(reason) ->
             Stratus.Telemetry.refuse(start, reason, header.fuel, parent_present?)
             {:reply, {:error, reason}, state}
+
+          # Contract-violating arena return ({:error, term} non-atom, e.g. a
+          # string): normalized to :arena_failure, NOT a crash. An unhandled
+          # clause here would kill the GenServer, zero-emit the telemetry
+          # event, and — under the application supervisor — reset both
+          # witness registers to genesis. Exactly-one-emit-per-outcome law:
+          # every {:error, _} arena return must produce exactly one refuse.
+          {:error, _other} ->
+            Stratus.Telemetry.refuse(start, :arena_failure, header.fuel, parent_present?)
+            {:reply, {:error, :arena_failure}, state}
         end
     end
   end
@@ -206,6 +218,16 @@ defmodule Stratus.Valve do
   end
 
   defp validate(_frame, _state), do: {:error, :malformed_frame}
+
+  # Telemetry metadata law (Stratus.Telemetry: "fuel is the header fuel when
+  # it was readable, nil for malformed frames"): recover the u64 fuel field
+  # whenever the 64-byte header shape parses, nil only when it does not.
+  defp fuel_from_validate(_reason, <<@magic, _version::8, _permutation::8, 0::16, _nonce::64,
+                                     fuel::64, _rest::binary>>) do
+    fuel
+  end
+
+  defp fuel_from_validate(_reason, _frame), do: nil
 
   defp actuate({m, f, a}, frame) when is_atom(m), do: apply(m, f, [frame | a])
   defp actuate(mod, frame) when is_atom(mod), do: mod.actuate(frame)

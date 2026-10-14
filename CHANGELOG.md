@@ -16,7 +16,8 @@
   collision, chained 1000-link stream, 10^6-draw tail pin, byte-identical
   replay). Escalated structural finding: guest universe digest binds only
   (tree_entries, parent, message) — nonce/payload absent from the
-  preimage; held for operator adjudication with KG-02.
+  preimage; adjudication applied 2026-10-13 (COURT_ADJUDICATIONS probe 14
+  → RE-ADJUDICATED PASS, option b).
 - FR-4 Ash projection tier (minimal slice, operator GO): 2 resources +
   `Stratus.Valve.DataLayer` (no-DO-authority at the layer) + `Refusals`
   policy module + domain; courts 13/0; deps-tree receipt in
@@ -27,6 +28,11 @@
 - DAO extension table `dao_full.rs` + Elixir mirror (`ChainDelegate 0x92`
   / `AckDelegation 0x93`) closing the G2 `0x0800 DELEGATION_PENDING`
   orphan place; protocol 399/0 across 40 suites.
+- DAO parity court `stratus/test/dao_parity_court.exs` (Elixir mirror
+  vs `dao_full.rs` table, typed EXEMPT vacuity disposition) + Stratus
+  resource courts `stratus/test/stratus/resources/` (`no_authority`,
+  `no_authority_attack`, `refusal_binding`, `valve_state`) closing the
+  no-DO-authority and refusal-binding laws at the valve layer.
 - Burn/odometer (KG-SX1): `LeaseLedger` per-`lease_pk` append-only
   odometer, `:lease_insufficient_burn` with zero side effects; wire
   canonical encoding unchanged (§24.6 → PARTIALLY-SUPPORTED, in-BEAM
@@ -37,17 +43,20 @@
   (5/0 ×3).
 - Drift meta-court `insa_sync_shape_court.rs` (6/0) pinning the T12
   shared chaining law against live insa-proof source (law text, GENESIS,
-  step update order, KAT triple-pin, vacuity twins).
+  step update order, KAT triple-pin, vacuity twins). KAT fixture
+  deduped: the court now `include_str!`s the shared fixture from
+  `sync_as_replay_kat.rs` (single fixture authority).
 - Register model (`strata_protocol/src/register.rs`) + temprun
   `ParentLedger`: replay/epoch-inversion refusals; `merge_join_total`
   wired into the pipeline (truncated-lineage now refuses).
 - Laws wired to mechanisms: `gate_status_sync.sh`, `gate_vacuity.sh`
-  (first census: 70 courts, 0 refusals), `gate_receipts.sh` + receipt
+  (first census: 70 courts, 0 refusals — 21 marked + 1 receipt-covered +
+  48 exempt per the 2026-10-13 census regen), `gate_receipts.sh` + receipt
   schema v2 (builder/grader lanes, SELF_GRADED refusal; 26 receipts
   backfilled, legacy payloads preserved verbatim in `legacy` fields),
   `gate_doc_drift.sh` wired into gate-docs scope (E55 census);
   `gen_ledger.py` reproducible with `--check`; `gen_court_inventory.py`
-  → `docs/COURT_INVENTORY.md` (161 courts).
+  → `docs/COURT_INVENTORY.md` (167 court/test files).
 - pnabi branchless port (KG-N05): `validate_and_advance_ct` with
   priority-encoded errors; parity court 4/0 (exhaustive + 200k
   cross-product, vacuity twin). Dudect re-run: FAIL-HONEST — accepted
@@ -111,7 +120,16 @@
   DOD_TOLLGATE dated supersede banner; NFR3_PRD_REVISION measured EF
   floor (2.366 B/quad → re-adjudication recommendation); README counts
   re-read from receipts; ARD §2.1 divergence note; GATE0.md refreshed
-  (2026-10-13 Gate 0 PASS, 197 B).
+  (2026-10-13 Gate 0 PASS, 197 B); E23 closed — Turtle id-source
+  divergence tolerated by all consumers (IRI-fragment keying verified in
+  pn_transitions.rq, query_golden_court.rs, ronr_parity_court.exs);
+  KG-P14 adjudication applied to COURT_ADJUDICATIONS +
+  ADJUDICATION_LEDGER (probe 14 → RE-ADJUDICATED PASS, option b) with
+  stale CLI-court counts corrected to 42/42; N04/N06 receipts
+  re-normalized to LANE_RECEIPT v2 after a v1-writer clobber (legacy
+  payloads preserved).
+- Justfile: `VERSION` derived from the `VERSION` file; new
+  `test-stratus-full` recipe.
 
 ## 26.10.11 — 2026-10-11 (release, tag v26.10.11 @ e0e7f19)
 

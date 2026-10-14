@@ -21,6 +21,9 @@ ml-dsa = "0.1.1"
 
 [dev-dependencies]
 temprun = { path = "../temprun" }
+# n17 domain-separation court: raw ml-dsa access to sign with foreign/empty
+# contexts (same version as [dependencies]; no lockfile drift).
+ml-dsa = "0.1.1"
 
 [[test]]
 name = "n16_zero_recursion"

@@ -26,7 +26,10 @@ LANDED 2026-10-13 (CREATE, ronr_full-style extension): `strata_protocol/src/dao_
 (`DAO_FULL` 15 entries = base 13 verbatim + ChainDelegate `0x92` pre `0x0028`
 → post `0x0828` producing `DELEGATION_PENDING`, AckDelegation `0x93` pre
 `0x0808` → post `0x0008` consuming it; `lookup`/`validate_step`; 7 unit
-tests incl. orphan-closure positive control). Mirror:
+tests incl. orphan-closure positive control). **Mask superseded 2026-10-14
+(defect-fix lane, 33f6705)**: `0x93` is now pre `0x0800` / post `0x0000`
+(widened for closure totality after `0x91` orphanized the pending place —
+see `docs/PN64_RONR_MAP.md` §delegation closure). Mirror:
 `stratus/lib/stratus/valve/dao_full.ex` + `stratus/test/dao_full_valve_test.exs`
 (6 tests green). Ontology + map doc updated. Base `dao_transitions.rs`
 13-verb table and frozen `dispatch.rs` untouched.

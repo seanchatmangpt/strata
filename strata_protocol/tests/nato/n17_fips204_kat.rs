@@ -531,6 +531,53 @@ fn kat_signature_is_key_bound() {
     assert!(!Signer::verify(&s0.public_key(), &p, &sig1));
 }
 
+/// Domain separation must be LOAD-BEARING on verify (hunt item 1,
+/// cross-protocol signature reuse): a valid ML-DSA-65 deterministic
+/// signature over the same canonical 72-byte payload, produced with an
+/// EMPTY or FOREIGN context, must be refused. Also pins the exact context
+/// string `strata-clap-attest-v1`: a signature made with this literal
+/// context must verify, so silently changing `SIGN_CONTEXT` fails here.
+/// All existing round-trip/corruption courts are self-consistent and would
+/// pass with the context dropped — this one is not.
+#[test]
+fn kat_domain_separation_is_load_bearing_on_verify() {
+    use ml_dsa::{MlDsa65, SigningKey};
+
+    const CTX: &[u8] = b"strata-clap-attest-v1";
+
+    let seed = kat_seed(KAT0_SEED_HEX);
+    let s = Signer::from_seed(seed);
+    let pk = s.public_key();
+    let p = kat_payload(0);
+    let msg = p.to_bytes();
+
+    let mk_sig = |ctx: &[u8]| -> Vec<u8> {
+        let sk = SigningKey::<MlDsa65>::from_seed(&ml_dsa::Seed::from(seed));
+        let sig = sk
+            .expanded_key()
+            .sign_deterministic(&msg, ctx)
+            .expect("deterministic sign");
+        sig.encode().to_vec()
+    };
+
+    // Empty context (raw cross-protocol reuse of the 72-byte payload) refused.
+    assert!(
+        !Signer::verify(&pk, &p, &mk_sig(b"")),
+        "signature over raw payload with EMPTY context must be REFUSED"
+    );
+    // Foreign context refused.
+    assert!(
+        !Signer::verify(&pk, &p, &mk_sig(b"other-protocol-v1")),
+        "signature made under a FOREIGN context must be REFUSED"
+    );
+    // The pinned context string must be the one actually in use: a signature
+    // made with this literal verifies, so SIGN_CONTEXT drift fails this court.
+    assert!(
+        Signer::verify(&pk, &p, &mk_sig(CTX)),
+        "signature under pinned literal context 'strata-clap-attest-v1' must VERIFY"
+    );
+}
+
 /// Wrong-length signature / public key must fail closed.
 #[test]
 fn malformed_inputs_fail_closed() {

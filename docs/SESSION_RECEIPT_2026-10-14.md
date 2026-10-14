@@ -771,3 +771,67 @@ drifting from the figure above minus receipt commits, without a superseding
 addendum. Falsifier for the two CANDIDATE asks in `9eb1de5`: adjudication
 recorded but never adjudicated by the operator while the pinned courts still
 admit.
+
+---
+
+## Addendum-11 — post-addendum-10 landings, carried list condensed (append-only)
+
+Append-only. **Dedupe**: re-read addenda 5-10 this session; every SHA named
+in the prompt's item list resolved as already recorded, so none is repeated
+as new here — widen-ack CANDIDATE asks `9eb1de5` (addendum-10 "New this
+addendum"), sign-refusal fuzz court `51f9799` (addendum-10 dedupe), n06
+stamp-churn gitignore `3537abb` (addenda 5/7/8, re-verified
+`git log --no-walk` resolves all three).
+
+### New this addendum — lane landings after addendum-10 (`git log --oneline 4ca9f7c..HEAD`)
+
+| Item | SHA | Verification |
+|---|---|---|
+| Receipts directory convention doc (`docs/RECEIPTS_DIRS.md`, new) | `1c1d053` | `git log --no-walk --oneline` resolves |
+| Receipts-hygiene audit closeout: glob sidecar ignores (`.gitignore`), dir-law citation in `RELEASE_TRAIN_v26.10.12.md`, stale-row fix (`valve/receipt_store.ex` moduledoc) | `fa6a228` | `git log --no-walk --oneline` resolves |
+
+Both are docs/hygiene landings; no runtime behavior change beyond the
+moduledoc text.
+
+### Carried forward — OPEN adjudication asks (operator, CANDIDATE/COURT-PENDING)
+
+E-series; KG-02; KG-P14 preimage; NFR-3 EF; KG-N05 residual; KG-SX1;
+pending-token authentication; policy_admission G2-branch inertness; ingress-
+drop observability; graphlaw 26.10.12 SHACL-recursion (the last three
+recorded as CANDIDATE rows in `9eb1de5`; graphlaw remains the cross-repo
+BLOCKER routed to the graphlaw owner — falsifier unchanged from
+addendum-9/10).
+
+### Carried forward — user-pending
+
+`_build_lane7`; `/tmp/strata_lanes`; `l77_scratch_audit`. Unchanged from
+prior addenda.
+
+### Carried forward — in-flight lanes (not landed, no court receipt)
+
+LeaseLedger implementation (design landed `4077911`); worker-lifecycle;
+semantics-surfaces; A02/card standing declaration (work committed inside
+`66015a0`). Working tree at write time also carries other lanes' in-flight
+edits (`temprun/` worker + Cargo.toml, untracked
+`temprun/tests/pn_pnabi_differential_court.rs`) — disclosed, not authored
+here; immutable-commit rule applies.
+
+### Session status
+
+**SATURATED-for-wave** (unchanged from addendum-10): defect-lattice
+discovery rate halved vs the addendum-5 peak; the loop winds into the
+release train per `docs/RELEASE_TRAIN_v26.10.12.md` (§2 frozen-subject gate,
+ladder OPEN) and continues per operator mandate.
+
+### Totals at addendum-11 time
+
+- Session range: `git log --oneline 548a0bf..HEAD | wc -l` = **119**
+  commits (addendum-10 recorded 116 at its writing; delta +3 = content
+  `1c1d053`, `fa6a228`, plus this lane's addendum-11 receipt commit;
+  receipt commits additive by convention per addenda 5-10). HEAD moved
+  during this lane's write (`9eb1de5` → `fa6a228`); figures are as-of-write.
+
+**Session falsifier**: any SHA cited in this receipt failing
+`git log --oneline --no-walk` at replay time, or the session commit count
+drifting from the figure above minus receipt commits, without a superseding
+addendum.

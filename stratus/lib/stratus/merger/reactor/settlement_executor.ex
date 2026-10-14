@@ -395,10 +395,12 @@ defmodule Strata.Merger.Reactor.SettlementExecutor do
     end
   end
 
+  # Netting in [0, 0.18]x: a negative ratio is over-netting and refuses
+  # fail-closed like an over-cap ratio.
   defp invariant_holds?(:netting_within_cap, s) do
     case Map.get(s.artifacts, :netting_ratio) do
       nil -> :ok
-      ratio when is_number(ratio) and ratio <= @netting_ratio_cap -> :ok
+      ratio when is_number(ratio) and ratio >= 0 and ratio <= @netting_ratio_cap -> :ok
       _ -> {:error, :invariant_violated}
     end
   end

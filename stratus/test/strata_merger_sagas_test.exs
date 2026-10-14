@@ -420,6 +420,47 @@ defmodule Strata.MergerSagasTest do
     end
   end
 
+  # -- 4. Netting-ratio positivity (E-M15 cap law is a [0, 0.18] band) -------
+
+  describe "netting ratio positivity" do
+    test "treasury rebalance: a negative netting_ratio is over-netting and refuses fail-closed" do
+      saga = start_saga(TreasuryRebalance)
+
+      assert :ok = TreasuryRebalance.admit(saga, lease("mx11-neg-netting-tr"), Strata.Merger.LeaseLedger)
+      assert :ok = TreasuryRebalance.load(saga, %{netting_ratio: -0.05})
+
+      assert {:error, :invariant_violated} = TreasuryRebalance.seal(saga)
+      # Positive control for vacuity: the refusal enacted real LIFO compensation.
+      assert compensations() == [:ap_ar_lane_release]
+      assert TreasuryRebalance.journal(saga) == []
+    end
+
+    test "settlement executor: a negative netting_ratio refuses fail-closed" do
+      System.put_env("STRATUS_TEMPRUN_STEP_BIN", @fake_bin)
+      saga = start_saga(SettlementExecutor)
+
+      assert :ok = SettlementExecutor.admit(saga, lease("mx11-neg-netting-se"), Strata.Merger.LeaseLedger)
+      assert :ok = SettlementExecutor.load(saga, %{netting_ratio: -0.05, fcc: 5.0})
+
+      assert {:error, :invariant_violated} = SettlementExecutor.seal(saga)
+      assert compensations() == [:instruction_lane_release]
+    end
+
+    test "positive control: an in-range ratio at the cap (0.18) does not fire the invariant" do
+      System.put_env("STRATUS_TEMPRUN_STEP_BIN", @fake_bin)
+      saga = start_saga(TreasuryRebalance)
+
+      assert :ok = TreasuryRebalance.admit(saga, lease("mx11-cap-netting"), Strata.Merger.LeaseLedger)
+      assert :ok = TreasuryRebalance.load(saga, %{netting_ratio: 0.18})
+
+      # In-range ratio passes the invariant; with the fake step bin resolved
+      # the whole sweep runs and the saga seals clean — NOT
+      # :invariant_violated.
+      assert {:ok, %{refusal: nil}} = TreasuryRebalance.seal(saga)
+      refute_received {:mx11_compensation, _}
+    end
+  end
+
   # -- Helpers ---------------------------------------------------------------------------
 
   defp build_ctrts_record do

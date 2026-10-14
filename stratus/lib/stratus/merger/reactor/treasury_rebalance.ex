@@ -319,12 +319,13 @@ defmodule Strata.Merger.Reactor.TreasuryRebalance do
     end)
   end
 
-  # Netting <= 0.18x. Absent ratio = not yet computable (sweep has not run);
-  # present-but-over-cap refuses fail-closed.
+  # Netting in [0, 0.18]x. Absent ratio = not yet computable (sweep has not
+  # run); a negative ratio is over-netting (netting more than the exposure)
+  # and refuses fail-closed like an over-cap ratio.
   defp invariant_holds?(:netting_within_cap, s) do
     case Map.get(s.artifacts, :netting_ratio) do
       nil -> :ok
-      ratio when is_number(ratio) and ratio <= @netting_ratio_cap -> :ok
+      ratio when is_number(ratio) and ratio >= 0 and ratio <= @netting_ratio_cap -> :ok
       _ -> {:error, :invariant_violated}
     end
   end

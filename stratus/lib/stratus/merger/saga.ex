@@ -7,12 +7,13 @@ defmodule Strata.Merger.Saga do
 
   ## Trajectory (AgentBase discipline, one extra state)
 
-      :admit -> :stepping -> :compensating -> :sealed
+      :admit -> :stepping -> :sealed
 
-  `:compensating` runs when a step refuses or an invariant breaks: each
-  fixed compensation atom in `compensations/0` is enacted in order;
-  compensations are fixed zero-entropy atoms chosen per step, never
-  data-dependent closures.
+  (`:compensating` is a phase, not a resting state: it runs in-call during
+  `seal/1` when a step refuses or an invariant breaks — each fixed
+  compensation atom in `compensations/0` is enacted in order; compensations
+  are fixed zero-entropy atoms chosen per step, never data-dependent
+  closures — and lands the saga in `:sealed` with the refusal recorded.)
 
   ## SEALED, never unsealed
 

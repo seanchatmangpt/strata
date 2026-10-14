@@ -67,6 +67,11 @@ semantics, and persistence costs that scale poorly. Strata addresses all four.
   on o" (o precedes s); all other predicates are non-causal. Sieve: Kahn cycle
   detection (incl. self-loops, O(V+E), NODE_CAP=1024 fail-closed) + within-trace
   vector-clock inversion.]
+  [DISPOSITION 2026-10-13: the `acyclicity.rs` header's inversion clause reads
+  "o occurs as a subject anywhere in the trace," but `t_of` is populated only
+  from DEP rows (acyclicity.rs:86-98) — the documented semantics is STRICTER
+  than the code, which inverts only against other DEP-row stamps. Kept as a
+  documented semantics choice pending owner call.]
   [ADJUDICATED 2026-10-10: POWL compilation architecture — host-side compile to sorted
   V_SPO; the wasm arena stays capability-free; bcinr-powl is optional/non-default
   feature-gated so wasm builds never link it. Evidence: temprun/src/conformance.rs,

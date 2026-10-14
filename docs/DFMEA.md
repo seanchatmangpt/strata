@@ -126,6 +126,24 @@ Verification commands are given per row; run from repo root `/Users/sac/strata`.
   is exactly the undetectable class). RPN pre 120 → post 45; residual risk on
   the unstandardized CLI refusal channel.
 
+## F-8. merge_join below-baseline false-accept (zero-coverage lineage admitted)
+
+- **Failure mode**: `merge_join`/`merge_join_total` advanced past a lineage
+  key sorting strictly below the current policy key without flagging a
+  mismatch; with a sorted-ascending policy the key can never be covered by a
+  later quad, so zero-coverage lineage admitted end-to-end through `run()`.
+- **Root cause**: the join treated the below-baseline cursor advance as
+  neutral, relying solely on the sortedness precondition without carrying the
+  coverage consequence.
+- **Remediation (landed)**: commit `dc8dd7d` — mismatch flagged on the
+  below-baseline advance in both joins. Courts
+  `temprun/tests/conformance_module_test.rs`:
+  `below_baseline_lineage_row_refuses_not_silently_skipped`,
+  `below_baseline_refusal_end_to_end`.
+- **Verify**: `cargo test -p temprun --test conformance_module_test`
+- **Scores (judgment, 2026-10-13)**: S 8, O 4, D 8 (pre D 8 — no probe covered
+  the window since `merge_join` landed). RPN pre 256 → post 64.
+
 ---
 
 ## Summary
@@ -139,6 +157,7 @@ Verification commands are given per row; run from repo root `/Users/sac/strata`.
 | F-5 | O(n) time travel | 252 | 108 | Remediated; residual documented in court |
 | F-6 | Teardown remanence | 192 | 96 | Remediated + courts (fr6, p11) |
 | F-7 | CLI silent truncation (p01) | 120 | 45 | **Partially remediated / accepted gap** |
+| F-8 | merge_join below-baseline false-accept | 256 | 64 | Remediated + court (dc8dd7d, found by vibration 2026-10-13) |
 
 All RPN values are dated engineering judgments (2026-10-10), not measured
 field data. See Also: `docs/COURT_ADJUDICATIONS.md`.

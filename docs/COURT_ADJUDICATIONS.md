@@ -59,6 +59,23 @@ bcinr-POWL is strictly host-side: the host compiles logic plus OCEL
 dictionaries into V_SPO before the valve. The arena stays a pure,
 capability-free integer machine.
 
+## Audit Vibration Adjudication (2026-10-13)
+
+False-accept found by the 2026-10-13 conformance audit lane (concurrent
+vibration over one checkout), not by any probe or existing court. In
+`temprun/src/conformance.rs`, `merge_join` and `merge_join_total` advanced the
+lineage cursor past a policy key WITHOUT flagging a mismatch when the lineage
+key sorted strictly below the current policy key — with a sorted-ascending
+policy, no later policy quad can equal that lineage key, so zero-coverage
+lineage against a strictly higher-keyed policy admitted end-to-end through
+`run()`. Fixed in commit `dc8dd7d` (mismatch flagged on the below-baseline
+advance in both joins; branch shape unchanged). New courts in
+`temprun/tests/conformance_module_test.rs`: `below_baseline_lineage_row_refuses_
+not_silently_skipped` and `below_baseline_refusal_end_to_end` (real `run()`
+gate). Honest note: the false-accept window existed since `merge_join` landed
+(no probe covered it); the below-baseline coverage check was only exercised
+after this adjudication.
+
 ## FR/NFR Court Status
 
 | Item | Verdict | Note |

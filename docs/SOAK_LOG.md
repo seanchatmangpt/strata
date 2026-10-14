@@ -49,3 +49,63 @@ cargo run -p temprun --release --bin soak -- --mixed --json
 - **Profile**: `--release` (optimized), default cargo release settings, no
   instrumentation. Each run is a fresh process; variance across runs captures
   scheduler/thermal noise (run 8's tail outlier is attributed here).
+
+## Soak Stability Record — 2026-10-13 23:58 PDT (receipts-refresh lane)
+
+Host: macOS (Darwin 25.2.0), strata @ HEAD `9cfe09b717c916984d6414006701afc96a1a2181`.
+Ten FRESH process runs, sequential, one cargo process at a time.
+
+Command per run (exit code cited per run):
+
+```
+cargo run -p temprun --release --bin soak -- --mixed --json
+```
+
+| Run | Timestamp (PDT) | Exit | Cp | Cpk | P99.9 (ns) | Constant-time | Verdict |
+|-----|-----------------|------|------|-------|--------|---|---------|
+| 1 | 2026-10-13 23:58 | 0 | 5.195 | 9.056 | 537959 | PASS | PASS |
+| 2 | 2026-10-13 23:58 | 0 | 5.399 | 9.422 | 562125 | PASS | PASS |
+| 3 | 2026-10-13 23:58 | 0 | 8.440 | 14.882 | 102000 | PASS | PASS |
+| 4 | 2026-10-13 23:58 | 0 | 6.424 | 11.445 | 13583 | PASS | PASS |
+| 5 | 2026-10-13 23:59 | 0 | 8.993 | 16.008 | 26334 | PASS | PASS |
+| 6 | 2026-10-13 23:59 | 0 | 8.979 | 15.997 | 24750 | PASS | PASS |
+| 7 | 2026-10-13 23:59 | 0 | 6.424 | 11.434 | 32583 | PASS | PASS |
+| 8 | 2026-10-13 23:59 | 0 | 5.867 | 10.336 | 91667 | PASS | PASS |
+| 9 | 2026-10-13 23:59 | 0 | 6.136 | 10.830 | 84375 | PASS | PASS |
+| 10 | 2026-10-13 23:59 | 0 | 6.130 | 10.829 | 54208 | PASS | PASS |
+
+### Summary
+
+- **Min Cp: 5.195** (run 1), **min Cpk: 9.056** (run 1). Floor is Cp >= 2.0 /
+  Cpk >= 1.5: all 10 runs clear it with 2.6x+ margin on Cp and 6x+ on Cpk.
+  No failures.
+- **P99.9 spread**: 13,583 - 562,125 ns. Runs 1-3 show heavy tail outliers
+  (max_ns up to 227,538,459 in run 1 — a single scheduler-stall cycle); the
+  MAD-based sigma keeps Cp/Cpk robust to these, which is why Cp stays >= 5.2
+  while P99.9 swings 40x. Runs 4-7 (machine quiesced mid-window) show the
+  tight-tail regime: P99.9 13.6-32.6 us.
+- **Constant-time refusal report**: all 4 robust classes (fuel-0,
+  coord-intersect, clock-inversion, malformed-magic; n=62562-62563 each)
+  passed median/P99.9 <= 2x admit on all 10 runs.
+- **Total**: 10 runs x 10^6 cycles = 10^7 cycles, exit 0 on all 10.
+
+### Methodology note
+
+Identical discipline to the 2026-10-10 record: `--mixed` 10^6 admit/refuse
+cycles per fresh process, USL=50000 ns / LSL=0 ns, Cp=(USL-LSL)/6sigma,
+`pass:true` requires both limits plus the robust-vs-robust constant-time
+gate. Difference vs 2026-10-10: runs are sequential across ~2 minutes
+(23:58:01-23:59:57 PDT) rather than back-to-back same-second, so the table
+also captures the tail-latency flap regime the consensus_slo receipt
+independently observed (sequencer p99.9 26.4 -> 45.9 between runs); the soak
+gate absorbs it, the latency courts do not. Recorded as measured; no tuning.
+
+### Subject-identity caveat
+
+Mid-run, `strata_protocol/src/ltl.rs` / `invariants.rs` (23:57-23:58) and
+later `lib.rs` / `temprun/src/*` (00:05-00:19) were edited on disk by other
+lanes. The soak binary was rebuilt after the external `target/release`
+deletion, so these ten runs are as-of-tree-state-at-compile (HEAD
+`9cfe09b` plus possibly-present in-flight lane edits), not certified
+exact-HEAD. Cp/Cpk margins (2.6x+/6x+) make a gate flip from those edits
+implausible but unproven here.

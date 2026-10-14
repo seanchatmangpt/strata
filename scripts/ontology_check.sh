@@ -15,8 +15,9 @@
 #      subset). Any mask drift fails with a diff.
 #      (Automates the L90 manual check; E10 C1 full-table scope.)
 #   7. --self-test: positive control that must fire. Mirrors the repo tree
-#      into a scratch dir, mutates one dao_full.rs mask in the extracted
-#      text, and asserts the --rust cross-check refuses (exit 1).
+#      into a scratch dir, mutates one mask per checked table (ronr.rs,
+#      ronr_full.rs, dao_transitions.rs, dao_full.rs — 4 mutations total)
+#      and asserts the --rust cross-check refuses (exit 1) on every one.
 #
 # Exit 0 = all checks pass; exit 1 = at least one named violation.
 # bash 3.2-safe: no assoc arrays, no ${var,,}, no mapfile.
@@ -43,9 +44,9 @@ for arg in "$@"; do
 done
 
 # -- check 7 (--self-test): must-fire mutation control ------------------------
-# Builds a scratch mirror of the checked tree, corrupts one dao_full.rs mask
-# (0x93 post 0x0008 -> 0x0009), and asserts the cross-check refuses. Any
-# pass here means the cross-check is vacuous on the dao_full surface.
+# Builds a scratch mirror of the checked tree, corrupts one mask per checked
+# table, and asserts the --rust cross-check refuses for every mutation. Any
+# pass means the cross-check is vacuous on that table's surface.
 if [ "$self_test" = 1 ]; then
     scratch=$(mktemp -d /tmp/ontology_check_selftest.XXXXXX)
     trap 'rm -rf "$scratch"' EXIT
@@ -53,30 +54,53 @@ if [ "$self_test" = 1 ]; then
     cp "$here/ontology_check.sh" "$scratch/scripts/"
     ln -s "$(cd "$here/.." && pwd)/ontology.ttl" "$scratch/ontology.ttl"
     cp "$here"/../strata_protocol/src/*.rs "$scratch/strata_protocol/src/"
-    # Mutate the 0x91 row's pre-mask (unique literal `pre: 0x0008,` in
-    # dao_full.rs): 0x0008 -> 0x0009 flips a bit the ontology pins to 0.
-    if sed -e 's/pre: 0x0008,/pre: 0x0009,/' \
-        "$scratch/strata_protocol/src/dao_full.rs" > "$scratch/dao_full.rs.tmp"; then
-        mv "$scratch/dao_full.rs.tmp" "$scratch/strata_protocol/src/dao_full.rs"
-    fi
-    if grep -q "pre: 0x0009," "$scratch/strata_protocol/src/dao_full.rs"; then
-        echo "self-test mutation applied: dao_full.rs (0x91) pre 0x0008 -> 0x0009"
-    else
-        echo "SELF-TEST FAILURE: mutation did not apply (dao_full.rs drifted?)"
+
+    # One mutation per cross-checked table: file|pattern|replacement|desc.
+    # Each replacement flips a bit the ontology pins to 0, so the mask drift
+    # MUST be refused. Patterns are asserted to match exactly once before sed
+    # (a no-match mutation would be a vacuous pass).
+    fired=0
+    total=0
+    while IFS='|' read -r file pat repl desc; do
+        [ -n "$file" ] || continue
+        total=$((total + 1))
+        target="$scratch/strata_protocol/src/$file"
+        n=$(grep -cF -- "$pat" "$target" || true)
+        if [ "$n" -ne 1 ]; then
+            echo "SELF-TEST FAILURE: mutation pattern matches $n times in $file (need exactly 1): $pat"
+            exit 1
+        fi
+        sed -e "s/$pat/$repl/" "$target" > "$scratch/mut.tmp" \
+            && mv "$scratch/mut.tmp" "$target"
+        if ! grep -qF -- "$repl" "$target"; then
+            echo "SELF-TEST FAILURE: mutation did not apply in $file (drifted?)"
+            exit 1
+        fi
+        echo "self-test mutation applied: $file — $desc"
+        if bash "$scratch/scripts/ontology_check.sh" --rust > "$scratch/out.txt" 2>&1; then
+            echo "SELF-TEST FAILURE: mutated $file PASSED the cross-check (must-fire control did not fire)"
+            sed -n '1,200p' "$scratch/out.txt"
+            exit 1
+        fi
+        grep -q "rust-cross-check" "$scratch/out.txt" || {
+            echo "SELF-TEST FAILURE: $file run failed but without a rust-cross-check violation"
+            sed -n '1,200p' "$scratch/out.txt"
+            exit 1
+        }
+        fired=$((fired + 1))
+        echo "self-test: $file mutation fired, cross-check refused as required"
+    done <<EOF
+ronr.rs|Transition { opcode: 0x0C, pre: 0x0000|Transition { opcode: 0x0C, pre: 0x0001|0x0C pre 0x0000 -> 0x0001
+ronr_full.rs|Transition { opcode: 0x0C, pre: 0x0000|Transition { opcode: 0x0C, pre: 0x0001|0x0C pre 0x0000 -> 0x0001
+dao_transitions.rs|pre: P_COLLATERAL_STAKED,|pre: P_TREASURY_SOLVENT,|VERB_WITHDRAW_COLLATERAL pre P_COLLATERAL_STAKED(0x0001) -> P_TREASURY_SOLVENT(0x0100)
+dao_full.rs|noun_scope: 0x34, pre: 0x0008|noun_scope: 0x34, pre: 0x0009|0x91 pre 0x0008 -> 0x0009
+EOF
+
+    if [ "$fired" -ne 4 ] || [ "$total" -ne 4 ]; then
+        echo "SELF-TEST FAILURE: $fired/$total mutations fired (need 4/4)"
         exit 1
     fi
-    if bash "$scratch/scripts/ontology_check.sh" --rust > "$scratch/out.txt" 2>&1; then
-        echo "SELF-TEST FAILURE: mutated dao_full.rs mask PASSED the cross-check (must-fire control did not fire)"
-        sed -n '1,200p' "$scratch/out.txt"
-        exit 1
-    fi
-    grep -q "rust-cross-check" "$scratch/out.txt" || {
-        echo "SELF-TEST FAILURE: run failed but without a rust-cross-check violation"
-        sed -n '1,200p' "$scratch/out.txt"
-        exit 1
-    }
-    grep "rust-cross-check" "$scratch/out.txt" | sed 's/^/  /'
-    echo "self-test: mutation fired, cross-check refused as required"
+    echo "self-test: 4/4 mutations fired, cross-check refused on every table"
     exit 0
 fi
 

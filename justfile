@@ -18,16 +18,25 @@ test-wasm:
     @test -d temprun || { echo "SKIP: temprun/ absent"; exit 0; }
     cargo rustc -p temprun --lib --target wasm32-unknown-unknown --release --crate-type cdylib
 
-# Verify temprun.wasm imports = ∅ via import-section count (refusal = exit 1).
+# Build the pn_kernel no_std cdylib (standalone workspace, wasm32-only).
+pn-kernel-wasm:
+    cd temprun/pn_kernel && cargo build --target wasm32-unknown-unknown --release
+
+# temprun wasm32-wasip1 release build (CI ladder step).
+wasip1:
+    cargo build -p temprun --target wasm32-wasip1 --release
+
+# Verify temprun.wasm imports = ∅ via import-section count. Fail-closed: a
+# missing artifact is exit 1, never a SKIP pass. Pins the exact temprun.wasm
+# artifact (no glob candidates).
 check-wasm-imports:
     #!/usr/bin/env python3
-    import struct, sys, pathlib
+    import sys, pathlib
 
-    candidates = sorted(pathlib.Path("target/wasm32-unknown-unknown/release").glob("*.wasm"))
-    if not candidates:
-        print("SKIP: no .wasm built under target/wasm32-unknown-unknown/release (run `just test-wasm`)")
-        sys.exit(0)
-    path = candidates[0]
+    path = pathlib.Path("target/wasm32-unknown-unknown/release/temprun.wasm")
+    if not path.exists():
+        print(f"FAIL: {path} missing (run `just test-wasm` first)")
+        sys.exit(1)
     data = path.read_bytes()
     assert data[:4] == b"\x00asm", f"{path}: not a wasm binary"
     pos = 8
@@ -70,8 +79,8 @@ test-stratus:
     @test -d stratus || { echo "SKIP: stratus/ absent"; exit 0; }
     cd stratus && mix test
 
-# Full verification ladder.
-ci: test test-wasm check-wasm-imports lint test-stratus
+# Full verification ladder == ci.yml rust job.
+ci: test test-wasm check-wasm-imports lint gate-pn-fast wasip1 gate-docs test-stratus
     @echo "ci: all gates green"
 
 # Six Sigma statistical harness: N-cycle sampling of the temprun admission

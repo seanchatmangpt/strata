@@ -7,7 +7,7 @@ on:
 
 jobs:
   rust:
-    name: Rust (test + clippy + wasm)
+    name: Rust + Elixir (just ci)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -16,6 +16,11 @@ jobs:
         run: |
           rustup toolchain install
           rustup target add wasm32-unknown-unknown wasm32-wasip1
+
+      - uses: erlef/setup-beam@v1
+        with:
+          elixir-version: '1.19'
+          otp-version: '28'
 
       - name: Install just
         run: |
@@ -32,40 +37,6 @@ jobs:
           key: cargo-${{ runner.os }}-${{ hashFiles('Cargo.lock', 'rust-toolchain.toml') }}
           restore-keys: cargo-${{ runner.os }}-
 
-      - name: Workspace tests
-        run: just test
-
-      - name: Lint (clippy, warnings denied)
-        run: just lint
-
-      - name: temprun wasm32-unknown-unknown build + imports = ∅ check
-        run: |
-          just test-wasm
-          just check-wasm-imports
-
-      - name: PN64 fast gate (SLO bench + gate0 court; full gate with 10x10^6 soak is local-only, see `just gate-pn`)
-        run: just gate-pn-fast
-
-      - name: Install rdflib for the ontology gate
-        run: python3 -m pip install rdflib
-
-      - name: Ontology + module ratchet gates
-        run: just gate-docs
-
-      - name: temprun wasm32-wasip1 build
-        run: cargo build -p temprun --target wasm32-wasip1 --release
-
-  stratus:
-    name: Elixir (stratus valve tests)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: erlef/setup-beam@v1
-        with:
-          elixir-version: '1.19'
-          otp-version: '28'
-
       - name: Cache mix deps + build
         uses: actions/cache@v4
         with:
@@ -77,5 +48,8 @@ jobs:
           key: mix-${{ runner.os }}-${{ hashFiles('stratus/mix.lock') }}
           restore-keys: mix-${{ runner.os }}-
 
-      - name: Stratus tests
-        run: just test-stratus
+      - name: Install rdflib for the ontology gate
+        run: python3 -m pip install rdflib
+
+      - name: Full ladder (just ci)
+        run: just ci

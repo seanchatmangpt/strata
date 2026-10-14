@@ -15,14 +15,14 @@ jobs:
           targets: wasm32-unknown-unknown
       - uses: erlef/setup-beam@v1
         with:
-          elixir-version: "1.17"
-          otp-version: "27"
-      - name: Release verification ladder
+          elixir-version: "1.19"
+          otp-version: "28"
+      - name: Install just
         run: |
-          cargo test --workspace
-          (cd stratus && mix deps.get && mix test)
-          just test-wasm
-          cargo clippy --workspace --all-targets -- -D warnings
+          curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh \
+            | bash -s -- --to /usr/local/bin
+      - name: Release verification ladder
+        run: just release-check
 
   wasm-artifact:
     runs-on: ubuntu-latest

@@ -109,6 +109,10 @@ defmodule Stratus.Temprun.Worker do
 
   require Logger
 
+  # Telemetry-surface the busy refusal lane, mirroring the valve's
+  # [:stratus, :valve, :refuse] class: metadata (typed atom class).
+  @refused_event [:stratus, :temprun, :worker, :refused]
+
   @typedoc "Fixed zero-entropy refusal atoms."
   @type refusal ::
           :bridge_down | :sealed | :not_initialized | :malformed_frame | :busy
@@ -360,6 +364,7 @@ defmodule Stratus.Temprun.Worker do
       # Pipe full: reply {:error, :busy} IMMEDIATELY — no pending caller, no
       # stall timer, no caller wedged behind a full pipe. The caller retries.
       :busy ->
+        :telemetry.execute(@refused_event, %{}, %{class: :busy, op: :step})
         {:keep_state, data, {:reply, from, {:error, :busy}}}
     end
   end
@@ -380,6 +385,7 @@ defmodule Stratus.Temprun.Worker do
 
       # Same immediate-refusal lane as :step/:busy — seal retries are cheap.
       :busy ->
+        :telemetry.execute(@refused_event, %{}, %{class: :busy, op: :seal})
         {:keep_state, data, {:reply, from, {:error, :busy}}}
     end
   end

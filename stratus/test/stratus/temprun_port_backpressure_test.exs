@@ -123,6 +123,40 @@ defmodule Stratus.TemprunPortBackpressureTest do
     Process.exit(worker, :kill)
   end
 
+  # -- (a2) telemetry witness: busy refusals emit the worker refused event -------
+  @tag :backpressure
+  @tag timeout: 30_000
+  test "busy refusal emits [:stratus, :temprun, :worker, :refused] with class: :busy", ctx do
+    ref = make_ref()
+    test_self = self()
+
+    handler = fn [:stratus, :temprun, :worker, :refused], _measurements, meta, ^ref ->
+      send(test_self, {:worker_refused, meta})
+    end
+
+    :ok = :telemetry.attach(ref, [:stratus, :temprun, :worker, :refused], handler, ref)
+
+    try do
+      model = :binary.copy(<<0>>, 2 * 1024 * 1024)
+      assert {:ok, worker} = start_worker(ctx.stubs.newed_stall, model)
+
+      assert wait_until(fn ->
+               case :sys.get_state(worker) do
+                 {:stepping, _} -> true
+                 _ -> false
+               end
+             end), "worker never reached :stepping"
+
+      assert {:error, :busy} = Stratus.Temprun.Worker.step(worker)
+
+      assert_received {:worker_refused, %{class: :busy, op: :step}}
+      Process.unlink(worker)
+      Process.exit(worker, :kill)
+    after
+      :telemetry.detach(ref)
+    end
+  end
+
   # -- (b) vacuity arm ---------------------------------------------------------
   @tag :backpressure
   @tag timeout: 20_000

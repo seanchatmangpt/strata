@@ -13,7 +13,8 @@
 //!    a local hex constant;
 //! 3. `ocel_top_byte`/`tick` equivalence by source pattern, with its own
 //!    vacuity twin (`>> 56` → `>> 48` mutation rejected);
-//! 4. self-check — recompute the head over the inline fixture through the
+//! 4. self-check — recompute the head over the shared KAT fixture
+//!    (read from `sync_as_replay_kat.rs`, not re-declared) through the
 //!    real `strata_protocol::logchain` and compare to the pinned hex;
 //! 5. taxonomy mirror — sync.rs's documented SyncFailure → LogChainError
 //!    mapping rows vs logchain.rs's actual variants.
@@ -141,6 +142,49 @@ fn tick_body_violation(body: &str) -> Result<(), String> {
         return Err(format!("tick body drifted: {body_ws:?}"));
     }
     Ok(())
+}
+
+/// Extract the shared fixture (LogEntry pn/ocel pairs) from the KAT
+/// source text, so this court carries no byte-literal copy of the
+/// fixture itself — `tests/sync_as_replay_kat.rs` is the single in-repo
+/// fixture authority; this court pins only the head hex (KAT_HEAD_HEX).
+fn fixture_pairs_from_kat_src(kat_src: &str) -> Vec<(u64, u64)> {
+    const NEEDLE: &str = "LogEntry { pn: 0x";
+    let start = kat_src
+        .find("fn fixture()")
+        .unwrap_or_else(|| panic!("KAT source has no fn fixture()"));
+    let rest = &kat_src[start..];
+    let end = rest
+        .find("\n}")
+        .unwrap_or_else(|| panic!("fn fixture() body not terminated"));
+    let body = &rest[..end];
+    let mut out = Vec::new();
+    let mut pos = 0;
+    while let Some(rel) = body[pos..].find(NEEDLE) {
+        let after_pn = &body[pos + rel + NEEDLE.len()..];
+        let pn_end = after_pn
+            .find(',')
+            .unwrap_or_else(|| panic!("fixture entry missing pn/ocel comma"));
+        let pn = u64::from_str_radix(after_pn[..pn_end].replace('_', "").trim(), 16)
+            .unwrap_or_else(|e| panic!("bad fixture pn literal: {e}"));
+        const OCEL_NEEDLE: &str = "ocel: 0x";
+        let o = after_pn
+            .find(OCEL_NEEDLE)
+            .unwrap_or_else(|| panic!("fixture entry missing ocel literal"));
+        let after_ocel = &after_pn[o + OCEL_NEEDLE.len()..];
+        let ocel_end = after_ocel
+            .find(|c: char| !c.is_ascii_hexdigit() && c != '_')
+            .unwrap_or(after_ocel.len());
+        let ocel = u64::from_str_radix(after_ocel[..ocel_end].replace('_', "").trim(), 16)
+            .unwrap_or_else(|e| panic!("bad fixture ocel literal: {e}"));
+        out.push((pn, ocel));
+        pos += rel + NEEDLE.len() + o + OCEL_NEEDLE.len() + ocel_end;
+    }
+    assert!(
+        !out.is_empty(),
+        "KAT fixture parse produced zero entries — extraction drifted"
+    );
+    out
 }
 
 fn tick_body_of(src: &str, fn_sig_needle: &str, path: &str) -> String {
@@ -294,18 +338,19 @@ fn ocel_top_byte_equivalence_by_source_pattern() {
 }
 
 #[test]
-fn self_check_recompute_chain_head_over_inline_fixture() {
-    // Fourth, independent copy of the fixture (test 2 cross-checks the KAT
-    // extraction; this test recomputes it through the real chain).
+fn self_check_recompute_chain_head_over_shared_kat_fixture() {
+    // Fourth pin: the head recomputed through the real chain over the
+    // shared fixture — read from `tests/sync_as_replay_kat.rs` at compile
+    // time (include_str!), never re-declared as byte literals here.
     use strata_protocol::logchain::chain_head;
     use strata_protocol::logsink::LogEntry;
 
-    let fx = vec![
-        LogEntry { pn: 0x0001_0000_0000_0001, ocel: 0x0A00_0000_0000_0001 },
-        LogEntry { pn: 0x0002_0000_0000_0002, ocel: 0x0B00_0000_0000_0002 },
-        LogEntry { pn: 0x0003_0000_0000_0003, ocel: 0x0C00_0000_0000_0003 },
-        LogEntry { pn: 0x0004_0000_0000_0004, ocel: 0x0D00_0000_0000_0004 },
-    ];
+    const KAT_SRC: &str = include_str!("sync_as_replay_kat.rs");
+    let fx: Vec<LogEntry> = fixture_pairs_from_kat_src(KAT_SRC)
+        .into_iter()
+        .map(|(pn, ocel)| LogEntry { pn, ocel })
+        .collect();
+    assert_eq!(fx.len(), 4, "shared KAT fixture must carry 4 entries");
     let head = chain_head(&fx);
     assert_eq!(
         hex(&head),
